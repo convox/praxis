@@ -1,0 +1,14 @@
+services:
+  web:
+    build: .
+    environment:
+      - FOO
+      - BAZ=qux
+# queues:
+#   main:
+#     timeout: 10
+tables:
+  organizations:
+  users:
+    indexes:
+      - organization

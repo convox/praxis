@@ -1,0 +1,107 @@
+package manifest
+
+import (
+	"fmt"
+	"reflect"
+
+	yaml "gopkg.in/yaml.v2"
+)
+
+func (v Services) MarshalYAML() (interface{}, error) {
+	return marshalMap(v, "Name")
+}
+
+func (v *Services) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return unmarshalMap(unmarshal, v, "Name")
+}
+
+func (v Tables) MarshalYAML() (interface{}, error) {
+	return marshalMap(v, "Name")
+}
+
+func (v *Tables) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return unmarshalMap(unmarshal, v, "Name")
+}
+
+func marshalMap(v interface{}, key string) (interface{}, error) {
+	ms := yaml.MapSlice{}
+
+	vv := reflect.ValueOf(v)
+
+	if vv.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("item is not a slice")
+	}
+
+	for i := 0; i < vv.Len(); i++ {
+		vi := vv.Index(i)
+		kf := vi.FieldByName(key)
+
+		if kf.Kind() != reflect.String {
+			return nil, fmt.Errorf("can not find key: %s", key)
+		}
+
+		ms = append(ms, yaml.MapItem{
+			Key:   kf.Interface(),
+			Value: vv.Index(i).Interface(),
+		})
+	}
+
+	return ms, nil
+}
+
+func unmarshalMap(unmarshal func(interface{}) error, out interface{}, key string) error {
+	var om yaml.MapSlice
+
+	if err := unmarshal(&om); err != nil {
+		return err
+	}
+
+	ov := reflect.ValueOf(out)
+
+	if ov.Kind() != reflect.Ptr {
+		return fmt.Errorf("could not unmarshal")
+	}
+
+	if reflect.Indirect(ov).Kind() != reflect.Slice {
+		return fmt.Errorf("could not unmarshal")
+	}
+
+	ovi := ov.Elem()
+
+	mt := reflect.Indirect(reflect.ValueOf(out)).Type().Elem()
+	mpt := reflect.New(mt).Type()
+	mm := reflect.New(reflect.MapOf(reflect.TypeOf(""), mpt))
+
+	if err := unmarshal(mm.Interface()); err != nil {
+		return err
+	}
+
+	for _, oi := range om {
+		k, ok := oi.Key.(string)
+		if !ok {
+			return fmt.Errorf("unknown key type: %v", k)
+		}
+
+		mi := mm.Elem().MapIndex(reflect.ValueOf(k)).Elem()
+
+		if !mi.IsValid() {
+			mi = reflect.New(mt).Elem()
+		}
+
+		kf := mi.FieldByName(key)
+
+		if !kf.CanSet() || kf.Kind() != reflect.String {
+			return fmt.Errorf("can not set key: %s", key)
+		}
+
+		kf.SetString(k)
+
+		if !mi.Type().ConvertibleTo(mt) {
+			return fmt.Errorf("could not unmarshal")
+		}
+
+		ovi.Set(reflect.Append(ovi, mi))
+	}
+
+	return nil
+}
