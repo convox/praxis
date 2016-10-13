@@ -7,7 +7,7 @@ import (
 )
 
 func (m *Manifest) system(format string, args ...interface{}) {
-	m.prefix("system").Write([]byte(fmt.Sprintf(format+"\n", args...)))
+	m.prefix("convox").Write([]byte(fmt.Sprintf(format+"\n", args...)))
 }
 
 func (m *Manifest) prefix(name string) io.Writer {

@@ -1,7 +1,6 @@
 package manifest
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"sync"
@@ -56,7 +55,7 @@ func (m *Manifest) RunService(s Service, opts RunOptions) error {
 		go m.syncServicePaths(s)
 	}
 
-	m.system("starting: %s", s.Name)
+	m.system("starting %s", s.Name)
 
 	cmd := exec.Command("docker", args...)
 
@@ -82,7 +81,7 @@ func (m *Manifest) Stop() {
 	wg.Add(len(m.Services))
 
 	for _, s := range m.Services {
-		m.system("stopping: %s", s.Name)
+		m.system("stopping %s", s.Name)
 
 		go func(s Service, wg *sync.WaitGroup) {
 			defer wg.Done()
@@ -114,7 +113,8 @@ func (m *Manifest) syncServicePaths(s Service) {
 		go s.Start(ch)
 
 		for s := range ch {
-			m.prefix("sync").Write([]byte(fmt.Sprintf("%s\n", s)))
+			m.system(s)
+			// m.prefix("sync").Write([]byte(fmt.Sprintf("%s\n", s)))
 		}
 	}
 }

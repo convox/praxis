@@ -255,12 +255,6 @@ func (s *Sync) syncIncomingAdds(adds []changes.Change, st Stream) {
 	} else {
 		st <- fmt.Sprintf("%d files <- %s", len(adds), s.Remote)
 	}
-
-	if os.Getenv("CONVOX_DEBUG") != "" {
-		for _, a := range adds {
-			st <- fmt.Sprintf("<- %s", filepath.Join(a.Base, a.Path))
-		}
-	}
 }
 
 func (s *Sync) syncIncomingRemoves(removes []changes.Change, st Stream) {
@@ -309,7 +303,7 @@ func (s *Sync) syncOutgoingAdds(adds []changes.Change, st Stream) {
 
 	if len(adds) < 5 {
 		for _, a := range adds {
-			st <- fmt.Sprintf("%s -> %s", a.Path, s.Container)
+			st <- fmt.Sprintf("%s -> %s:%s", a.Path, s.Container, a.Path)
 		}
 	} else {
 		st <- fmt.Sprintf("%d files -> %s", len(adds), s.Container)
@@ -359,7 +353,7 @@ func (s *Sync) syncOutgoingRemoves(removes []changes.Change, st Stream) {
 
 	if len(removes) < 5 {
 		for _, r := range removes {
-			st <- fmt.Sprintf("%s (removed) -> %s", r.Path, s.Container)
+			st <- fmt.Sprintf("%s (removed) -> %s:%s", r.Path, s.Container, r.Path)
 		}
 	} else {
 		st <- fmt.Sprintf("%d files (removed) -> %s", len(removes), s.Container)

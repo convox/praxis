@@ -30,6 +30,8 @@ func (m *Manifest) Build() error {
 		cmd.Stdout = pw
 		cmd.Stderr = Writer
 
+		m.system("building %s", dir)
+
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("build failed")
 		}
