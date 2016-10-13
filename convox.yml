@@ -1,0 +1,8 @@
+services:
+  api:
+    build: .
+    command: bin/api
+    environment:
+      - PROVIDER
+    ports:
+      - 5000

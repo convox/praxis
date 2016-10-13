@@ -57,3 +57,7 @@ func (c *Context) Help() string {
 
 	return s
 }
+
+func (c *Context) Printf(format string, args ...interface{}) {
+	fmt.Printf(format, args...)
+}

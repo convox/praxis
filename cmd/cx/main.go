@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"os"
+	"os/signal"
 
 	"github.com/convox/praxis/cli"
 	"github.com/convox/praxis/manifest"
@@ -38,27 +38,44 @@ func main() {
 	cli.Run(os.Args)
 }
 
+var currentManifest *manifest.Manifest
+
 func cmdStart(c cli.Context) error {
 	m, err := manifest.LoadFile("convox.yml")
 	if err != nil {
 		return err
 	}
 
-	data, err := m.Raw()
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("m = %+v\n", m)
-	fmt.Printf("string(data) = \n%+v\n", string(data))
+	go handleSignals(c)
 
 	if err := m.Build(); err != nil {
 		return err
 	}
 
-	if err := m.Run(); err != nil {
+	currentManifest = m
+
+	if err := m.Run(manifest.RunOptions{Sync: true}); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func handleSignals(c cli.Context) {
+	ch := make(chan os.Signal, 1)
+
+	signal.Notify(ch, os.Interrupt)
+
+	for sig := range ch {
+		switch sig {
+		case os.Interrupt:
+			c.Printf("\n")
+
+			if currentManifest != nil {
+				currentManifest.Stop()
+			}
+
+			os.Exit(1)
+		}
+	}
 }

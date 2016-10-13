@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# cd to api root
+cd $(dirname ${0:-})/../api
+
+exec rerun -watch $GOPATH/src/github.com/convox/praxis -build github.com/convox/praxis/api

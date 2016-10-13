@@ -3,9 +3,53 @@ package manifest
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	yaml "gopkg.in/yaml.v2"
 )
+
+func (v Environment) MarshalYAML() (interface{}, error) {
+	env := []string{}
+
+	for _, e := range v {
+		if e.Default == nil {
+			env = append(env, e.Key)
+		} else {
+			env = append(env, fmt.Sprintf("%s=%s", e.Key, e.Default))
+		}
+	}
+
+	return env, nil
+}
+
+func (v *Environment) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var env []string
+
+	if err := unmarshal(&env); err != nil {
+		return err
+	}
+
+	for _, e := range env {
+		parts := strings.SplitN(e, "=", 2)
+
+		switch len(parts) {
+		case 1:
+			*v = append(*v, EnvironmentPair{
+				Key:     parts[0],
+				Default: nil,
+			})
+		case 2:
+			*v = append(*v, EnvironmentPair{
+				Key:     parts[0],
+				Default: &parts[1],
+			})
+		default:
+			return fmt.Errorf("could not parse environment: %s", e)
+		}
+	}
+
+	return nil
+}
 
 func (v Services) MarshalYAML() (interface{}, error) {
 	return marshalMap(v, "Name")
