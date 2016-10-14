@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/convox/praxis/models"
 	"github.com/convox/praxis/provider/local"
+	"github.com/convox/praxis/provider/models"
 )
 
 type Provider interface {
