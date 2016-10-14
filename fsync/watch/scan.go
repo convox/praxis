@@ -1,6 +1,6 @@
 // +build !darwin,!linux darwin,!cgo
 
-package changes
+package watch
 
 import "time"
 

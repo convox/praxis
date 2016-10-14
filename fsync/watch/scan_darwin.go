@@ -2,7 +2,7 @@
 
 // heavily inspired by https://github.com/fsnotify/fsevents
 
-package changes
+package watch
 
 /*
 #cgo LDFLAGS: -framework CoreServices

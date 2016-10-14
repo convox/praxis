@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/convox/rack/changes"
+	"github.com/convox/praxis/fsync/watch"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -27,8 +27,8 @@ type Sync struct {
 
 	docker   *docker.Client
 	lock     sync.Mutex
-	incoming chan changes.Change
-	outgoing chan changes.Change
+	incoming chan watch.Change
+	outgoing chan watch.Change
 
 	incomingBlocks map[string]int
 	outgoingBlocks map[string]int
@@ -48,8 +48,8 @@ func NewSync(container, local, remote string) (*Sync, error) {
 	}
 
 	sync.docker, _ = docker.NewClientFromEnv()
-	sync.incoming = make(chan changes.Change)
-	sync.outgoing = make(chan changes.Change)
+	sync.incoming = make(chan watch.Change)
+	sync.outgoing = make(chan watch.Change)
 	sync.incomingBlocks = make(map[string]int)
 	sync.outgoingBlocks = make(map[string]int)
 
@@ -113,8 +113,8 @@ func (s *Sync) Start(st Stream) error {
 	go s.watchIncoming(st)
 	go s.watchOutgoing(st)
 
-	incoming := []changes.Change{}
-	outgoing := []changes.Change{}
+	incoming := []watch.Change{}
+	outgoing := []watch.Change{}
 
 	for {
 		timeout := time.After(1 * time.Second)
@@ -126,16 +126,16 @@ func (s *Sync) Start(st Stream) error {
 			outgoing = append(outgoing, c)
 		case <-timeout:
 			if len(incoming) > 0 {
-				a, r := changes.Partition(incoming)
+				a, r := watch.Partition(incoming)
 				s.syncIncomingAdds(a, st)
 				s.syncIncomingRemoves(r, st)
-				incoming = []changes.Change{}
+				incoming = []watch.Change{}
 			}
 			if len(outgoing) > 0 {
-				a, r := changes.Partition(outgoing)
+				a, r := watch.Partition(outgoing)
 				s.syncOutgoingAdds(a, st)
 				s.syncOutgoingRemoves(r, st)
-				outgoing = []changes.Change{}
+				outgoing = []watch.Change{}
 			}
 		}
 	}
@@ -143,7 +143,7 @@ func (s *Sync) Start(st Stream) error {
 	return nil
 }
 
-func (s *Sync) syncIncomingAdds(adds []changes.Change, st Stream) {
+func (s *Sync) syncIncomingAdds(adds []watch.Change, st Stream) {
 	if len(adds) == 0 {
 		return
 	}
@@ -257,11 +257,11 @@ func (s *Sync) syncIncomingAdds(adds []changes.Change, st Stream) {
 	}
 }
 
-func (s *Sync) syncIncomingRemoves(removes []changes.Change, st Stream) {
+func (s *Sync) syncIncomingRemoves(removes []watch.Change, st Stream) {
 	// do not sync removes out from the container for safety
 }
 
-func (s *Sync) syncOutgoingAdds(adds []changes.Change, st Stream) {
+func (s *Sync) syncOutgoingAdds(adds []watch.Change, st Stream) {
 	if len(adds) == 0 {
 		return
 	}
@@ -321,7 +321,7 @@ func (s *Sync) syncOutgoingAdds(adds []changes.Change, st Stream) {
 	}
 }
 
-func (s *Sync) syncOutgoingRemoves(removes []changes.Change, st Stream) {
+func (s *Sync) syncOutgoingRemoves(removes []watch.Change, st Stream) {
 	if len(removes) == 0 {
 		return
 	}
@@ -365,14 +365,14 @@ func (s *Sync) uploadChangesDaemon(st Stream) {
 
 	tgz := tar.NewWriter(&buf)
 
-	data, err := Asset("changed")
+	data, err := Asset("watchd")
 
 	if err != nil {
 		st <- fmt.Sprintf("error: %s", err)
 	}
 
 	tgz.WriteHeader(&tar.Header{
-		Name: "changed",
+		Name: "watchd",
 		Mode: 0755,
 		Size: int64(len(data)),
 	})
@@ -406,7 +406,7 @@ func (s *Sync) watchIncoming(st Stream) {
 	res, err := s.docker.CreateExec(docker.CreateExecOptions{
 		AttachStdout: true,
 		Container:    s.Container,
-		Cmd:          []string{"/changed", s.Remote},
+		Cmd:          []string{"/watchd", s.Remote},
 	})
 
 	if err != nil {
@@ -437,7 +437,7 @@ func (s *Sync) watchIncoming(st Stream) {
 			if s.incomingBlocks[parts[2]] > 0 {
 				s.incomingBlocks[parts[2]] -= 1
 			} else {
-				s.incoming <- changes.Change{
+				s.incoming <- watch.Change{
 					Operation: parts[0],
 					Base:      parts[1],
 					Path:      parts[2],
@@ -454,10 +454,10 @@ func (s *Sync) watchIncoming(st Stream) {
 }
 
 func (s *Sync) watchOutgoing(st Stream) {
-	ch := make(chan changes.Change, 1)
+	ch := make(chan watch.Change, 1)
 
 	go func() {
-		if err := changes.Watch(s.Local, ch); err != nil {
+		if err := watch.Watch(s.Local, ch); err != nil {
 			st <- fmt.Sprintf("error: %s", err)
 		}
 	}()
