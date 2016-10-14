@@ -250,10 +250,10 @@ func (s *Sync) syncIncomingAdds(adds []changes.Change, st Stream) {
 
 	if len(adds) < 5 {
 		for _, a := range adds {
-			st <- fmt.Sprintf("%s <- %s:%s", a.Path, s.Container, a.Path)
+			st <- fmt.Sprintf("syncing %s from %s", a.Path, s.Container)
 		}
 	} else {
-		st <- fmt.Sprintf("%d files <- %s", len(adds), s.Remote)
+		st <- fmt.Sprintf("syncing %d files from %s", len(adds), s.Remote)
 	}
 }
 
@@ -303,10 +303,10 @@ func (s *Sync) syncOutgoingAdds(adds []changes.Change, st Stream) {
 
 	if len(adds) < 5 {
 		for _, a := range adds {
-			st <- fmt.Sprintf("%s -> %s:%s", a.Path, s.Container, a.Path)
+			st <- fmt.Sprintf("syncing %s to %s", a.Path, s.Container)
 		}
 	} else {
-		st <- fmt.Sprintf("%d files -> %s", len(adds), s.Container)
+		st <- fmt.Sprintf("syncing %d files to %s", len(adds), s.Container)
 	}
 
 	tgz.Close()
@@ -353,10 +353,10 @@ func (s *Sync) syncOutgoingRemoves(removes []changes.Change, st Stream) {
 
 	if len(removes) < 5 {
 		for _, r := range removes {
-			st <- fmt.Sprintf("%s (removed) -> %s:%s", r.Path, s.Container, r.Path)
+			st <- fmt.Sprintf("removing %s from %s", r.Path, s.Container)
 		}
 	} else {
-		st <- fmt.Sprintf("%d files (removed) -> %s", len(removes), s.Container)
+		st <- fmt.Sprintf("removing %d files from %s", len(removes), s.Container)
 	}
 }
 
