@@ -1,24 +1,15 @@
 package provider
 
 import (
-	"fmt"
-	"os"
+	"io"
 
-	"github.com/convox/praxis/provider/local"
 	"github.com/convox/praxis/provider/models"
 )
 
 type Provider interface {
-	TableList() (models.Tables, error)
-}
+	BlobStore(key string, r io.Reader, opts models.BlobStoreOptions) (string, error)
 
-func FromEnv() Provider {
-	switch os.Getenv("PROVIDER") {
-	case "local":
-		return local.FromEnv()
-	case "test":
-		return &MockProvider{}
-	default:
-		panic(fmt.Errorf("unknown PROVIDER"))
-	}
+	BuildCreate(url string, opts models.BuildCreateOptions) (*models.Build, error)
+
+	ProcessRun(service string, opts models.ProcessRunOptions) (*models.Process, error)
 }

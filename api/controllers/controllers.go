@@ -3,24 +3,32 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 
 	"github.com/convox/praxis/provider"
+	"github.com/convox/praxis/provider/local"
 )
 
 var (
-	Provider = provider.FromEnv()
+	Provider = providerFromEnv()
 )
 
-func RenderError(w http.ResponseWriter, err error) {
-	http.Error(w, err.Error(), 500)
-}
-
-func RenderJSON(w http.ResponseWriter, v interface{}) {
+func Render(w http.ResponseWriter, v interface{}) error {
 	data, err := json.Marshal(v)
 	if err != nil {
-		RenderError(w, err)
-		return
+		return err
 	}
 
-	w.Write(data)
+	if _, err := w.Write(data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func providerFromEnv() provider.Provider {
+	switch os.Getenv("PROVIDER") {
+	default:
+		return local.FromEnv()
+	}
 }

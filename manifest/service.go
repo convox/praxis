@@ -15,6 +15,7 @@ type Service struct {
 	Command     string      `yaml:"command,omitempty"`
 	Environment Environment `yaml:"environment,omitempty"`
 	Image       string      `yaml:"image,omitempty"`
+	Volumes     Volumes     `yaml:"volumes,omitempty"`
 }
 
 type Services []Service

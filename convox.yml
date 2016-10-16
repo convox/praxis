@@ -6,3 +6,8 @@ services:
       - PROVIDER
     ports:
       - 5000
+    volumes:
+      - /var/run/convox
+buckets:
+  builds:
+    - expire: 90d

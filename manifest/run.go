@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"sync"
@@ -32,13 +33,18 @@ func (m *Manifest) Run(opts RunOptions) error {
 func (m *Manifest) RunService(s Service, opts RunOptions) error {
 	args := []string{"run"}
 
+	args = append(args, "-i")
+	args = append(args, "--name", s.Name)
+	args = append(args, "-p", "5000:5000")
+	args = append(args, "--rm")
+
 	if _, err := os.Stat(".env"); !os.IsNotExist(err) {
 		args = append(args, "--env-file", ".env")
 	}
 
-	args = append(args, "-i")
-	args = append(args, "--name", s.Name)
-	args = append(args, "--rm")
+	for _, v := range s.Volumes {
+		args = append(args, "-v", fmt.Sprintf("%s:%s", v.Local, v.Remote))
+	}
 
 	args = append(args, s.Name)
 

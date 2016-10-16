@@ -67,6 +67,45 @@ func (v *Tables) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return unmarshalMap(unmarshal, v, "Name")
 }
 
+func (v Volumes) MarshalYAML() (interface{}, error) {
+	volumes := []string{}
+
+	for _, vol := range v {
+		volumes = append(volumes, fmt.Sprintf("%s:%s", vol.Local, vol.Remote))
+	}
+
+	return volumes, nil
+}
+
+func (v *Volumes) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var volumes []string
+
+	if err := unmarshal(&volumes); err != nil {
+		return err
+	}
+
+	for _, vol := range volumes {
+		parts := strings.SplitN(vol, ":", 2)
+
+		switch len(parts) {
+		case 1:
+			*v = append(*v, Volume{
+				Local:  parts[0],
+				Remote: parts[0],
+			})
+		case 2:
+			*v = append(*v, Volume{
+				Local:  parts[0],
+				Remote: parts[1],
+			})
+		default:
+			return fmt.Errorf("could not parse volume: %s", vol)
+		}
+	}
+
+	return nil
+}
+
 func marshalMap(v interface{}, key string) (interface{}, error) {
 	ms := yaml.MapSlice{}
 

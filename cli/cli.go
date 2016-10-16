@@ -1,6 +1,9 @@
 package cli
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 type Command struct {
 	Name        string
@@ -37,7 +40,11 @@ func Register(c Command) {
 func Run(args []string) {
 	for _, c := range commands {
 		if c.Name == args[1] {
-			c.Func(Context{})
+			if err := c.Func(Context{}); err != nil {
+				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
 		}
 	}
 }
