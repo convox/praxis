@@ -15,5 +15,5 @@ func main() {
 }
 
 func start() error {
-	return api.Listen("127.0.0.1:9877")
+	return api.Listen(":9877")
 }
