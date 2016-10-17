@@ -9,6 +9,7 @@ import (
 
 	"github.com/convox/praxis/cli"
 	"github.com/convox/praxis/manifest"
+	"github.com/convox/praxis/provider/models"
 )
 
 func init() {
@@ -40,12 +41,17 @@ func cmdStart(c cli.Context) error {
 	}
 
 	for i := range m.Services {
-		for j := range m.Services[i].Volumes {
-			m.Services[i].Volumes[j].Local = filepath.Join(u.HomeDir, ".convox", "volumes", m.Services[i].Volumes[j].Local)
-		}
+		m.Services[i].Volumes.Prepend(filepath.Join(u.HomeDir, ".convox", "volumes"))
 	}
 
 	go handleSignals(c)
+
+	app, err := rack().AppCreate("app", models.AppCreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("app = %+v\n", app)
 
 	build, err := buildDirectory(".")
 	if err != nil {

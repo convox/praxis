@@ -23,5 +23,5 @@ func main() {
 }
 
 func rack() *client.Client {
-	return client.New("http://localhost:9877/apps/system")
+	return client.New("http://localhost:9877")
 }

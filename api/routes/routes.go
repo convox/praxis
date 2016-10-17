@@ -10,6 +10,7 @@ import (
 func New() *mux.Router {
 	r := mux.NewRouter()
 
+	r.HandleFunc("/apps", api(controllers.AppCreate)).Methods("POST")
 	r.HandleFunc("/apps/{app}/builds", api(controllers.BuildCreate)).Methods("POST")
 	r.HandleFunc("/apps/{app}/blobs/{key:.*}", api(controllers.BlobStore)).Methods("POST")
 

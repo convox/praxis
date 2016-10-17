@@ -8,7 +8,7 @@ import (
 	"github.com/convox/praxis/provider/models"
 )
 
-func (p *Provider) ProcessRun(service string, opts models.ProcessRunOptions) (*models.Process, error) {
+func (p *Provider) ProcessRun(app, service string, opts models.ProcessRunOptions) (*models.Process, error) {
 	cmd := exec.Command("docker", append([]string{"run", "-i", service}, opts.Command...)...)
 
 	cmd.Stdout = os.Stdout

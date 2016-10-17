@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    ports:
+      - 80:5000
+    volumes:
+      - /tmp/foo
+buckets:
+  builds:
+    - expire: 90d

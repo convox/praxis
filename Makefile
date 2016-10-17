@@ -3,7 +3,7 @@
 all:
 
 dev:
-	rerun -build -watch . github.com/convox/praxis/cmd/convoxd
+	rerun -build github.com/convox/praxis
 
 mocks:
 	make -C provider mocks

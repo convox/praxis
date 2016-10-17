@@ -7,9 +7,11 @@ import (
 )
 
 type Provider interface {
-	BlobStore(key string, r io.Reader, opts models.BlobStoreOptions) (string, error)
+	AppCreate(name string, opts models.AppCreateOptions) (*models.App, error)
 
-	BuildCreate(url string, opts models.BuildCreateOptions) (*models.Build, error)
+	BlobStore(app, key string, r io.Reader, opts models.BlobStoreOptions) (string, error)
 
-	ProcessRun(service string, opts models.ProcessRunOptions) (*models.Process, error)
+	BuildCreate(app, url string, opts models.BuildCreateOptions) (*models.Build, error)
+
+	ProcessRun(app, service string, opts models.ProcessRunOptions) (*models.Process, error)
 }
