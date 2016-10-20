@@ -9,7 +9,7 @@ type BlobStoreOptions struct {
 	Public bool
 }
 
-func (c *Client) BlobStore(key string, r io.Reader, opts BlobStoreOptions) (string, error) {
+func (c *Client) BlobStore(app, key string, r io.Reader, opts BlobStoreOptions) (string, error) {
 	var url string
 
 	popts := PostOptions{
@@ -18,7 +18,7 @@ func (c *Client) BlobStore(key string, r io.Reader, opts BlobStoreOptions) (stri
 		},
 	}
 
-	if err := c.Post(fmt.Sprintf("/blobs/%s", key), &url, popts); err != nil {
+	if err := c.Post(fmt.Sprintf("/apps/%s/blobs/%s", app, key), &url, popts); err != nil {
 		return "", err
 	}
 

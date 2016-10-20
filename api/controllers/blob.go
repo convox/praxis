@@ -15,7 +15,7 @@ func BlobStore(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	url, err := Provider.BlobStore(vars["key"], data, models.BlobStoreOptions{
+	url, err := Provider.BlobStore(vars["app"], vars["key"], data, models.BlobStoreOptions{
 		Public: r.FormValue("public") == "true",
 	})
 	if err != nil {

@@ -10,20 +10,22 @@ type Provider struct {
 	mock.Mock
 }
 
-// BlobStore provides a mock function with given fields: key, r, opts
-func (_m *Provider) BlobStore(key string, r io.Reader, opts models.BlobStoreOptions) (string, error) {
-	ret := _m.Called(key, r, opts)
+// AppCreate provides a mock function with given fields: name, opts
+func (_m *Provider) AppCreate(name string, opts models.AppCreateOptions) (*models.App, error) {
+	ret := _m.Called(name, opts)
 
-	var r0 string
-	if rf, ok := ret.Get(0).(func(string, io.Reader, models.BlobStoreOptions) string); ok {
-		r0 = rf(key, r, opts)
+	var r0 *models.App
+	if rf, ok := ret.Get(0).(func(string, models.AppCreateOptions) *models.App); ok {
+		r0 = rf(name, opts)
 	} else {
-		r0 = ret.Get(0).(string)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.App)
+		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, io.Reader, models.BlobStoreOptions) error); ok {
-		r1 = rf(key, r, opts)
+	if rf, ok := ret.Get(1).(func(string, models.AppCreateOptions) error); ok {
+		r1 = rf(name, opts)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -31,13 +33,34 @@ func (_m *Provider) BlobStore(key string, r io.Reader, opts models.BlobStoreOpti
 	return r0, r1
 }
 
-// BuildCreate provides a mock function with given fields: url, opts
-func (_m *Provider) BuildCreate(url string, opts models.BuildCreateOptions) (*models.Build, error) {
-	ret := _m.Called(url, opts)
+// BlobStore provides a mock function with given fields: app, key, r, opts
+func (_m *Provider) BlobStore(app string, key string, r io.Reader, opts models.BlobStoreOptions) (string, error) {
+	ret := _m.Called(app, key, r, opts)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, string, io.Reader, models.BlobStoreOptions) string); ok {
+		r0 = rf(app, key, r, opts)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, io.Reader, models.BlobStoreOptions) error); ok {
+		r1 = rf(app, key, r, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// BuildCreate provides a mock function with given fields: app, url, opts
+func (_m *Provider) BuildCreate(app string, url string, opts models.BuildCreateOptions) (*models.Build, error) {
+	ret := _m.Called(app, url, opts)
 
 	var r0 *models.Build
-	if rf, ok := ret.Get(0).(func(string, models.BuildCreateOptions) *models.Build); ok {
-		r0 = rf(url, opts)
+	if rf, ok := ret.Get(0).(func(string, string, models.BuildCreateOptions) *models.Build); ok {
+		r0 = rf(app, url, opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*models.Build)
@@ -45,8 +68,8 @@ func (_m *Provider) BuildCreate(url string, opts models.BuildCreateOptions) (*mo
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, models.BuildCreateOptions) error); ok {
-		r1 = rf(url, opts)
+	if rf, ok := ret.Get(1).(func(string, string, models.BuildCreateOptions) error); ok {
+		r1 = rf(app, url, opts)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -54,13 +77,50 @@ func (_m *Provider) BuildCreate(url string, opts models.BuildCreateOptions) (*mo
 	return r0, r1
 }
 
-// ProcessRun provides a mock function with given fields: service, opts
-func (_m *Provider) ProcessRun(service string, opts models.ProcessRunOptions) (*models.Process, error) {
-	ret := _m.Called(service, opts)
+// BuildLoad provides a mock function with given fields: app, id
+func (_m *Provider) BuildLoad(app string, id string) (*models.Build, error) {
+	ret := _m.Called(app, id)
+
+	var r0 *models.Build
+	if rf, ok := ret.Get(0).(func(string, string) *models.Build); ok {
+		r0 = rf(app, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.Build)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// BuildSave provides a mock function with given fields: build
+func (_m *Provider) BuildSave(build *models.Build) error {
+	ret := _m.Called(build)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*models.Build) error); ok {
+		r0 = rf(build)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// ProcessStart provides a mock function with given fields: app, service, opts
+func (_m *Provider) ProcessStart(app string, service string, opts models.ProcessRunOptions) (*models.Process, error) {
+	ret := _m.Called(app, service, opts)
 
 	var r0 *models.Process
-	if rf, ok := ret.Get(0).(func(string, models.ProcessRunOptions) *models.Process); ok {
-		r0 = rf(service, opts)
+	if rf, ok := ret.Get(0).(func(string, string, models.ProcessRunOptions) *models.Process); ok {
+		r0 = rf(app, service, opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*models.Process)
@@ -68,13 +128,71 @@ func (_m *Provider) ProcessRun(service string, opts models.ProcessRunOptions) (*
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, models.ProcessRunOptions) error); ok {
-		r1 = rf(service, opts)
+	if rf, ok := ret.Get(1).(func(string, string, models.ProcessRunOptions) error); ok {
+		r1 = rf(app, service, opts)
 	} else {
 		r1 = ret.Error(1)
 	}
 
 	return r0, r1
+}
+
+// ProcessWait provides a mock function with given fields: app, pid
+func (_m *Provider) ProcessWait(app string, pid string) (int, error) {
+	ret := _m.Called(app, pid)
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(string, string) int); ok {
+		r0 = rf(app, pid)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, pid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// TableLoad provides a mock function with given fields: app, table, id
+func (_m *Provider) TableLoad(app string, table string, id string) (map[string]string, error) {
+	ret := _m.Called(app, table, id)
+
+	var r0 map[string]string
+	if rf, ok := ret.Get(0).(func(string, string, string) map[string]string); ok {
+		r0 = rf(app, table, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = rf(app, table, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// TableSave provides a mock function with given fields: app, table, id, attrs
+func (_m *Provider) TableSave(app string, table string, id string, attrs map[string]string) error {
+	ret := _m.Called(app, table, id, attrs)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, string, map[string]string) error); ok {
+		r0 = rf(app, table, id, attrs)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 var _ provider.Provider = (*Provider)(nil)

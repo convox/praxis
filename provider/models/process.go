@@ -5,5 +5,6 @@ type Process struct {
 }
 
 type ProcessRunOptions struct {
-	Command []string
+	Command     []string
+	Environment map[string]string
 }

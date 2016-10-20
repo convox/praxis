@@ -1,15 +1,13 @@
 package client
 
-type Build struct {
-	Id string `json:"id"`
-}
+import (
+	"fmt"
 
-type BuildCreateOptions struct {
-	Cache bool
-}
+	"github.com/convox/praxis/provider/models"
+)
 
-func (c *Client) BuildCreate(url string, opts BuildCreateOptions) (*Build, error) {
-	var build Build
+func (c *Client) BuildCreate(app, url string, opts models.BuildCreateOptions) (*models.Build, error) {
+	var build models.Build
 
 	popts := PostOptions{
 		Params: map[string]string{
@@ -17,9 +15,19 @@ func (c *Client) BuildCreate(url string, opts BuildCreateOptions) (*Build, error
 		},
 	}
 
-	if err := c.Post("/builds", &build, popts); err != nil {
+	if err := c.Post(fmt.Sprintf("/apps/%s/builds", app), &build, popts); err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	return &build, nil
+}
+
+func (c *Client) BuildGet(app, id string) (*models.Build, error) {
+	var build models.Build
+
+	if err := c.Get(fmt.Sprintf("/apps/%s/builds/%s", app, id), &build, GetOptions{}); err != nil {
+		return nil, err
+	}
+
+	return &build, nil
 }

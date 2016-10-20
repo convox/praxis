@@ -46,14 +46,14 @@ func cmdStart(c cli.Context) error {
 
 	go handleSignals(c)
 
-	app, err := rack().AppCreate("app", models.AppCreateOptions{})
+	app, err := rack().AppCreate("test", models.AppCreateOptions{})
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("app = %+v\n", app)
 
-	build, err := buildDirectory(".")
+	build, err := buildDirectory("test", ".")
 	if err != nil {
 		return err
 	}

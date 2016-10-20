@@ -5,9 +5,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/convox/praxis/cli"
 	"github.com/convox/praxis/client"
+	"github.com/convox/praxis/provider/models"
 	"github.com/docker/docker/pkg/archive"
 )
 
@@ -27,7 +29,7 @@ func init() {
 }
 
 func cmdBuild(c cli.Context) error {
-	build, err := buildDirectory(".")
+	build, err := buildDirectory("test", ".")
 	if err != nil {
 		return err
 	}
@@ -37,20 +39,34 @@ func cmdBuild(c cli.Context) error {
 	return nil
 }
 
-func buildDirectory(dir string) (*client.Build, error) {
-	url, err := uploadDirectory(".")
+func buildDirectory(app, dir string) (*models.Build, error) {
+	url, err := uploadDirectory(app, ".")
 	if err != nil {
 		return nil, err
 	}
 
-	build, err := rack().BuildCreate(url, client.BuildCreateOptions{})
+	build, err := rack().BuildCreate(app, url, models.BuildCreateOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("build = %+v\n", build)
+	id := build.Id
 
-	return nil, nil
+	for {
+		build, err := rack().BuildGet(app, id)
+		if err != nil {
+			return nil, err
+		}
+
+		switch build.Status {
+		case "complete":
+			return build, nil
+		case "error":
+			return nil, fmt.Errorf("build failed")
+		}
+
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func createTarball(dir string) (io.Reader, error) {
@@ -77,13 +93,13 @@ func createTarball(dir string) (io.Reader, error) {
 	return archive.TarWithOptions(sym, options)
 }
 
-func uploadDirectory(dir string) (string, error) {
+func uploadDirectory(app, dir string) (string, error) {
 	r, err := createTarball(dir)
 	if err != nil {
 		return "", err
 	}
 
-	return rack().BlobStore("", r, client.BlobStoreOptions{
+	return rack().BlobStore(app, "", r, client.BlobStoreOptions{
 		Public: false,
 	})
 }

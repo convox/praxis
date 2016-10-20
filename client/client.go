@@ -58,6 +58,46 @@ func (c *Client) Request(method, path string, body io.Reader) (*http.Request, er
 	return req, nil
 }
 
+type GetOptions struct {
+	Params   map[string]string
+	Progress Progress
+}
+
+func (c *Client) Get(path string, out interface{}, opts GetOptions) error {
+	req, err := c.Request("GET", path, nil)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.Client().Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+
+	if err := responseError(res); err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadAll(res.Body)
+
+	if err != nil {
+		return err
+	}
+
+	if out != nil {
+		err = json.Unmarshal(data, out)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 type PostOptions struct {
 	Files    map[string]io.Reader
 	Params   map[string]string

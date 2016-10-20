@@ -12,6 +12,7 @@ func New() *mux.Router {
 
 	r.HandleFunc("/apps", api(controllers.AppCreate)).Methods("POST")
 	r.HandleFunc("/apps/{app}/builds", api(controllers.BuildCreate)).Methods("POST")
+	r.HandleFunc("/apps/{app}/builds/{build}", api(controllers.BuildGet)).Methods("GET")
 	r.HandleFunc("/apps/{app}/blobs/{key:.*}", api(controllers.BlobStore)).Methods("POST")
 
 	return r

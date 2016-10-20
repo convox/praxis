@@ -11,3 +11,5 @@ services:
 buckets:
   builds:
     - expire: 90d
+tables:
+  builds:
