@@ -2,12 +2,14 @@ package local
 
 import (
 	"fmt"
+	"io"
+	"os/exec"
 
-	"github.com/convox/praxis/provider/models"
+	"github.com/convox/praxis/provider"
 )
 
-func (p *Provider) BuildCreate(app, url string, opts models.BuildCreateOptions) (*models.Build, error) {
-	build := &models.Build{
+func (p *Provider) BuildCreate(app, url string, opts provider.BuildCreateOptions) (*provider.Build, error) {
+	build := &provider.Build{
 		Id:     id("B"),
 		Status: "running",
 	}
@@ -16,10 +18,10 @@ func (p *Provider) BuildCreate(app, url string, opts models.BuildCreateOptions) 
 		return nil, err
 	}
 
-	auth := ""
+	auth := "{}"
 
-	ps, err := p.ProcessStart("system", "api", models.ProcessRunOptions{
-		Command: []string{"build", "-url", url},
+	ps, err := p.ProcessStart("system", "api", provider.ProcessRunOptions{
+		Command: []string{"build", "-method", "tgz", "-url", url},
 		Environment: map[string]string{
 			"BUILD_APP":      app,
 			"BUILD_AUTH":     auth,
@@ -49,8 +51,12 @@ func (p *Provider) waitProcess(app, build, process string) error {
 		return err
 	}
 
+	defer p.TableSave("system", "builds", build, attrs)
+
 	code, err := p.ProcessWait(app, process)
 	if err != nil {
+		attrs["error"] = err.Error()
+		attrs["status"] = "error"
 		return err
 	}
 
@@ -58,27 +64,20 @@ func (p *Provider) waitProcess(app, build, process string) error {
 	case 0:
 		attrs["status"] = "complete"
 	default:
+		attrs["error"] = fmt.Sprintf("exit: %d", code)
 		attrs["status"] = "error"
-	}
-
-	if err := p.TableSave("system", "builds", build, attrs); err != nil {
-		return err
 	}
 
 	return nil
 }
 
-func (p *Provider) BuildLoad(app, id string) (*models.Build, error) {
+func (p *Provider) BuildLoad(app, id string) (*provider.Build, error) {
 	attrs, err := p.TableLoad("system", "builds", id)
-	fmt.Printf("attrs = %+v\n", attrs)
-	fmt.Printf("err = %+v\n", err)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("attrs = %+v\n", attrs)
-
-	build := &models.Build{
+	build := &provider.Build{
 		Id:      id,
 		Process: attrs["process"],
 		Status:  attrs["status"],
@@ -87,7 +86,32 @@ func (p *Provider) BuildLoad(app, id string) (*models.Build, error) {
 	return build, nil
 }
 
-func (p *Provider) BuildSave(build *models.Build) error {
+func (p *Provider) BuildLogs(app, id string) (io.ReadCloser, error) {
+	build, err := p.BuildLoad(app, id)
+	if err != nil {
+		return nil, err
+	}
+
+	r, w := io.Pipe()
+
+	cmd := exec.Command("docker", "logs", "-f", build.Process)
+
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+
+	go func() {
+		cmd.Wait()
+		w.Close()
+	}()
+
+	return r, nil
+}
+
+func (p *Provider) BuildSave(build *provider.Build) error {
 	attrs := map[string]string{
 		"error":    build.Error,
 		"ended":    build.Ended.Format(SortableTime),

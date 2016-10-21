@@ -180,6 +180,22 @@
 			"Rev": "f09c4662a0bd6bd8943ac7b4931e185df9471da4"
 		},
 		{
+			"ImportPath": "golang.org/x/net/http2",
+			"Rev": "f09c4662a0bd6bd8943ac7b4931e185df9471da4"
+		},
+		{
+			"ImportPath": "golang.org/x/net/http2/hpack",
+			"Rev": "f09c4662a0bd6bd8943ac7b4931e185df9471da4"
+		},
+		{
+			"ImportPath": "golang.org/x/net/idna",
+			"Rev": "f09c4662a0bd6bd8943ac7b4931e185df9471da4"
+		},
+		{
+			"ImportPath": "golang.org/x/net/lex/httplex",
+			"Rev": "f09c4662a0bd6bd8943ac7b4931e185df9471da4"
+		},
+		{
 			"ImportPath": "golang.org/x/sys/unix",
 			"Rev": "7a56174f0086b32866ebd746a794417edbc678a1"
 		},

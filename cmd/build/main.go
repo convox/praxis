@@ -10,13 +10,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/convox/praxis/cmd/build/source"
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/provider"
 	"github.com/convox/praxis/provider/local"
-	"github.com/convox/praxis/provider/models"
 )
 
 var (
@@ -29,20 +27,10 @@ var (
 	flagPush     string
 	flagRelease  string
 	flagUrl      string
-
-	currentBuild    *models.Build
-	currentLogs     string
-	currentManifest string
-	currentProvider provider.Provider
 )
-
-func init() {
-	currentProvider = providerFromEnv()
-}
 
 func main() {
 	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	fs.StringVar(&flagApp, "app", "example", "app name")
 	fs.StringVar(&flagAuth, "auth", "", "docker auth data (base64 encoded)")
 	fs.StringVar(&flagCache, "cache", "true", "use docker cache")
 	fs.StringVar(&flagId, "id", "", "build id")
@@ -93,13 +81,6 @@ func main() {
 }
 
 func execute() error {
-	b, err := currentProvider.BuildLoad(flagApp, flagId)
-	if err != nil {
-		return err
-	}
-
-	currentBuild = b
-
 	if err := login(); err != nil {
 		return err
 	}
@@ -110,13 +91,6 @@ func execute() error {
 	}
 
 	defer os.RemoveAll(dir)
-
-	data, err := ioutil.ReadFile(filepath.Join(dir, flagManifest))
-	if err != nil {
-		return err
-	}
-
-	currentBuild.Manifest = string(data)
 
 	if err := build(dir); err != nil {
 		return err
@@ -200,6 +174,17 @@ func build(dir string) error {
 
 	defer close(s)
 
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	defer os.Chdir(wd)
+
+	if err := os.Chdir(dir); err != nil {
+		return err
+	}
+
 	if err := m.Build(manifest.BuildOptions{Cache: true}); err != nil {
 		return err
 	}
@@ -212,7 +197,7 @@ func build(dir string) error {
 }
 
 func success() error {
-	// release := &models.Release{
+	// release := &client.Release{
 	//   App: flagApp,
 	// }
 
@@ -235,19 +220,19 @@ func success() error {
 	//   return err
 	// }
 
-	url, err := currentProvider.BlobStore(flagApp, fmt.Sprintf("convox/builds/%s/logs", currentBuild.Id), bytes.NewReader([]byte(currentLogs)), models.BlobStoreOptions{})
-	if err != nil {
-		return err
-	}
+	// url, err := Client.BlobStore(flagApp, fmt.Sprintf("convox/builds/%s/logs", currentBuild.Id), bytes.NewReader([]byte(currentLogs)), client.BlobStoreOptions{})
+	// if err != nil {
+	//   return err
+	// }
 
-	currentBuild.Ended = time.Now()
-	currentBuild.Logs = url
-	// currentBuild.Release = release.Id
-	currentBuild.Status = "complete"
+	// currentBuild.Ended = time.Now()
+	// currentBuild.Logs = url
+	// // currentBuild.Release = release.Id
+	// currentBuild.Status = "complete"
 
-	if err := currentProvider.BuildSave(currentBuild); err != nil {
-		return err
-	}
+	// if err := Client.BuildSave(currentBuild); err != nil {
+	//   return err
+	// }
 
 	return nil
 }
@@ -255,22 +240,21 @@ func success() error {
 func fail(err error) {
 	log(fmt.Sprintf("ERROR: %s", err))
 
-	url, _ := currentProvider.BlobStore(flagApp, fmt.Sprintf("convox/builds/%s/logs", currentBuild.Id), bytes.NewReader([]byte(currentLogs)), models.BlobStoreOptions{})
+	// url, _ := Client.BlobStore(flagApp, fmt.Sprintf("convox/builds/%s/logs", currentBuild.Id), bytes.NewReader([]byte(currentLogs)), client.BlobStoreOptions{})
 
-	currentBuild.Ended = time.Now()
-	currentBuild.Error = err.Error()
-	currentBuild.Logs = url
-	currentBuild.Status = "failed"
+	// currentBuild.Ended = time.Now()
+	// currentBuild.Error = err.Error()
+	// currentBuild.Logs = url
+	// currentBuild.Status = "failed"
 
-	if err := currentProvider.BuildSave(currentBuild); err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
-	}
+	// if err := currentProvider.BuildSave(currentBuild); err != nil {
+	//   fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+	// }
 
 	os.Exit(1)
 }
 
 func log(line string) {
-	currentLogs += fmt.Sprintf("%s\n", line)
 	fmt.Println(line)
 }
 

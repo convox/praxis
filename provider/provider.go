@@ -1,23 +1,23 @@
 package provider
 
-import (
-	"io"
-
-	"github.com/convox/praxis/provider/models"
-)
+import "io"
 
 type Provider interface {
-	AppCreate(name string, opts models.AppCreateOptions) (*models.App, error)
+	AppCreate(name string, opts AppCreateOptions) (*App, error)
+	AppDelete(name string) error
 
-	BlobStore(app, key string, r io.Reader, opts models.BlobStoreOptions) (string, error)
+	BlobFetch(app, key string) (io.ReadCloser, error)
+	BlobStore(app, key string, r io.Reader, opts BlobStoreOptions) (string, error)
 
-	BuildCreate(app, url string, opts models.BuildCreateOptions) (*models.Build, error)
-	BuildLoad(app, id string) (*models.Build, error)
-	BuildSave(build *models.Build) error
+	BuildCreate(app, url string, opts BuildCreateOptions) (*Build, error)
+	BuildLoad(app, id string) (*Build, error)
+	BuildLogs(app, id string) (io.ReadCloser, error)
+	BuildSave(build *Build) error
 
-	ProcessStart(app, service string, opts models.ProcessRunOptions) (*models.Process, error)
+	ProcessStart(app, service string, opts ProcessRunOptions) (*Process, error)
 	ProcessWait(app, pid string) (int, error)
 
 	TableLoad(app, table, id string) (map[string]string, error)
+	TableRemove(app, table, id string) error
 	TableSave(app, table, id string, attrs map[string]string) error
 }

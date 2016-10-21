@@ -1,12 +1,12 @@
 package source
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 
+	"github.com/convox/praxis/client"
 	"github.com/convox/praxis/provider"
 	"github.com/convox/praxis/provider/local"
 )
@@ -28,9 +28,8 @@ func urlReader(url_ string) (io.ReadCloser, error) {
 			return nil, err
 		}
 		return fd, nil
-	case "object":
-		fmt.Printf("u = %#v\n", u)
-		return nil, fmt.Errorf("unsupported")
+	case "blob":
+		return client.New(os.Getenv("CONVOX_URL")).BlobFetch(os.Getenv("BUILD_APP"), u.Path)
 		// return providerFromEnv().BlobFetch(app, u.Path)
 	}
 

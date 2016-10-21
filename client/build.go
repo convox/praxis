@@ -2,12 +2,18 @@ package client
 
 import (
 	"fmt"
+	"io"
 
-	"github.com/convox/praxis/provider/models"
+	"github.com/convox/praxis/provider"
 )
 
-func (c *Client) BuildCreate(app, url string, opts models.BuildCreateOptions) (*models.Build, error) {
-	var build models.Build
+type Build provider.Build
+type Builds provider.Builds
+
+type BuildCreateOptions provider.BuildCreateOptions
+
+func (c *Client) BuildCreate(app, url string, opts BuildCreateOptions) (*Build, error) {
+	var build Build
 
 	popts := PostOptions{
 		Params: map[string]string{
@@ -22,12 +28,16 @@ func (c *Client) BuildCreate(app, url string, opts models.BuildCreateOptions) (*
 	return &build, nil
 }
 
-func (c *Client) BuildGet(app, id string) (*models.Build, error) {
-	var build models.Build
+func (c *Client) BuildGet(app, id string) (*Build, error) {
+	var build Build
 
 	if err := c.Get(fmt.Sprintf("/apps/%s/builds/%s", app, id), &build, GetOptions{}); err != nil {
 		return nil, err
 	}
 
 	return &build, nil
+}
+
+func (c *Client) BuildLogs(app, id string) (io.ReadCloser, error) {
+	return c.GetReader(fmt.Sprintf("/apps/%s/builds/%s/logs", app, id), GetOptions{})
 }

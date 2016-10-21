@@ -32,6 +32,10 @@ func (p *Provider) TableLoad(app, table, id string) (map[string]string, error) {
 	return attrs, nil
 }
 
+func (p *Provider) TableRemove(app, table, id string) error {
+	return p.remove(fmt.Sprintf("/tables/%s/%s/index/id/%s", app, table, id))
+}
+
 func (p *Provider) TableSave(app, table, id string, attrs map[string]string) error {
 	if attrs == nil {
 		attrs = map[string]string{}

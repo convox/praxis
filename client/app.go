@@ -1,9 +1,18 @@
 package client
 
-import "github.com/convox/praxis/provider/models"
+import (
+	"fmt"
 
-func (c *Client) AppCreate(name string, opts models.AppCreateOptions) (*models.App, error) {
-	var app models.App
+	"github.com/convox/praxis/provider"
+)
+
+type App provider.App
+type Apps provider.Apps
+
+type AppCreateOptions provider.AppCreateOptions
+
+func (c *Client) AppCreate(name string, opts AppCreateOptions) (*App, error) {
+	var app App
 
 	popts := PostOptions{
 		Params: map[string]string{
@@ -16,4 +25,8 @@ func (c *Client) AppCreate(name string, opts models.AppCreateOptions) (*models.A
 	}
 
 	return &app, nil
+}
+
+func (c *Client) AppDelete(name string) error {
+	return c.Delete(fmt.Sprintf("/apps/%s", name), DeleteOptions{})
 }

@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/convox/praxis/provider/models"
+	"github.com/convox/praxis/provider"
 )
 
-func (p *Provider) BlobStore(app, key string, r io.Reader, opts models.BlobStoreOptions) (string, error) {
-	fmt.Printf("key = %+v\n", key)
+func (p *Provider) BlobFetch(app, key string) (io.ReadCloser, error) {
+	return p.load(fmt.Sprintf("blob/%s/%s", app, key))
+}
+
+func (p *Provider) BlobStore(app, key string, r io.Reader, opts provider.BlobStoreOptions) (string, error) {
 	if key == "" {
 		tmp, err := generateTempKey()
 		if err != nil {

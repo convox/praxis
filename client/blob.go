@@ -9,6 +9,10 @@ type BlobStoreOptions struct {
 	Public bool
 }
 
+func (c *Client) BlobFetch(app, key string) (io.ReadCloser, error) {
+	return c.GetReader(fmt.Sprintf("/apps/%s/blobs/%s", app, key), GetOptions{})
+}
+
 func (c *Client) BlobStore(app, key string, r io.Reader, opts BlobStoreOptions) (string, error) {
 	var url string
 

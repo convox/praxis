@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/convox/praxis/cli"
+	"github.com/convox/praxis/client"
 	"github.com/convox/praxis/manifest"
-	"github.com/convox/praxis/provider/models"
 )
 
 func init() {
@@ -46,12 +46,12 @@ func cmdStart(c cli.Context) error {
 
 	go handleSignals(c)
 
-	app, err := rack().AppCreate("test", models.AppCreateOptions{})
+	app, err := rack().AppCreate("test", client.AppCreateOptions{})
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("app = %+v\n", app)
+	defer rack().AppDelete(app.Name)
 
 	build, err := buildDirectory("test", ".")
 	if err != nil {
@@ -60,11 +60,11 @@ func cmdStart(c cli.Context) error {
 
 	fmt.Printf("build = %+v\n", build)
 
-	currentManifest = m
+	// currentManifest = m
 
-	if err := m.Run(manifest.RunOptions{Sync: true}); err != nil {
-		return err
-	}
+	// if err := m.Run(manifest.RunOptions{Sync: true}); err != nil {
+	//   return err
+	// }
 
 	return nil
 }

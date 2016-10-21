@@ -9,7 +9,6 @@ import (
 
 	"github.com/convox/praxis/cli"
 	"github.com/convox/praxis/client"
-	"github.com/convox/praxis/provider/models"
 	"github.com/docker/docker/pkg/archive"
 )
 
@@ -39,18 +38,29 @@ func cmdBuild(c cli.Context) error {
 	return nil
 }
 
-func buildDirectory(app, dir string) (*models.Build, error) {
+func buildDirectory(app, dir string) (*client.Build, error) {
 	url, err := uploadDirectory(app, ".")
 	if err != nil {
 		return nil, err
 	}
 
-	build, err := rack().BuildCreate(app, url, models.BuildCreateOptions{})
+	build, err := rack().BuildCreate(app, url, client.BuildCreateOptions{})
 	if err != nil {
 		return nil, err
 	}
 
 	id := build.Id
+
+	r, err := rack().BuildLogs(app, build.Id)
+	fmt.Printf("r = %+v\n", r)
+	fmt.Printf("err = %+v\n", err)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := io.Copy(os.Stdout, r); err != nil {
+		return nil, err
+	}
 
 	for {
 		build, err := rack().BuildGet(app, id)

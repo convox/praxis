@@ -1,13 +1,33 @@
 package local
 
 import (
-	"crypto/rand"
 	"fmt"
 	"io"
-	"math/big"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
+
+	docker "github.com/fsouza/go-dockerclient"
 )
+
+var (
+	Docker   *docker.Client
+	SystemId string
+)
+
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
+
+	dc, err := docker.NewClient("unix:///var/run/docker.sock")
+	if err != nil {
+		panic(err)
+	}
+
+	Docker = dc
+
+	SystemId = fmt.Sprintf("%d", rand.Int63())
+}
 
 type Provider struct {
 	Home string
@@ -21,6 +41,10 @@ func FromEnv() *Provider {
 
 func (p *Provider) load(key string) (io.ReadCloser, error) {
 	return os.Open(filepath.Join(p.Home, key))
+}
+
+func (p *Provider) remove(key string) error {
+	return os.Remove(filepath.Join(p.Home, key))
 }
 
 func (p *Provider) save(key string, r io.Reader) error {
@@ -62,11 +86,7 @@ var (
 func id(prefix string) string {
 	b := make([]rune, 10)
 	for i := range b {
-		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(alphabet))))
-		if err != nil {
-			panic(err)
-		}
-		b[i] = alphabet[idx.Int64()]
+		b[i] = alphabet[rand.Intn(len(alphabet))]
 	}
 	return prefix + string(b)
 }

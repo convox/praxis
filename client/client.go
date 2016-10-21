@@ -10,6 +10,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+
+	"golang.org/x/net/http2"
 )
 
 type Client struct {
@@ -23,21 +25,19 @@ func New(endpoint string) *Client {
 }
 
 func (c *Client) Client() *http.Client {
-	client := &http.Client{}
-
-	var config *tls.Config
-
-	// FIXME: better verification
-	config = &tls.Config{
-		InsecureSkipVerify: true,
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
 	}
 
-	client.Transport = &http.Transport{
-		Proxy:           http.ProxyFromEnvironment,
-		TLSClientConfig: config,
+	if err := http2.ConfigureTransport(transport); err != nil {
+		panic(err)
 	}
 
-	return client
+	return &http.Client{
+		Transport: transport,
+	}
 }
 
 func (c *Client) Request(method, path string, body io.Reader) (*http.Request, error) {
@@ -70,7 +70,6 @@ func (c *Client) Get(path string, out interface{}, opts GetOptions) error {
 	}
 
 	res, err := c.Client().Do(req)
-
 	if err != nil {
 		return err
 	}
@@ -82,7 +81,6 @@ func (c *Client) Get(path string, out interface{}, opts GetOptions) error {
 	}
 
 	data, err := ioutil.ReadAll(res.Body)
-
 	if err != nil {
 		return err
 	}
@@ -96,6 +94,24 @@ func (c *Client) Get(path string, out interface{}, opts GetOptions) error {
 	}
 
 	return nil
+}
+
+func (c *Client) GetReader(path string, opts GetOptions) (io.ReadCloser, error) {
+	req, err := c.Request("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := c.Client().Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := responseError(res); err != nil {
+		return nil, err
+	}
+
+	return res.Body, nil
 }
 
 type PostOptions struct {
@@ -139,7 +155,6 @@ func (c *Client) Post(path string, out interface{}, opts PostOptions) error {
 	}
 
 	req, err := c.Request("POST", path, br)
-
 	if err != nil {
 		return err
 	}
@@ -147,7 +162,6 @@ func (c *Client) Post(path string, out interface{}, opts PostOptions) error {
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	res, err := c.Client().Do(req)
-
 	if err != nil {
 		return err
 	}
@@ -159,7 +173,6 @@ func (c *Client) Post(path string, out interface{}, opts PostOptions) error {
 	}
 
 	data, err := ioutil.ReadAll(res.Body)
-
 	if err != nil {
 		return err
 	}
@@ -170,6 +183,32 @@ func (c *Client) Post(path string, out interface{}, opts PostOptions) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+type DeleteOptions struct {
+	Params   map[string]string
+	Progress Progress
+}
+
+func (c *Client) Delete(path string, opts DeleteOptions) error {
+	req, err := c.Request("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.Client().Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+
+	if err := responseError(res); err != nil {
+		return err
 	}
 
 	return nil
