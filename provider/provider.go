@@ -17,7 +17,7 @@ type Provider interface {
 	ProcessStart(app, service string, opts ProcessRunOptions) (*Process, error)
 	ProcessWait(app, pid string) (int, error)
 
+	TableDelete(app, table, id string) error
 	TableLoad(app, table, id string) (map[string]string, error)
-	TableRemove(app, table, id string) error
 	TableSave(app, table, id string, attrs map[string]string) error
 }

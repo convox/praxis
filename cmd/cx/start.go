@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"os/user"
 	"path/filepath"
 
 	"github.com/convox/praxis/cli"
@@ -30,41 +29,37 @@ func init() {
 var currentManifest *manifest.Manifest
 
 func cmdStart(c cli.Context) error {
-	m, err := manifest.LoadFile("convox.yml")
-	if err != nil {
-		return err
-	}
-
-	u, err := user.Current()
-	if err != nil {
-		return err
-	}
-
-	for i := range m.Services {
-		m.Services[i].Volumes.Prepend(filepath.Join(u.HomeDir, ".convox", "volumes"))
-	}
-
 	go handleSignals(c)
 
-	app, err := rack().AppCreate("test", client.AppCreateOptions{})
+	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
-	defer rack().AppDelete(app.Name)
+	app := filepath.Base(wd)
 
-	build, err := buildDirectory("test", ".")
+	a, err := rack().AppCreate(app, client.AppCreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	defer rack().AppDelete(a.Name)
+
+	build, err := buildDirectory(app, ".")
+	if err != nil {
+		return err
+	}
+
+	if err := streamBuild(app, build.Id, os.Stdout); err != nil {
+		return err
+	}
+
+	build, err = waitForBuild(a.Name, build.Id)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("build = %+v\n", build)
-
-	// currentManifest = m
-
-	// if err := m.Run(manifest.RunOptions{Sync: true}); err != nil {
-	//   return err
-	// }
 
 	return nil
 }

@@ -12,8 +12,12 @@ const (
 	SortableTime = "20060102.150405.000000000"
 )
 
+func (p *Provider) TableDelete(app, table, id string) error {
+	return p.remove(fmt.Sprintf("tables/%s/%s/index/id/%s", app, table, id))
+}
+
 func (p *Provider) TableLoad(app, table, id string) (map[string]string, error) {
-	r, err := p.load(fmt.Sprintf("/tables/%s/%s/index/id/%s", app, table, id))
+	r, err := p.load(fmt.Sprintf("tables/%s/%s/index/id/%s", app, table, id))
 	if err != nil {
 		return nil, err
 	}
@@ -32,10 +36,6 @@ func (p *Provider) TableLoad(app, table, id string) (map[string]string, error) {
 	return attrs, nil
 }
 
-func (p *Provider) TableRemove(app, table, id string) error {
-	return p.remove(fmt.Sprintf("/tables/%s/%s/index/id/%s", app, table, id))
-}
-
 func (p *Provider) TableSave(app, table, id string, attrs map[string]string) error {
 	if attrs == nil {
 		attrs = map[string]string{}
@@ -52,7 +52,7 @@ func (p *Provider) TableSave(app, table, id string, attrs map[string]string) err
 		return err
 	}
 
-	if err := p.save(fmt.Sprintf("/tables/%s/%s/index/id/%s", app, table, id), bytes.NewReader(data)); err != nil {
+	if err := p.save(fmt.Sprintf("tables/%s/%s/index/id/%s", app, table, id), bytes.NewReader(data)); err != nil {
 		return err
 	}
 

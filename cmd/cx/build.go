@@ -44,39 +44,7 @@ func buildDirectory(app, dir string) (*client.Build, error) {
 		return nil, err
 	}
 
-	build, err := rack().BuildCreate(app, url, client.BuildCreateOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	id := build.Id
-
-	r, err := rack().BuildLogs(app, build.Id)
-	fmt.Printf("r = %+v\n", r)
-	fmt.Printf("err = %+v\n", err)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := io.Copy(os.Stdout, r); err != nil {
-		return nil, err
-	}
-
-	for {
-		build, err := rack().BuildGet(app, id)
-		if err != nil {
-			return nil, err
-		}
-
-		switch build.Status {
-		case "complete":
-			return build, nil
-		case "error":
-			return nil, fmt.Errorf("build failed")
-		}
-
-		time.Sleep(1 * time.Second)
-	}
+	return rack().BuildCreate(app, url, client.BuildCreateOptions{})
 }
 
 func createTarball(dir string) (io.Reader, error) {
@@ -103,6 +71,19 @@ func createTarball(dir string) (io.Reader, error) {
 	return archive.TarWithOptions(sym, options)
 }
 
+func streamBuild(app, build string, w io.Writer) error {
+	r, err := rack().BuildLogs(app, build)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(w, r); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func uploadDirectory(app, dir string) (string, error) {
 	r, err := createTarball(dir)
 	if err != nil {
@@ -112,4 +93,22 @@ func uploadDirectory(app, dir string) (string, error) {
 	return rack().BlobStore(app, "", r, client.BlobStoreOptions{
 		Public: false,
 	})
+}
+
+func waitForBuild(app, build string) (*client.Build, error) {
+	for {
+		b, err := rack().BuildGet(app, build)
+		if err != nil {
+			return nil, err
+		}
+
+		switch b.Status {
+		case "complete":
+			return b, nil
+		case "error":
+			return nil, fmt.Errorf("build failed")
+		}
+
+		time.Sleep(1 * time.Second)
+	}
 }

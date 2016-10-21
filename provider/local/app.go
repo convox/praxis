@@ -16,5 +16,5 @@ func (p *Provider) AppCreate(name string, opts provider.AppCreateOptions) (*prov
 }
 
 func (p *Provider) AppDelete(name string) error {
-	return p.TableRemove("system", "apps", name)
+	return p.TableDelete("system", "apps", name)
 }

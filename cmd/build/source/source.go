@@ -29,8 +29,7 @@ func urlReader(url_ string) (io.ReadCloser, error) {
 		}
 		return fd, nil
 	case "blob":
-		return client.New(os.Getenv("CONVOX_URL")).BlobFetch(os.Getenv("BUILD_APP"), u.Path)
-		// return providerFromEnv().BlobFetch(app, u.Path)
+		return client.New(os.Getenv("CONVOX_URL")).BlobFetch(os.Getenv("BUILD_APP"), u.Path[1:])
 	}
 
 	req, err := http.Get(url_)
