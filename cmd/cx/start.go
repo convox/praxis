@@ -61,6 +61,14 @@ func cmdStart(c cli.Context) error {
 
 	fmt.Printf("build = %+v\n", build)
 
+	// Provider.ReleasePromote(build.Release)
+	// Provider.ReleaseWait(build.Release)
+	// Provider.ServiceScale("web", {Count:1})
+
+	// SIGINT ->
+	// ps := range Provider.ProcessList()
+	//   Provider.ProcessStop(ps)
+
 	return nil
 }
 
