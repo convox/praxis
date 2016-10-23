@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 
@@ -11,10 +12,36 @@ import (
 func BuildCreate(w http.ResponseWriter, r *http.Request) error {
 	vars := mux.Vars(r)
 
-	build, err := Provider.BuildCreate(vars["app"], r.FormValue("url"), provider.BuildCreateOptions{
+	opts := provider.BuildCreateOptions{
 		Cache: true,
-	})
+	}
+
+	build, err := Provider.BuildCreate(vars["app"], r.FormValue("url"), opts)
+	fmt.Printf("build = %+v\n", build)
+	fmt.Printf("err = %+v\n", err)
 	if err != nil {
+		return err
+	}
+
+	env, err := Provider.EnvironmentLoad(vars["app"])
+	fmt.Printf("env = %+v\n", env)
+	fmt.Printf("err = %+v\n", err)
+	if err != nil {
+		return err
+	}
+
+	release, err := Provider.ReleaseCreate(vars["app"], build, env)
+	fmt.Printf("release = %+v\n", release)
+	fmt.Printf("err = %+v\n", err)
+	if err != nil {
+		return err
+	}
+
+	build.Release = release.Id
+
+	fmt.Printf("build = %+v\n", build)
+
+	if err := Provider.BuildSave(build); err != nil {
 		return err
 	}
 
@@ -40,7 +67,7 @@ func BuildLogs(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	if _, err := io.Copy(w, rd); err != nil {
+	if _, err := io.Copy(flushWriter{w}, rd); err != nil {
 		return err
 	}
 

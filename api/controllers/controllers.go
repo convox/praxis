@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"os"
 
@@ -12,6 +13,13 @@ import (
 var (
 	Provider = providerFromEnv()
 )
+
+func providerFromEnv() provider.Provider {
+	switch os.Getenv("PROVIDER") {
+	default:
+		return local.FromEnv()
+	}
+}
 
 func Render(w http.ResponseWriter, v interface{}) error {
 	data, err := json.Marshal(v)
@@ -26,9 +34,16 @@ func Render(w http.ResponseWriter, v interface{}) error {
 	return nil
 }
 
-func providerFromEnv() provider.Provider {
-	switch os.Getenv("PROVIDER") {
-	default:
-		return local.FromEnv()
+type flushWriter struct {
+	w io.Writer
+}
+
+func (fw flushWriter) Write(p []byte) (n int, err error) {
+	n, err = fw.w.Write(p)
+
+	if f, ok := fw.w.(http.Flusher); ok {
+		f.Flush()
 	}
+
+	return
 }

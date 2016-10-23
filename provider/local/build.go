@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"time"
 
 	"github.com/convox/praxis/provider"
 )
@@ -46,17 +47,13 @@ func (p *Provider) BuildCreate(app, url string, opts provider.BuildCreateOptions
 }
 
 func (p *Provider) waitProcess(app, build, process string) error {
-	attrs, err := p.TableLoad("system", "builds", build)
+	code, err := p.ProcessWait(app, process)
 	if err != nil {
 		return err
 	}
 
-	defer p.TableSave("system", "builds", build, attrs)
-
-	code, err := p.ProcessWait(app, process)
+	attrs, err := p.TableLoad("system", "builds", build)
 	if err != nil {
-		attrs["error"] = err.Error()
-		attrs["status"] = "error"
 		return err
 	}
 
@@ -68,7 +65,7 @@ func (p *Provider) waitProcess(app, build, process string) error {
 		attrs["status"] = "error"
 	}
 
-	return nil
+	return p.TableSave("system", "builds", build, attrs)
 }
 
 func (p *Provider) BuildLoad(app, id string) (*provider.Build, error) {
@@ -78,9 +75,21 @@ func (p *Provider) BuildLoad(app, id string) (*provider.Build, error) {
 	}
 
 	build := &provider.Build{
-		Id:      id,
-		Process: attrs["process"],
-		Status:  attrs["status"],
+		Error:    attrs["error"],
+		Id:       id,
+		Manifest: attrs["manifest"],
+		Process:  attrs["process"],
+		Release:  attrs["release"],
+		Status:   attrs["status"],
+	}
+
+	if attrs["ended"] != "" {
+		t, err := time.Parse(SortableTime, attrs["ended"])
+		if err != nil {
+			return nil, err
+		}
+
+		build.Ended = t
 	}
 
 	return build, nil
@@ -118,6 +127,7 @@ func (p *Provider) BuildSave(build *provider.Build) error {
 		"logs":     build.Logs,
 		"manifest": build.Manifest,
 		"process":  fmt.Sprintf("%s", build.Process),
+		"release":  build.Release,
 		"status":   build.Status,
 	}
 

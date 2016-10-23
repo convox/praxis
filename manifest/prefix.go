@@ -7,10 +7,10 @@ import (
 )
 
 func (m *Manifest) system(format string, args ...interface{}) {
-	m.prefix("convox").Write([]byte(fmt.Sprintf(format+"\n", args...)))
+	m.Prefix("convox").Write([]byte(fmt.Sprintf(format+"\n", args...)))
 }
 
-func (m *Manifest) prefix(name string) io.Writer {
+func (m *Manifest) Prefix(name string) io.Writer {
 	longest := 6
 
 	for _, s := range m.Services {

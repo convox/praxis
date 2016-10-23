@@ -10,6 +10,10 @@ import (
 	"github.com/convox/praxis/provider"
 )
 
+func (p *Provider) BlobExists(app, key string) (bool, error) {
+	return p.exists(fmt.Sprintf("blob/%s/%s", app, key))
+}
+
 func (p *Provider) BlobFetch(app, key string) (io.ReadCloser, error) {
 	return p.load(fmt.Sprintf("blob/%s/%s", app, key))
 }

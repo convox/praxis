@@ -30,7 +30,7 @@ func (m *Manifest) Build(opts BuildOptions) error {
 
 		cmd := exec.Command("docker", "build", "-t", id, dir)
 
-		pw := m.prefix("build")
+		pw := m.Prefix("build")
 
 		cmd.Stdout = pw
 		cmd.Stderr = Writer

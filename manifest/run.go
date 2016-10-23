@@ -65,7 +65,7 @@ func (m *Manifest) RunService(s Service, opts RunOptions) error {
 
 	cmd := exec.Command("docker", args...)
 
-	pw := m.prefix(s.Name)
+	pw := m.Prefix(s.Name)
 
 	cmd.Stdout = pw
 	cmd.Stderr = pw

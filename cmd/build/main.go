@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -185,12 +186,64 @@ func build(dir string) error {
 		return err
 	}
 
-	if err := m.Build(manifest.BuildOptions{Cache: true}); err != nil {
-		return err
+	builds := map[string][]string{}
+	pulls := map[string][]string{}
+
+	for _, s := range m.Services {
+		switch {
+		case s.Build != "":
+			builds[s.Build] = append(builds[s.Build], s.Name)
+		case s.Image != "":
+			pulls[s.Image] = append(pulls[s.Image], s.Name)
+		}
 	}
 
-	if err := m.Push(flagPush, flagId); err != nil {
-		return err
+	for dir, tags := range builds {
+		id := fmt.Sprintf("%x", sha256.Sum256([]byte(dir)))[0:10]
+
+		cmd := exec.Command("docker", "build", "-t", id, dir)
+
+		cmd.Stdout = m.Prefix("build")
+		cmd.Stderr = m.Prefix("build")
+
+		cmd.Stdout.Write([]byte(fmt.Sprintf("building %s\n", dir)))
+
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("build failed")
+		}
+
+		for _, tag := range tags {
+			if err := exec.Command("docker", "tag", id, tag).Run(); err != nil {
+				return fmt.Errorf("could not tag: %s", tag)
+			}
+		}
+	}
+
+	for image, tags := range pulls {
+		if err := exec.Command("docker", "pull", image).Run(); err != nil {
+			return fmt.Errorf("could not pull: %s", image)
+		}
+
+		for _, tag := range tags {
+			if err := exec.Command("docker", "tag", image, tag).Run(); err != nil {
+				return fmt.Errorf("could not tag: %s", tag)
+			}
+		}
+	}
+
+	if flagPush != "" {
+		for _, s := range m.Services {
+			local := s.Name
+			remote := fmt.Sprintf("%s%s:%s", flagPush, s.Name, flagId)
+
+			if err := exec.Command("docker", "tag", local, remote).Run(); err != nil {
+				return err
+			}
+
+			if err := exec.Command("docker", "push", remote).Run(); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

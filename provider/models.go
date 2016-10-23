@@ -16,11 +16,21 @@ type Build struct {
 	Logs     string    `json:"logs"`
 	Manifest string    `json:"manifest"`
 	Process  string    `json:"process"`
+	Release  string    `json:"release"`
 	Status   string    `json:"status"`
 }
 
 type Builds []Build
 
+type Environment map[string]string
+
 type Process struct {
 	Id string `json:"id"`
+}
+
+type Release struct {
+	Id string `json:"id"`
+
+	Build       string      `json:"build"`
+	Environment Environment `json:"environment"`
 }

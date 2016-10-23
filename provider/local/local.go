@@ -39,6 +39,18 @@ func FromEnv() *Provider {
 	}
 }
 
+func (p *Provider) exists(key string) (bool, error) {
+	_, err := os.Stat(filepath.Join(p.Home, key))
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (p *Provider) load(key string) (io.ReadCloser, error) {
 	return os.Open(filepath.Join(p.Home, key))
 }

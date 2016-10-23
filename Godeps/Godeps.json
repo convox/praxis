@@ -22,7 +22,7 @@
 		},
 		{
 			"ImportPath": "github.com/convox/nlogger",
-			"Rev": "021d214e1bf86ccc6a4f8e918685bd72dda3cfae"
+			"Rev": "f8bc892c8cebc50723dc5c981ab931d8b85bdb75"
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
