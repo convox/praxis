@@ -5,7 +5,6 @@ machine:
 dependencies:
   override:
     - curl -Ls https://install.convox.com/linux.tgz | tar xz -C /home/ubuntu/bin
-    - convox build .
 
 test:
   override:
