@@ -59,6 +59,8 @@ func (s Service) build(tag string, opts BuildOptions) error {
 	//   fmt.Printf("arg = %+v\n", arg)
 	// }
 
+	args = append(args, "--rm=false")
+
 	args = append(args, "-t", tag)
 
 	path, err := filepath.Abs(filepath.Join(opts.Root, s.Build.Path))
