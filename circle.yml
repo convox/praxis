@@ -2,10 +2,7 @@ machine:
   services:
     - docker
 
-dependencies:
-  override:
-    - go get ./cmd/cx
-
 test:
   override:
+    - go get ./cmd/cx
     - cx test
