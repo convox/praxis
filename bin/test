@@ -1,21 +1,11 @@
 #!/bin/bash
 
 set -e
+cd $(dirname $(dirname $0))
 
-go get -t ./...
+[ -n "$TEST" ] && (go test -coverprofile=coverage.txt -covermode=atomic $TEST; exit)
 
-rm -f coverage.txt
-
-if [ ! -z ${TEST} ]; then
-    go test -coverprofile=profile.out -covermode=atomic "$TEST"
-    exit
-fi
-
-for d in $(find . -not \( -name vendor -prune \) -name '*.go' -exec dirname {} \; | sort -u); do
-  go test -coverprofile=profile.out -covermode=atomic $d
-
-  if [ -f profile.out ]; then
-    cat profile.out >> coverage.txt
-    rm profile.out
-  fi
+find . -name '*.go' -exec dirname {} \; | grep -v '^\./vendor/' | sort -u | while read dir; do
+  go test -coverprofile=profile.out -covermode=atomic $dir
+  [ -f profile.out ] && (cat profile.out >> coverage.txt; rm profile.out)
 done

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -e
+cd $(dirname $(dirname $0))
+
+## gofmt
+
+find . -name '*.go' | grep -v '^\./vendor/' | while read file; do
+  diff="${diff}$(gofmt -d $file 2>&1)"
+done
+
+[ -n "$diff" ] && (printf "$diff"; exit 1)
+
+## govet
+
+find . -name '*.go' | grep -v '^\./vendor/' | while read file; do
+  go vet $file
+done
