@@ -1,8 +1,8 @@
 machine:
   environment:
-    INSTALL_DIR: /home/ubuntu/.go_workspace/src/github.com/convox/console
-    GODIST: "go1.7.5.linux-amd64.tar.gz"
-    IMPORT_PATH: "github.com/convox/praxis"
+    GODIST: "go1.7.4.linux-amd64.tar.gz"
+    IMPORT_PATH: "github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
+    INSTALL_DIR: "/home/ubuntu/.go_workspace/src/$IMPORT_PATH"
 
 test:
   override:
