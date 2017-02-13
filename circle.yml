@@ -1,9 +1,13 @@
 machine:
-  environment:
-    GODIST: "go1.7.5.linux-amd64.tar.gz"
-    IMPORT_PATH: "github.com/convox/praxis"
-    INSTALL_DIR: "/home/ubuntu/.go_workspace/src/$IMPORT_PATH"
+  services:
+    - docker
+
+dependencies:
+  override:
+    - docker info
+    - curl -Ls https://install.convox.com/linux.tgz | tar xz -C /usr/local/bin
+    - convox build .
 
 test:
   override:
-    - make ci
+    - convox start praxis make ci
