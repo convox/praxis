@@ -1,4 +1,8 @@
 machine:
+  environment:
+    GODIST: "go1.7.4.linux-amd64.tar.gz"
+    IMPORT_PATH: "github.com/convox/praxis"
+    INSTALL_DIR: "/home/ubuntu/.go_workspace/src/$IMPORT_PATH"
   services:
     - docker
 
