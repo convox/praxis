@@ -1,8 +1,7 @@
 services:
   rack:
     build: .
-    test:
-      - make ci
+    test: make ci
 workflows:
   change:
     create:

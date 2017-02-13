@@ -94,6 +94,31 @@ func (v *Service) SetName(name string) {
 	v.Name = name
 }
 
+func (v *ServiceBuild) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var w interface{}
+
+	if err := unmarshal(&w); err != nil {
+		return err
+	}
+
+	switch t := w.(type) {
+	case map[interface{}]interface{}:
+		type serviceBuild ServiceBuild
+		var r serviceBuild
+		if err := remarshal(w, &r); err != nil {
+			return err
+		}
+		v.Args = r.Args
+		v.Path = r.Path
+	case string:
+		v.Path = t
+	default:
+		return fmt.Errorf("unknown type for service build: %T", t)
+	}
+
+	return nil
+}
+
 func (v Tables) MarshalYAML() (interface{}, error) {
 	return nil, fmt.Errorf("unimplemented")
 }

@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"path/filepath"
 
@@ -48,10 +49,16 @@ func LoadFile(path string) (*Manifest, error) {
 	return m, nil
 }
 
-func (m *Manifest) Path(sub string) (string, error) {
-	if m.Root == "" {
-		return "", fmt.Errorf("path undefined for a manifest with no root")
-	}
+// func (m *Manifest) Path(sub string) (string, error) {
+//   if m.Root == "" {
+//     return "", fmt.Errorf("path undefined for a manifest with no root")
+//   }
 
-	return filepath.Join(m.Root, sub), nil
+//   return filepath.Join(m.Root, sub), nil
+// }
+
+func message(w io.Writer, format string, args ...interface{}) {
+	if w != nil {
+		w.Write([]byte(fmt.Sprintf(format, args...) + "\n"))
+	}
 }

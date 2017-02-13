@@ -11,6 +11,7 @@ type Service struct {
 	Build       ServiceBuild
 	Environment []string
 	Image       string
+	Test        string
 }
 
 type Services []Service
@@ -20,6 +21,6 @@ type ServiceBuild struct {
 	Path string
 }
 
-func (sb ServiceBuild) Hash() string {
-	return fmt.Sprintf("%x", sha1.Sum([]byte(fmt.Sprintf("%v||||%v", sb.Path, sb.Args))))
+func (s Service) BuildHash() string {
+	return fmt.Sprintf("%x", sha1.Sum([]byte(fmt.Sprintf("build[path=%q, args=%v] image=%q", s.Build.Path, s.Build.Args, s.Image))))
 }
