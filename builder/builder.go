@@ -76,7 +76,7 @@ func (b *Builder) Build() error {
 		}
 	}
 
-	for image, _ := range pulls {
+	for image := range pulls {
 		if err := b.pull(image); err != nil {
 			return err
 		}
