@@ -4,8 +4,8 @@ machine:
 
 dependencies:
   override:
-    - curl -Ls https://install.convox.com/linux.tgz | tar xz -C /home/ubuntu/bin
+    - go get ./cmd/cx
 
 test:
   override:
-    - convox start rack make ci
+    - cx test
