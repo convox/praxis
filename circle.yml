@@ -8,4 +8,4 @@ dependencies:
 
 test:
   override:
-    - convox start praxis make ci
+    - convox start rack make ci
