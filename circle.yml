@@ -1,7 +1,7 @@
 machine:
   environment:
     INSTALL_DIR: /home/ubuntu/.go_workspace/src/github.com/convox/console
-    GODIST: "go1.7.4.linux-amd64.tar.gz"
+    GODIST: "go1.7.5.linux-amd64.tar.gz"
     IMPORT_PATH: "github.com/convox/praxis"
 
 test:
