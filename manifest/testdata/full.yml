@@ -1,22 +1,12 @@
 balancers:
   api:
-    endpoints:
-      80:
-        protocol: http
-        redirect: https://:443
-      443:
-        protocol: https
-        target: http://api:3000
+    80/http/301: https://:443
+    443/https: http://api:3000
   proxy:
-    endpoints:
-      80:
-        target: proxy:3001
-      443:
-        target: proxy:3002
-      1080:
-        target: proxy:3003
-      2133:
-        target: proxy:3000
+    80: proxy:3001
+    443: proxy:3002
+    1080: proxy:3003
+    2133: proxy:3000
 queues:
   traffic:
     timeout: 5m
