@@ -5,6 +5,7 @@ machine:
 dependencies:
   override:
     - docker info
+    - echo $PATH
     - curl -Ls https://install.convox.com/linux.tgz | tar xz -C /usr/local/bin
     - convox build .
 
