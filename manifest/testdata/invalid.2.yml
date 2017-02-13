@@ -1,0 +1,9 @@
+balancerss:
+  api:
+    endpoints
+      80:
+        protocol: http
+        redirect: https://:443
+      443:
+        protocol: https
+        target: http://api:3000

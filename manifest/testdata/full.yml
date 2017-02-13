@@ -1,0 +1,50 @@
+balancers:
+  api:
+    endpoints:
+      80:
+        protocol: http
+        redirect: https://:443
+      443:
+        protocol: https
+        target: http://api:3000
+  proxy:
+    endpoints:
+      80:
+        target: proxy:3001
+      443:
+        target: proxy:3002
+      1080:
+        target: proxy:3003
+      2133:
+        target: proxy:3000
+queues:
+  traffic:
+    timeout: 5m
+services:
+  api:
+    build:
+      path: api
+    environment:
+      - DEVELOPMENT=false
+      - SECRET
+  proxy:
+    command: bash
+    image: ubuntu:16.04
+    environment:
+      - SECRET
+tables:
+  proxies:
+    indexes:
+      - password
+      - password-previous
+      - heroku-id
+  servers:
+    indexes:
+      - ip
+      - type-available
+  stats:
+    indexes:
+      - proxy-month
+  traffic:
+    indexes:
+      - proxy:started
