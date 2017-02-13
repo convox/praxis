@@ -7,5 +7,5 @@ cd $(dirname $(dirname $0))
 
 find . -name '*.go' -exec dirname {} \; | grep -v '^\./vendor/' | sort -u | while read dir; do
   go test -coverprofile=profile.out -covermode=atomic $dir
-  [ -f profile.out ] && (cat profile.out >> coverage.txt; rm profile.out)
+  [ -f profile.out ] && cat profile.out >> coverage.txt; rm -f profile.out
 done
