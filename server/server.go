@@ -10,9 +10,9 @@ type Server struct {
 }
 
 func New() *Server {
-	api := api.New("rack.convox")
+	api := api.New("convox", "rack.convox")
 
-	api.Route("POST", "/apps", controllers.AppCreate)
+	api.Route("POST", "/apps", "apps.create", controllers.AppCreate)
 
 	return &Server{Server: api}
 }

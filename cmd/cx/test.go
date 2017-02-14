@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/sdk/rack"
@@ -23,9 +24,10 @@ func init() {
 func runTest(c *cli.Context) error {
 	os.Remove("/tmp/test.sock")
 	go server.New().Listen("unix", "/tmp/test.sock")
+	time.Sleep(100 * time.Millisecond)
 	Rack.Socket = "/tmp/test.sock"
 
-	app, err := Rack.AppCreate("")
+	app, err := Rack.AppCreate("test")
 	if err != nil {
 		return err
 	}

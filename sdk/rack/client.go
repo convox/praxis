@@ -51,13 +51,13 @@ func (c *Client) Get(path string, out interface{}) error {
 
 func (c *Client) PostStream(path string, body io.Reader) (io.Reader, error) {
 	req, err := c.Request("POST", path, body)
-	fmt.Printf("req = %+v\n", req)
 	if err != nil {
 		return nil, err
 	}
 
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 	res, err := c.handleRequest(req)
-	fmt.Printf("res = %+v\n", res)
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +94,10 @@ func (c *Client) Client() *http.Client {
 		},
 	}
 
-	err := http2.ConfigureTransport(t)
-	fmt.Printf("err = %+v\n", err)
+	if err := http2.ConfigureTransport(t); err != nil {
+		fmt.Printf("err = %+v\n", err)
+		panic(err)
+	}
 
 	return &http.Client{
 		Transport: t,
