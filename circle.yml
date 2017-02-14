@@ -1,11 +1,17 @@
 machine:
+  environment:
+    GOPATH: "/home/ubuntu/go"
+    PATH: "$GOPATH/bin:$PATH"
+    PROJECT: "github.com/convox/praxis"
   services:
     - docker
 
+dependencies:
+  override:
+    - mkdir -p "$GOPATH/src/$PROJECT"
+    - rsync -azC --delete ./ "$GOPATH/src/$PROJECT"
+
 test:
   override:
-    - pwd
-    - echo $GOPATH
-    - ls -laR ~/.go_workspace
     - go get github.com/convox/praxis/cmd/cx
     - cx test
