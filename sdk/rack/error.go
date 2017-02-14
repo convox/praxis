@@ -12,6 +12,10 @@ type Error struct {
 }
 
 func responseError(res *http.Response) error {
+	if !res.ProtoAtLeast(2, 0) {
+		return fmt.Errorf("server did not respond with http/2")
+	}
+
 	if res.StatusCode < 400 {
 		return nil
 	}

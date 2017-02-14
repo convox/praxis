@@ -26,15 +26,24 @@ tables:
   proxies:
     indexes:
       - password
-      - password-previous
-      - heroku-id
-  servers:
-    indexes:
-      - ip
-      - type-available
-  stats:
-    indexes:
-      - proxy-month
   traffic:
     indexes:
       - proxy:started
+workflows:
+  change:
+    create:
+      - create: staging/praxis-$branch
+      - build: staging/praxis-$branch
+      - test
+      - promote
+    close:
+      - delete: staging/praxis-$branch
+  merge:
+    demo:
+      - deploy: demo/praxis-demo
+    master:
+      - build: staging/praxis-staging
+      - test
+      - promote
+      - copy: production/praxis-production
+      - promote

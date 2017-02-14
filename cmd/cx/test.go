@@ -3,8 +3,11 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"os"
 
+	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/sdk/rack"
+	"github.com/convox/praxis/server"
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -18,47 +21,48 @@ func init() {
 }
 
 func runTest(c *cli.Context) error {
-	// app, err := Rack.AppCreate("")
-	// if err != nil {
-	//   return err
-	// }
+	os.Remove("/tmp/test.sock")
+	go server.New().Listen("unix", "/tmp/test.sock")
+	Rack.Socket = "/tmp/test.sock"
 
-	// release, err := releaseDirectory(app.Name, ".")
-	// if err != nil {
-	//   return err
-	// }
+	app, err := Rack.AppCreate("")
+	if err != nil {
+		return err
+	}
 
-	// data, err := Rack.ReleaseManifest(app.Name, release.Id)
-	// if err != nil {
-	//   return err
-	// }
+	fmt.Printf("app = %+v\n", app)
 
-	// m, err := manifest.Load(data)
-	// if err != nil {
-	//   return err
-	// }
+	release, err := releaseDirectory(app.Name, ".")
+	if err != nil {
+		return err
+	}
 
-	// for _, s := range m.Services {
-	//   if s.Test != "" {
-	//     _, err := Rack.ProcessRun(app.Name, s.Name, rack.ProcessRunOptions{
-	//       Output: os.Stdout,
-	//     })
-	//     if err != nil {
-	//       return err
-	//     }
-	//   }
-	// }
+	fmt.Printf("release = %+v\n", release)
 
-	// fmt.Printf("m = %+v\n", m)
+	data, err := Rack.ReleaseManifest(app.Name, release.Id)
+	if err != nil {
+		return err
+	}
 
-	// r, err := Rack.GetStream("/clockstream")
-	// if err != nil {
-	//   return err
-	// }
+	fmt.Printf("len(data) = %+v\n", len(data))
 
-	// io.Copy(os.Stdout, r)
+	m, err := manifest.Load(data)
+	if err != nil {
+		return err
+	}
 
-	fmt.Println("success")
+	fmt.Printf("m = %+v\n", m)
+
+	for _, s := range m.Services {
+		if s.Test != "" {
+			_, err := Rack.ProcessRun(app.Name, s.Name, rack.ProcessRunOptions{
+				Output: os.Stdout,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	return nil
 }

@@ -1,7 +1,20 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+
+	"github.com/convox/praxis/server"
+)
 
 func main() {
-	fmt.Println("rack")
+	// if err := server.New().Listen("tcp", ":9666"); err != nil {
+	//   fmt.Printf("err = %+v\n", err)
+	//   os.Exit(1)
+	// }
+
+	if err := server.New().Listen("unix", "/tmp/test.sock"); err != nil {
+		fmt.Printf("err = %+v\n", err)
+		os.Exit(1)
+	}
 }

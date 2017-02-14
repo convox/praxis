@@ -1,14 +1,19 @@
 package rack
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
+
+	"golang.org/x/net/http2"
 )
 
 type Client struct {
@@ -19,22 +24,16 @@ type Client struct {
 	Version string
 }
 
+type Params map[string]string
+
 func (c *Client) GetStream(path string) (io.ReadCloser, error) {
 	req, err := c.Request("GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := c.Client().Do(req)
+	res, err := c.handleRequest(req)
 	if err != nil {
-		return nil, err
-	}
-
-	if !res.ProtoAtLeast(2, 0) {
-		return nil, fmt.Errorf("server did not respond with http/2")
-	}
-
-	if err := responseError(res); err != nil {
 		return nil, err
 	}
 
@@ -50,18 +49,57 @@ func (c *Client) Get(path string, out interface{}) error {
 	return unmarshalReader(r, out)
 }
 
-func (c *Client) Client() *http.Client {
-	client := http.DefaultClient
-
-	if c.Socket != "" {
-		client.Transport = &http.Transport{
-			DialContext: func(ctx context.Context, proto, addr string) (net.Conn, error) {
-				return (&net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}).DialContext(ctx, "unix", c.Socket)
-			},
-		}
+func (c *Client) PostStream(path string, body io.Reader) (io.Reader, error) {
+	req, err := c.Request("POST", path, body)
+	fmt.Printf("req = %+v\n", req)
+	if err != nil {
+		return nil, err
 	}
 
-	return client
+	res, err := c.handleRequest(req)
+	fmt.Printf("res = %+v\n", res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body, nil
+}
+
+func (c *Client) Post(path string, params Params, out interface{}) error {
+	uv := url.Values{}
+
+	for k, v := range params {
+		uv.Set(k, v)
+	}
+
+	r, err := c.PostStream(path, bytes.NewReader([]byte(uv.Encode())))
+	if err != nil {
+		return err
+	}
+
+	return unmarshalReader(r, out)
+}
+
+func (c *Client) Client() *http.Client {
+	t := &http.Transport{
+		DialContext: func(ctx context.Context, proto, addr string) (net.Conn, error) {
+			if c.Socket != "" {
+				return (&net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}).DialContext(ctx, "unix", c.Socket)
+			}
+
+			return (&net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}).DialContext(ctx, proto, addr)
+		},
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	err := http2.ConfigureTransport(t)
+	fmt.Printf("err = %+v\n", err)
+
+	return &http.Client{
+		Transport: t,
+	}
 }
 
 func (c *Client) Request(method, path string, body io.Reader) (*http.Request, error) {
@@ -78,6 +116,19 @@ func (c *Client) Request(method, path string, body io.Reader) (*http.Request, er
 	req.SetBasicAuth("convox", string(c.Key))
 
 	return req, nil
+}
+
+func (c *Client) handleRequest(req *http.Request) (*http.Response, error) {
+	res, err := c.Client().Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := responseError(res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func unmarshalReader(r io.Reader, out interface{}) error {
