@@ -4,7 +4,7 @@ machine:
 
 dependencies:
   override:
-    - ln -sf /home/ubuntu/.go_workspace/src/$PROJECT $(pwd)
+    - ln -sf /home/ubuntu/.go_workspace/src/github.com/convox/praxis $(pwd)
     # - mkdir -p "$GOPATH/src/$PROJECT"
     # - rsync -azC --delete ./ "$GOPATH/src/$PROJECT"
 
