@@ -19,5 +19,5 @@ test:
   override:
     - pwd
     - ls -la
-    - go get ./cmd/cx
+    - go get github.com/convox/praxis/cmd/cx
     - cx test
