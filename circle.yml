@@ -18,6 +18,7 @@ dependencies:
 test:
   override:
     - pwd
-    - ls -la
+    - echo $GOPATH
+    - ls -laR $GOPATH
     - go get github.com/convox/praxis/cmd/cx
     - cx test
