@@ -1,8 +1,6 @@
 machine:
   environment:
     GODIST: "go1.7.4.linux-amd64.tar.gz"
-    IMPORT_PATH: "github.com/convox/praxis"
-    INSTALL_DIR: "$GOPATH/src/github.com/convox/praxis"
   services:
     - docker
   post:
@@ -19,6 +17,6 @@ test:
   override:
     - pwd
     - echo $GOPATH
-    - ls -laR $GOPATH
+    - ls -laR ~/.go_workspace
     - go get github.com/convox/praxis/cmd/cx
     - cx test
