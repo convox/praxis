@@ -69,21 +69,6 @@ func TestManifestLoad(t *testing.T) {
 				Name: "proxies",
 				Indexes: []string{
 					"password",
-					"password-previous",
-					"heroku-id",
-				},
-			},
-			manifest.Table{
-				Name: "servers",
-				Indexes: []string{
-					"ip",
-					"type-available",
-				},
-			},
-			manifest.Table{
-				Name: "stats",
-				Indexes: []string{
-					"proxy-month",
 				},
 			},
 			manifest.Table{
