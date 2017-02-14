@@ -2,8 +2,7 @@ package main
 
 import (
 	"bytes"
-	"io"
-	"os"
+	"fmt"
 
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
@@ -52,12 +51,14 @@ func runTest(c *cli.Context) error {
 
 	// fmt.Printf("m = %+v\n", m)
 
-	r, err := Rack.GetStream("/clockstream")
-	if err != nil {
-		return err
-	}
+	// r, err := Rack.GetStream("/clockstream")
+	// if err != nil {
+	//   return err
+	// }
 
-	io.Copy(os.Stdout, r)
+	// io.Copy(os.Stdout, r)
+
+	fmt.Println("success")
 
 	return nil
 }
