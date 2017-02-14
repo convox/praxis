@@ -4,12 +4,18 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 )
 
 var (
+	Rack    *rack.Client
 	Version = "dev"
 )
+
+func init() {
+	Rack = rack.New()
+}
 
 func main() {
 	app := stdcli.New()
