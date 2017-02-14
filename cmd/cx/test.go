@@ -72,15 +72,19 @@ func runTest(c *cli.Context) error {
 func releaseDirectory(app, dir string) (*rack.Release, error) {
 	context := bytes.NewReader([]byte{})
 
-	object, err := Rack.ObjectStore("", context)
+	object, err := Rack.ObjectStore(app, "", context)
 	if err != nil {
 		return nil, err
 	}
 
-	build, err := Rack.BuildCreate(app, object.URL)
+	fmt.Printf("object = %+v\n", object)
+
+	build, err := Rack.BuildCreate(app, fmt.Sprintf("object://%s", object.Key))
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("build = %+v\n", build)
 
 	return Rack.ReleaseCreate(app, rack.ReleaseCreateOptions{
 		Build: build.Id,

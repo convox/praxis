@@ -1,7 +1,10 @@
 package api
 
 import (
+	"crypto/rand"
+	"crypto/sha1"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,8 +16,9 @@ import (
 )
 
 type Context struct {
-	logger  *logger.Logger
-	request *http.Request
+	logger   *logger.Logger
+	request  *http.Request
+	response http.ResponseWriter
 }
 
 type Error struct {
@@ -43,6 +47,10 @@ func Errorf(code int, format string, args ...interface{}) Error {
 		error: fmt.Errorf(format, args...),
 		Code:  code,
 	}
+}
+
+func (c *Context) Form(name string) string {
+	return c.request.FormValue(name)
 }
 
 func (c *Context) LogError(err error) {
@@ -87,6 +95,21 @@ func (c *Context) Logf(format string, args ...interface{}) {
 	c.logger.Logf(format, args...)
 }
 
+func (c *Context) RenderJSON(v interface{}) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("string(data) = %+v\n", string(data))
+
+	if _, err := c.response.Write(data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *Context) Start(format string, args ...interface{}) {
 	c.logger = c.logger.Start()
 	c.logger.At("start").Logf(format, args...)
@@ -94,6 +117,10 @@ func (c *Context) Start(format string, args ...interface{}) {
 
 func (c *Context) Tag(format string, args ...interface{}) {
 	c.logger = c.logger.Namespace(format, args...)
+}
+
+func (c *Context) Var(name string) string {
+	return mux.Vars(c.request)[name]
 }
 
 func (s *Server) Listen(addr, port string) error {
@@ -116,13 +143,19 @@ func (s *Server) Listen(addr, port string) error {
 	return http.Serve(tls.NewListener(l, config), s.Router)
 }
 
-func (s *Server) Route(method, path, name string, fn HandlerFunc) {
+func (s *Server) Route(name, method, path string, fn HandlerFunc) {
 	s.Router.Handle(path, s.api(name, fn)).Methods(method)
 }
 
 func (s *Server) api(at string, fn HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		c := s.context(at, w, r)
+		c, err := s.context(at, w, r)
+		if err != nil {
+			e := fmt.Errorf("context error: %s", err)
+			c.LogError(e)
+			http.Error(w, e.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		c.Start("method=%q path=%q", r.Method, r.URL.Path)
 
@@ -143,9 +176,18 @@ func (s *Server) api(at string, fn HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (s *Server) context(name string, w http.ResponseWriter, r *http.Request) *Context {
-	return &Context{
-		logger:  s.logger.Namespace("route=%s id=1234", name),
-		request: r,
+func (s *Server) context(name string, w http.ResponseWriter, r *http.Request) (*Context, error) {
+	idb := make([]byte, 128)
+
+	if _, err := rand.Read(idb); err != nil {
+		return nil, err
 	}
+
+	id := fmt.Sprintf("%x", sha1.Sum(idb))[0:12]
+
+	return &Context{
+		logger:   s.logger.Namespace("route=%s id=%s", name, id),
+		request:  r,
+		response: w,
+	}, nil
 }

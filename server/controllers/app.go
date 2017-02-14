@@ -1,24 +1,20 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/convox/praxis/api"
 )
 
 func AppCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	// name := r.FormValue("name")
-	// fmt.Printf("name = %+v\n", name)
-
-	// if name == "" {
-	//   return api.Errorf(400, "name must not be blank")
-	// }
+	name := c.Form("name")
 
 	c.LogParams("name")
 
-	w.Write([]byte(`{"name":"foo"}`))
-	return nil
+	app, err := Provider.AppCreate(name)
+	if err != nil {
+		return err
+	}
 
-	return fmt.Errorf("test")
+	return c.RenderJSON(app)
 }

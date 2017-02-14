@@ -1,4 +1,4 @@
-.PHONY: all check ci coverage deps lint test test-deps
+.PHONY: all check ci coverage deps lint mocks test test-deps
 
 all: test
 
@@ -18,6 +18,9 @@ deps:
 
 lint:
 	golint -set_exit_status ./...
+
+mocks:
+	make -C provider mocks
 
 test: test-deps check
 	bin/test
