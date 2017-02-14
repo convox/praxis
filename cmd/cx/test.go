@@ -32,6 +32,8 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
+	defer Rack.AppDelete("test")
+
 	fmt.Printf("app = %+v\n", app)
 
 	release, err := releaseDirectory(app.Name, ".")

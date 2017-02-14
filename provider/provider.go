@@ -15,7 +15,7 @@ type Provider interface {
 
 	AppCreate(name string) (*types.App, error)
 	// AppGet(name string) (*structs.App, error)
-	// AppDelete(name string) error
+	AppDelete(name string) error
 
 	// BuildCreate(app, method, source string, opts structs.BuildOptions) (*structs.Build, error)
 	// BuildDelete(app, id string) (*structs.Build, error)

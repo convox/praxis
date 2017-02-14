@@ -13,6 +13,7 @@ func New() *Server {
 	api := api.New("convox.rack", "convox.rack")
 
 	api.Route("app.create", "POST", "/apps", controllers.AppCreate)
+	api.Route("app.delete", "DELETE", "/apps/{app}", controllers.AppDelete)
 
 	api.Route("object.store", "POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)
 

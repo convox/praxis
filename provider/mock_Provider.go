@@ -32,6 +32,20 @@ func (_m *MockProvider) AppCreate(name string) (*types.App, error) {
 	return r0, r1
 }
 
+// AppDelete provides a mock function with given fields: name
+func (_m *MockProvider) AppDelete(name string) error {
+	ret := _m.Called(name)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(name)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ObjectStore provides a mock function with given fields: app, key, r, opts
 func (_m *MockProvider) ObjectStore(app string, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error) {
 	ret := _m.Called(app, key, r, opts)

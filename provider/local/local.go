@@ -1,8 +1,12 @@
 package local
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/convox/logger"
@@ -24,7 +28,7 @@ type Provider struct {
 
 // NewProviderFromEnv returns a new AWS provider from env vars
 func FromEnv() *Provider {
-	home, err := homedir.Expand("~/.convox/rack")
+	home, err := homedir.Expand("~/.convox/local")
 	if err != nil {
 		panic(err)
 	}
@@ -34,4 +38,35 @@ func FromEnv() *Provider {
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
+}
+
+func (p *Provider) Delete(key string) error {
+	path, err := filepath.Abs(filepath.Join(p.Root, key))
+	if err != nil {
+		return err
+	}
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return fmt.Errorf("no such key: %s", key)
+	}
+
+	return os.Remove(path)
+}
+
+func (p *Provider) Store(key string, v interface{}) error {
+	path, err := filepath.Abs(filepath.Join(p.Root, key))
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(path, data, 0600)
 }

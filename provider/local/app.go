@@ -1,7 +1,23 @@
 package local
 
-import "github.com/convox/praxis/provider/types"
+import (
+	"fmt"
+
+	"github.com/convox/praxis/provider/types"
+)
 
 func (p *Provider) AppCreate(name string) (*types.App, error) {
-	return &types.App{Name: name}, nil
+	app := &types.App{
+		Name: name,
+	}
+
+	if err := p.Store(fmt.Sprintf("apps/%s", app.Name), app); err != nil {
+		return nil, err
+	}
+
+	return app, nil
+}
+
+func (p *Provider) AppDelete(app string) error {
+	return p.Delete(fmt.Sprintf("apps/%s", app))
 }

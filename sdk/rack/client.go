@@ -49,7 +49,7 @@ func (c *Client) Get(path string, out interface{}) error {
 	return unmarshalReader(r, out)
 }
 
-func (c *Client) PostStream(path string, body io.Reader) (io.Reader, error) {
+func (c *Client) PostStream(path string, body io.Reader) (io.ReadCloser, error) {
 	req, err := c.Request("POST", path, body)
 	if err != nil {
 		return nil, err
@@ -78,6 +78,20 @@ func (c *Client) Post(path string, params Params, out interface{}) error {
 	}
 
 	return unmarshalReader(r, out)
+}
+
+func (c *Client) Delete(path string, out interface{}) error {
+	req, err := c.Request("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.handleRequest(req)
+	if err != nil {
+		return err
+	}
+
+	return unmarshalReader(res.Body, out)
 }
 
 func (c *Client) Client() *http.Client {
@@ -133,7 +147,13 @@ func (c *Client) handleRequest(req *http.Request) (*http.Response, error) {
 	return res, nil
 }
 
-func unmarshalReader(r io.Reader, out interface{}) error {
+func unmarshalReader(r io.ReadCloser, out interface{}) error {
+	defer r.Close()
+
+	if out == nil {
+		return nil
+	}
+
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err
