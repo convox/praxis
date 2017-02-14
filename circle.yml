@@ -8,10 +8,11 @@ machine:
 
 dependencies:
   override:
-    - mkdir -p "$GOPATH/src/$PROJECT"
-    - rsync -azC --delete ./ "$GOPATH/src/$PROJECT"
+    - ln -sf $GOPATH/src/$PROJECT $(pwd)
+    # - mkdir -p "$GOPATH/src/$PROJECT"
+    # - rsync -azC --delete ./ "$GOPATH/src/$PROJECT"
 
 test:
   override:
-    - go get github.com/convox/praxis/cmd/cx
+    - go get ./cmd/cx
     - cx test
