@@ -1,13 +1,10 @@
 machine:
-  environment:
-    GOPATH: "/home/ubuntu/go"
-    PATH: "$GOPATH/bin:$PATH"
-    PROJECT: "github.com/convox/praxis"
   services:
     - docker
 
 dependencies:
   override:
+    - echo $GOPATH
     - ln -sf $GOPATH/src/$PROJECT $(pwd)
     # - mkdir -p "$GOPATH/src/$PROJECT"
     # - rsync -azC --delete ./ "$GOPATH/src/$PROJECT"
