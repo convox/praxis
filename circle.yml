@@ -13,5 +13,5 @@ dependencies:
 
 test:
   override:
-    - go get ./cmd/cx
+    - go get ${PROJECT}/cmd/cx
     - cx test
