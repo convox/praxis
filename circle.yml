@@ -4,8 +4,7 @@ machine:
 
 dependencies:
   override:
-    - echo $GOPATH
-    - ln -sf $GOPATH/src/$PROJECT $(pwd)
+    - ln -sf /home/ubuntu/.go_workspace/src/$PROJECT $(pwd)
     # - mkdir -p "$GOPATH/src/$PROJECT"
     # - rsync -azC --delete ./ "$GOPATH/src/$PROJECT"
 
