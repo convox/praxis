@@ -46,6 +46,29 @@ func (_m *MockProvider) AppDelete(name string) error {
 	return r0
 }
 
+// BuildCreate provides a mock function with given fields: app, url, opts
+func (_m *MockProvider) BuildCreate(app string, url string, opts types.BuildCreateOptions) (*types.Build, error) {
+	ret := _m.Called(app, url, opts)
+
+	var r0 *types.Build
+	if rf, ok := ret.Get(0).(func(string, string, types.BuildCreateOptions) *types.Build); ok {
+		r0 = rf(app, url, opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Build)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, types.BuildCreateOptions) error); ok {
+		r1 = rf(app, url, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ObjectStore provides a mock function with given fields: app, key, r, opts
 func (_m *MockProvider) ObjectStore(app string, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error) {
 	ret := _m.Called(app, key, r, opts)
@@ -62,6 +85,29 @@ func (_m *MockProvider) ObjectStore(app string, key string, r io.Reader, opts ty
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string, io.Reader, types.ObjectStoreOptions) error); ok {
 		r1 = rf(app, key, r, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ReleaseGet provides a mock function with given fields: app, id
+func (_m *MockProvider) ReleaseGet(app string, id string) (*types.Release, error) {
+	ret := _m.Called(app, id)
+
+	var r0 *types.Release
+	if rf, ok := ret.Get(0).(func(string, string) *types.Release); ok {
+		r0 = rf(app, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Release)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, id)
 	} else {
 		r1 = ret.Error(1)
 	}

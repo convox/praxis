@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"runtime"
 	"strings"
 
 	"github.com/convox/logger"
@@ -54,26 +53,23 @@ func (c *Context) Form(name string) string {
 }
 
 func (c *Context) LogError(err error) {
-	_, file, line, _ := runtime.Caller(1)
-	location := fmt.Sprintf("%s:%d", file, line)
-
 	log := c.logger.At("end")
 
 	switch t := err.(type) {
 	case Error:
 		switch t.Code / 100 {
 		case 4:
-			log.Logf("state=error type=user code=%d error=%q location=%q", t.Code, t.Error(), location)
+			log.Logf("state=error type=user code=%d error=%q", t.Code, t.Error())
 		case 5:
-			log.Logf("state=error type=server code=%d error=%q location=%q", t.Code, t.Error(), location)
+			log.Logf("state=error type=server code=%d error=%q", t.Code, t.Error())
 		default:
-			log.Logf("state=error type=unknown code=%d error=%q location=%q", t.Code, t.Error(), location)
+			log.Logf("state=error type=unknown code=%d error=%q", t.Code, t.Error())
 		}
 	case error:
-		log.Logf("state=error code=500 error=%q location=%q", t.Error(), location)
+		log.Logf("state=error code=500 error=%q", t.Error())
 	case nil:
 	default:
-		log.Logf("state=error code=500 error=%q location=%q", "unknown error type", location)
+		log.Logf("state=error code=500 error=%q", "unknown error type")
 	}
 }
 
@@ -100,8 +96,6 @@ func (c *Context) RenderJSON(v interface{}) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("string(data) = %+v\n", string(data))
 
 	if _, err := c.response.Write(data); err != nil {
 		return err

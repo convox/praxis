@@ -17,7 +17,7 @@ type Provider interface {
 	// AppGet(name string) (*structs.App, error)
 	AppDelete(name string) error
 
-	// BuildCreate(app, method, source string, opts structs.BuildOptions) (*structs.Build, error)
+	BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error)
 	// BuildDelete(app, id string) (*structs.Build, error)
 	// BuildExport(app, id string, w io.Writer) error
 	// BuildGet(app, id string) (*structs.Build, error)
@@ -70,7 +70,7 @@ type Provider interface {
 	// RegistryList() (structs.Registries, error)
 
 	// ReleaseDelete(app, buildID string) error
-	// ReleaseGet(app, id string) (*structs.Release, error)
+	ReleaseGet(app, id string) (*types.Release, error)
 	// ReleaseList(app string, limit int64) (structs.Releases, error)
 	// ReleasePromote(*structs.Release) error
 	// ReleaseSave(*structs.Release) error

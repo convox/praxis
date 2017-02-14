@@ -1,15 +1,17 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/sdk/rack"
-	"github.com/convox/praxis/server"
 	"github.com/convox/praxis/stdcli"
+	"github.com/docker/docker/builder/dockerignore"
+	"github.com/docker/docker/pkg/archive"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -22,19 +24,14 @@ func init() {
 }
 
 func runTest(c *cli.Context) error {
-	os.Remove("/tmp/test.sock")
-	go server.New().Listen("unix", "/tmp/test.sock")
-	time.Sleep(100 * time.Millisecond)
-	Rack.Socket = "/tmp/test.sock"
+	name := fmt.Sprintf("test-%d", time.Now().Unix())
 
-	app, err := Rack.AppCreate("test")
+	app, err := Rack.AppCreate(name)
 	if err != nil {
 		return err
 	}
 
-	defer Rack.AppDelete("test")
-
-	fmt.Printf("app = %+v\n", app)
+	defer Rack.AppDelete(name)
 
 	release, err := releaseDirectory(app.Name, ".")
 	if err != nil {
@@ -71,24 +68,52 @@ func runTest(c *cli.Context) error {
 	return nil
 }
 
-func releaseDirectory(app, dir string) (*rack.Release, error) {
-	context := bytes.NewReader([]byte{})
-
-	object, err := Rack.ObjectStore(app, "", context)
+func createTarball(base string) (io.ReadCloser, error) {
+	sym, err := filepath.EvalSymlinks(base)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("object = %+v\n", object)
+	abs, err := filepath.Abs(sym)
+	if err != nil {
+		return nil, err
+	}
+
+	includes := []string{"."}
+	excludes := []string{}
+
+	if fd, err := os.Open(filepath.Join(abs, ".dockerignore")); err == nil {
+		e, err := dockerignore.ReadAll(fd)
+		if err != nil {
+			return nil, err
+		}
+
+		excludes = e
+	}
+
+	options := &archive.TarOptions{
+		Compression:     archive.Gzip,
+		ExcludePatterns: excludes,
+		IncludeFiles:    includes,
+	}
+
+	return archive.TarWithOptions(sym, options)
+}
+func releaseDirectory(app, dir string) (*rack.Release, error) {
+	r, err := createTarball(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	object, err := Rack.ObjectStore(app, "", r)
+	if err != nil {
+		return nil, err
+	}
 
 	build, err := Rack.BuildCreate(app, fmt.Sprintf("object://%s", object.Key))
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("build = %+v\n", build)
-
-	return Rack.ReleaseCreate(app, rack.ReleaseCreateOptions{
-		Build: build.Id,
-	})
+	return Rack.ReleaseGet(app, build.Release)
 }

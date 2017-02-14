@@ -11,7 +11,7 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 		Name: name,
 	}
 
-	if err := p.Store(fmt.Sprintf("apps/%s", app.Name), app); err != nil {
+	if err := p.Store(fmt.Sprintf("apps/%s/app", app.Name), app); err != nil {
 		return nil, err
 	}
 
@@ -19,5 +19,5 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 }
 
 func (p *Provider) AppDelete(app string) error {
-	return p.Delete(fmt.Sprintf("apps/%s", app))
+	return p.DeleteAll(fmt.Sprintf("apps/%s", app))
 }

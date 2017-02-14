@@ -3,6 +3,7 @@ package local
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -41,6 +42,10 @@ func init() {
 }
 
 func (p *Provider) Delete(key string) error {
+	if p.Root == "" {
+		return fmt.Errorf("cannot delete with empty root")
+	}
+
 	path, err := filepath.Abs(filepath.Join(p.Root, key))
 	if err != nil {
 		return err
@@ -53,6 +58,14 @@ func (p *Provider) Delete(key string) error {
 	return os.Remove(path)
 }
 
+func (p *Provider) DeleteAll(key string) error {
+	if p.Root == "" {
+		return fmt.Errorf("cannot delete with empty root")
+	}
+
+	return os.RemoveAll(filepath.Join(p.Root, key))
+}
+
 func (p *Provider) Store(key string, v interface{}) error {
 	path, err := filepath.Abs(filepath.Join(p.Root, key))
 	if err != nil {
@@ -61,6 +74,19 @@ func (p *Provider) Store(key string, v interface{}) error {
 
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
+	}
+
+	if r, ok := v.(io.Reader); ok {
+		fd, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+		if err != nil {
+			return err
+		}
+
+		if _, err := io.Copy(fd, r); err != nil {
+			return err
+		}
+
+		return nil
 	}
 
 	data, err := json.Marshal(v)

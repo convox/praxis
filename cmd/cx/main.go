@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/convox/praxis/sdk/rack"
+	"github.com/convox/praxis/server"
 	"github.com/convox/praxis/stdcli"
 )
 
@@ -18,6 +20,11 @@ func init() {
 }
 
 func main() {
+	os.Remove("/tmp/test.sock")
+	go server.New().Listen("unix", "/tmp/test.sock")
+	time.Sleep(100 * time.Millisecond)
+	Rack.Socket = "/tmp/test.sock"
+
 	app := stdcli.New()
 
 	app.Name = "cx"
