@@ -1,7 +1,21 @@
 package local
 
-import "github.com/convox/praxis/provider/types"
+import (
+	"fmt"
+
+	"github.com/convox/praxis/provider/types"
+)
 
 func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error) {
-	return &types.Build{Id: "B1234", Release: "R1234"}, nil
+	id := types.Id("B", 10)
+
+	build := &types.Build{
+		Id: id,
+	}
+
+	if err := p.Store(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
+		return nil, err
+	}
+
+	return build, nil
 }

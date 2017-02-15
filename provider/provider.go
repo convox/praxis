@@ -45,10 +45,6 @@ type Provider interface {
 	// FormationGet(app, process string) (*structs.ProcessFormation, error)
 	// FormationSave(app string, pf *structs.ProcessFormation) error
 
-	// IndexDiff(*structs.Index) ([]string, error)
-	// IndexDownload(*structs.Index, string) error
-	// IndexUpload(string, []byte) error
-
 	// InstanceList() (structs.Instances, error)
 	// InstanceTerminate(id string) error
 
@@ -62,7 +58,7 @@ type Provider interface {
 
 	// ProcessExec(app, pid, command string, stream io.ReadWriter, opts structs.ProcessExecOptions) error
 	// ProcessList(app string) (structs.Processes, error)
-	// ProcessRun(app, process string, opts structs.ProcessRunOptions) (string, error)
+	ProcessRun(app, process string, opts types.ProcessRunOptions) (string, error)
 	// ProcessStop(app, pid string) error
 
 	// RegistryAdd(server, username, password string) (*structs.Registry, error)
@@ -75,18 +71,9 @@ type Provider interface {
 	// ReleasePromote(*structs.Release) error
 	// ReleaseSave(*structs.Release) error
 
-	// ResourceCreate(name, kind string, params map[string]string) (*structs.Resource, error)
-	// ResourceDelete(name string) (*structs.Resource, error)
-	// ResourceGet(name string) (*structs.Resource, error)
-	// ResourceLink(name, app, process string) (*structs.Resource, error)
-	// ResourceList() (structs.Resources, error)
-	// ResourceUnlink(name, app, process string) (*structs.Resource, error)
-	// ResourceUpdate(name string, params map[string]string) (*structs.Resource, error)
-
 	// SystemGet() (*structs.System, error)
 	// SystemLogs(w io.Writer, opts structs.LogStreamOptions) error
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
-	// SystemReleases() (structs.Releases, error)
 	// SystemSave(system structs.System) error
 }
 
