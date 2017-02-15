@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/convox/praxis/provider/local"
-	"github.com/convox/praxis/provider/types"
+	"github.com/convox/praxis/types"
 )
 
 type Provider interface {
