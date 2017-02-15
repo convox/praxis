@@ -18,7 +18,7 @@ func init() {
 func Id(prefix string, length int) string {
 	id := prefix
 
-	for i := 0; i < length-len(id); i++ {
+	for i := 0; i < length-len(prefix); i++ {
 		id += string(Alphabet[rand.Intn(len(Alphabet))])
 	}
 

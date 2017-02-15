@@ -3,5 +3,10 @@ package local
 import "github.com/convox/praxis/types"
 
 func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
-	return &types.Release{Id: "R1234", Build: "B1234"}, nil
+	release := &types.Release{
+		Id:  id,
+		App: app,
+	}
+
+	return release, nil
 }

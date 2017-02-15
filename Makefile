@@ -1,6 +1,9 @@
-.PHONY: all check ci coverage deps lint mocks test test-deps
+.PHONY: all build check ci coverage deps lint mocks test test-deps
 
-all: test
+all: build
+
+build:
+	docker build -t convox/praxis .
 
 check:
 	bin/check

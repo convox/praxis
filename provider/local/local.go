@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -95,4 +96,19 @@ func (p *Provider) Store(key string, v interface{}) error {
 	}
 
 	return ioutil.WriteFile(path, data, 0600)
+}
+
+func (p *Provider) Run(app, service, image, command string, args ...string) (int, error) {
+	a := []string{"run", "-i", image, command}
+	a = append(a, args...)
+
+	fmt.Printf("a = %+v\n", a)
+
+	cmd := exec.Command("docker", a...)
+
+	if err := cmd.Start(); err != nil {
+		return 0, err
+	}
+
+	return cmd.Process.Pid, nil
 }
