@@ -3,7 +3,7 @@ package local
 import (
 	"fmt"
 
-	"github.com/convox/praxis/provider/types"
+	"github.com/convox/praxis/types"
 )
 
 func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error) {
