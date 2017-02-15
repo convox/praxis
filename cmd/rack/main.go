@@ -8,12 +8,7 @@ import (
 )
 
 func main() {
-	// if err := server.New().Listen("tcp", ":9666"); err != nil {
-	//   fmt.Printf("err = %+v\n", err)
-	//   os.Exit(1)
-	// }
-
-	if err := server.New().Listen("unix", "/tmp/test.sock"); err != nil {
+	if err := server.New().Listen("tcp", ":3000"); err != nil {
 		fmt.Printf("err = %+v\n", err)
 		os.Exit(1)
 	}

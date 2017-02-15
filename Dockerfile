@@ -5,6 +5,6 @@ RUN apk add --update bash build-base curl git
 WORKDIR $GOPATH/src/github.com/convox/praxis
 COPY . .
 RUN go install ./cmd/cx
-RUN go install ./server
+RUN go install ./cmd/rack
 
-CMD ["server"]
+CMD ["rack"]

@@ -1,2 +1,4 @@
 rack:
   build: .
+  ports:
+    - 443:3000
