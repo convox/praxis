@@ -6,7 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/convox/praxis/provider/types"
+	"github.com/convox/praxis/types"
 )
 
 type Object types.Object

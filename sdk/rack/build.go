@@ -3,7 +3,7 @@ package rack
 import (
 	"fmt"
 
-	"github.com/convox/praxis/provider/types"
+	"github.com/convox/praxis/types"
 )
 
 type Build types.Build

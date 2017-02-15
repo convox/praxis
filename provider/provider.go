@@ -58,7 +58,7 @@ type Provider interface {
 
 	// ProcessExec(app, pid, command string, stream io.ReadWriter, opts structs.ProcessExecOptions) error
 	// ProcessList(app string) (structs.Processes, error)
-	ProcessRun(app, process string, opts types.ProcessRunOptions) (string, error)
+	ProcessRun(app, process string, opts types.ProcessRunOptions) (*types.Process, error)
 	// ProcessStop(app, pid string) error
 
 	// RegistryAdd(server, username, password string) (*structs.Registry, error)

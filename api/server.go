@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/convox/logger"
-	"github.com/convox/praxis/provider/types"
+	"github.com/convox/praxis/types"
 	"github.com/gorilla/mux"
 )
 

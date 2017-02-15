@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/convox/praxis/provider/types"
+	"github.com/convox/praxis/types"
 )
 
 func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error) {

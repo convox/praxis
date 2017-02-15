@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/convox/praxis/api"
-	"github.com/convox/praxis/provider/types"
+	"github.com/convox/praxis/types"
 )
 
 func BuildCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
