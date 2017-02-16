@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/convox/logger"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 var (
@@ -30,12 +29,7 @@ type Provider struct {
 
 // NewProviderFromEnv returns a new AWS provider from env vars
 func FromEnv() *Provider {
-	home, err := homedir.Expand("~/.convox/local")
-	if err != nil {
-		panic(err)
-	}
-
-	return &Provider{Root: home}
+	return &Provider{Root: "/var/convox"}
 }
 
 func init() {
@@ -65,6 +59,46 @@ func (p *Provider) DeleteAll(key string) error {
 	}
 
 	return os.RemoveAll(filepath.Join(p.Root, key))
+}
+
+func (p *Provider) Exists(key string) bool {
+	path, err := filepath.Abs(filepath.Join(p.Root, key))
+	if err != nil {
+		return false
+	}
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	}
+
+	return true
+}
+
+func (p *Provider) Read(key string) (io.ReadCloser, error) {
+	path, err := filepath.Abs(filepath.Join(p.Root, key))
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil, fmt.Errorf("no such key: %s", key)
+	}
+
+	return os.Open(path)
+}
+
+func (p *Provider) Load(key string, v interface{}) error {
+	r, err := p.Read(key)
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(data, v)
 }
 
 func (p *Provider) Store(key string, v interface{}) error {
@@ -98,17 +132,36 @@ func (p *Provider) Store(key string, v interface{}) error {
 	return ioutil.WriteFile(path, data, 0600)
 }
 
-func (p *Provider) Run(app, service, image, command string, args ...string) (int, error) {
-	a := []string{"run", "-i", image, command}
+func (p *Provider) Run(app, service, image, command string, args ...string) (string, error) {
+	a := []string{"run", "--detach", "-i", image, command}
 	a = append(a, args...)
-
-	fmt.Printf("a = %+v\n", a)
 
 	cmd := exec.Command("docker", a...)
 
-	if err := cmd.Start(); err != nil {
-		return 0, err
+	data, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
 	}
 
-	return cmd.Process.Pid, nil
+	return string(data)[0:10], nil
+}
+
+func (p *Provider) Logs(pid string) (io.Reader, error) {
+	r, w := io.Pipe()
+
+	cmd := exec.Command("docker", "logs", "--follow", pid)
+
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+
+	go func() {
+		cmd.Wait()
+		w.Close()
+	}()
+
+	return r, nil
 }

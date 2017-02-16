@@ -10,6 +10,7 @@ import (
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
+	"github.com/convox/praxis/types"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/archive"
 	cli "gopkg.in/urfave/cli.v1"
@@ -31,37 +32,32 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	defer Rack.AppDelete(name)
+	// defer Rack.AppDelete(name)
 
-	release, err := releaseDirectory(app.Name, ".")
+	release, err := buildDirectory(app.Name, ".")
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("release = %+v\n", release)
-
-	data, err := Rack.ReleaseManifest(app.Name, release.Id)
+	build, err := Rack.BuildGet(app.Name, release.Build)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("len(data) = %+v\n", len(data))
-
-	m, err := manifest.Load(data)
+	m, err := manifest.Load([]byte(build.Manifest))
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("m = %+v\n", m)
 
 	for _, s := range m.Services {
 		if s.Test != "" {
-			_, err := Rack.ProcessRun(app.Name, s.Name, rack.ProcessRunOptions{
+			ps, err := Rack.ProcessRun(app.Name, s.Name, rack.ProcessRunOptions{
 				Output: os.Stdout,
 			})
 			if err != nil {
 				return err
 			}
+			fmt.Printf("ps = %+v\n", ps)
 		}
 	}
 
@@ -99,7 +95,8 @@ func createTarball(base string) (io.ReadCloser, error) {
 
 	return archive.TarWithOptions(sym, options)
 }
-func releaseDirectory(app, dir string) (*rack.Release, error) {
+
+func buildDirectory(app, dir string) (*types.Release, error) {
 	r, err := createTarball(dir)
 	if err != nil {
 		return nil, err
@@ -110,7 +107,32 @@ func releaseDirectory(app, dir string) (*rack.Release, error) {
 		return nil, err
 	}
 
-	build, err := Rack.BuildCreate(app, fmt.Sprintf("object://%s", object.Key))
+	build, err := Rack.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key))
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		build, err := Rack.BuildGet(app, build.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Printf("build = %+v\n", build)
+
+		break
+	}
+
+	logs, err := Rack.BuildLogs(app, build.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := io.Copy(os.Stdout, logs); err != nil {
+		return nil, err
+	}
+
+	build, err = Rack.BuildGet(app, build.Id)
 	if err != nil {
 		return nil, err
 	}

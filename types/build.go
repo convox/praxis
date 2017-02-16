@@ -6,6 +6,7 @@ type Build struct {
 	Id       string `json:"id"`
 	App      string `json:"app"`
 	Manifest string `json:"manifest"`
+	Process  string `json:"process"`
 	Release  string `json:"release"`
 	Status   string `json:"status"`
 
@@ -16,4 +17,10 @@ type Build struct {
 type BuildCreateOptions struct {
 	Cache    bool
 	Manifest string
+}
+
+type BuildUpdateOptions struct {
+	Manifest string
+	Release  string
+	Status   string
 }

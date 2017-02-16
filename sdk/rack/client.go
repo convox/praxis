@@ -80,6 +80,37 @@ func (c *Client) Post(path string, params Params, out interface{}) error {
 	return unmarshalReader(r, out)
 }
 
+func (c *Client) PutStream(path string, body io.Reader) (io.ReadCloser, error) {
+	req, err := c.Request("PUT", path, body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err := c.handleRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body, nil
+}
+
+func (c *Client) Put(path string, params Params, out interface{}) error {
+	uv := url.Values{}
+
+	for k, v := range params {
+		uv.Set(k, v)
+	}
+
+	r, err := c.PutStream(path, bytes.NewReader([]byte(uv.Encode())))
+	if err != nil {
+		return err
+	}
+
+	return unmarshalReader(r, out)
+}
+
 func (c *Client) Delete(path string, out interface{}) error {
 	req, err := c.Request("DELETE", path, nil)
 	if err != nil {
@@ -109,7 +140,6 @@ func (c *Client) Client() *http.Client {
 	}
 
 	if err := http2.ConfigureTransport(t); err != nil {
-		fmt.Printf("err = %+v\n", err)
 		panic(err)
 	}
 

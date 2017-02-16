@@ -9,9 +9,11 @@ import (
 	"github.com/convox/praxis/types"
 )
 
-type Object types.Object
+func (c *Client) ObjectFetch(app string, key string) (io.Reader, error) {
+	return c.GetStream(fmt.Sprintf("/apps/%s/objects/%s", app, key))
+}
 
-func (c *Client) ObjectStore(app string, key string, r io.Reader) (*Object, error) {
+func (c *Client) ObjectStore(app string, key string, r io.Reader) (*types.Object, error) {
 	r, err := c.PostStream(fmt.Sprintf("/apps/%s/objects/%s", app, key), r)
 	if err != nil {
 		return nil, err
@@ -22,7 +24,7 @@ func (c *Client) ObjectStore(app string, key string, r io.Reader) (*Object, erro
 		return nil, err
 	}
 
-	var o Object
+	var o types.Object
 
 	if err := json.Unmarshal(data, &o); err != nil {
 		return nil, err

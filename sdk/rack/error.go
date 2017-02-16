@@ -1,9 +1,7 @@
 package rack
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -20,19 +18,5 @@ func responseError(res *http.Response) error {
 		return nil
 	}
 
-	data, err := ioutil.ReadAll(res.Body)
-
-	if err != nil {
-		return fmt.Errorf("error reading response body: %s", err)
-	}
-
-	var e Error
-
-	err = json.Unmarshal(data, &e)
-
-	if err != nil {
-		return fmt.Errorf("response status: %d %s", res.StatusCode, data)
-	}
-
-	return fmt.Errorf(e.Error)
+	return fmt.Errorf("response status %d", res.StatusCode)
 }

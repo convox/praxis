@@ -19,6 +19,9 @@ deps:
 	go get -d ./...
 	godep save ./...
 
+dev: build
+	docker run -it --name=rack -p 5443:3000 -v ~/.convox/local:/var/convox -v /var/run/docker.sock:/var/run/docker.sock --rm convox/praxis
+
 lint:
 	golint -set_exit_status ./...
 

@@ -69,6 +69,98 @@ func (_m *MockProvider) BuildCreate(app string, url string, opts types.BuildCrea
 	return r0, r1
 }
 
+// BuildGet provides a mock function with given fields: app, id
+func (_m *MockProvider) BuildGet(app string, id string) (*types.Build, error) {
+	ret := _m.Called(app, id)
+
+	var r0 *types.Build
+	if rf, ok := ret.Get(0).(func(string, string) *types.Build); ok {
+		r0 = rf(app, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Build)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// BuildLogs provides a mock function with given fields: app, id
+func (_m *MockProvider) BuildLogs(app string, id string) (io.Reader, error) {
+	ret := _m.Called(app, id)
+
+	var r0 io.Reader
+	if rf, ok := ret.Get(0).(func(string, string) io.Reader); ok {
+		r0 = rf(app, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.Reader)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// BuildUpdate provides a mock function with given fields: app, id, opts
+func (_m *MockProvider) BuildUpdate(app string, id string, opts types.BuildUpdateOptions) (*types.Build, error) {
+	ret := _m.Called(app, id, opts)
+
+	var r0 *types.Build
+	if rf, ok := ret.Get(0).(func(string, string, types.BuildUpdateOptions) *types.Build); ok {
+		r0 = rf(app, id, opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Build)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, types.BuildUpdateOptions) error); ok {
+		r1 = rf(app, id, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ObjectFetch provides a mock function with given fields: app, key
+func (_m *MockProvider) ObjectFetch(app string, key string) (io.ReadCloser, error) {
+	ret := _m.Called(app, key)
+
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(string, string) io.ReadCloser); ok {
+		r0 = rf(app, key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadCloser)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, key)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ObjectStore provides a mock function with given fields: app, key, r, opts
 func (_m *MockProvider) ObjectStore(app string, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error) {
 	ret := _m.Called(app, key, r, opts)
@@ -108,6 +200,29 @@ func (_m *MockProvider) ProcessRun(app string, process string, opts types.Proces
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string, types.ProcessRunOptions) error); ok {
 		r1 = rf(app, process, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ReleaseCreate provides a mock function with given fields: app, opts
+func (_m *MockProvider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error) {
+	ret := _m.Called(app, opts)
+
+	var r0 *types.Release
+	if rf, ok := ret.Get(0).(func(string, types.ReleaseCreateOptions) *types.Release); ok {
+		r0 = rf(app, opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Release)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, types.ReleaseCreateOptions) error); ok {
+		r1 = rf(app, opts)
 	} else {
 		r1 = ret.Error(1)
 	}

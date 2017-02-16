@@ -11,20 +11,19 @@ import (
 )
 
 type BuildOptions struct {
-	DockerHost string
-	Root       string
-	Stdout     io.Writer
-	Stderr     io.Writer
+	Root   string
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
-func (m *Manifest) Build(ns string, opts BuildOptions) error {
+func (m *Manifest) Build(app string, opts BuildOptions) error {
 	builds := map[string]Service{}
 	tags := map[string]string{}
 
 	for _, s := range m.Services {
 		hash := s.BuildHash()
 		builds[hash] = s
-		tags[hash] = fmt.Sprintf("%s/%s", ns, s.Name)
+		tags[hash] = fmt.Sprintf("%s/%s", app, s.Name)
 	}
 
 	for hash, service := range builds {

@@ -82,7 +82,7 @@ func (s *Server) context(name string, w http.ResponseWriter, r *http.Request) (*
 	}
 
 	return &Context{
-		logger:   s.logger.Namespace("route=%s id=%s", name, id),
+		logger:   s.logger.Namespace("id=%s route=%s", id, name),
 		request:  r,
 		response: w,
 	}, nil

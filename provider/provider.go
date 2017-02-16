@@ -20,12 +20,12 @@ type Provider interface {
 	BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error)
 	// BuildDelete(app, id string) (*structs.Build, error)
 	// BuildExport(app, id string, w io.Writer) error
-	// BuildGet(app, id string) (*structs.Build, error)
+	BuildGet(app, id string) (*types.Build, error)
 	// BuildImport(app string, r io.Reader) (*structs.Build, error)
-	// BuildLogs(app, id string, w io.Writer) error
+	BuildLogs(app, id string) (io.Reader, error)
 	// BuildList(app string, limit int64) (structs.Builds, error)
 	// BuildRelease(*structs.Build) (*structs.Release, error)
-	// BuildSave(*structs.Build) error
+	BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*types.Build, error)
 
 	// CapacityGet() (*structs.Capacity, error)
 
@@ -52,7 +52,7 @@ type Provider interface {
 
 	// ObjectDelete(key string) error
 	// ObjectExists(key string) bool
-	// ObjectFetch(key string) (io.ReadCloser, error)
+	ObjectFetch(app, key string) (io.ReadCloser, error)
 	// ObjectList(prefix string) ([]string, error)
 	ObjectStore(app, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error)
 
@@ -65,6 +65,7 @@ type Provider interface {
 	// RegistryDelete(server string) error
 	// RegistryList() (structs.Registries, error)
 
+	ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error)
 	// ReleaseDelete(app, buildID string) error
 	ReleaseGet(app, id string) (*types.Release, error)
 	// ReleaseList(app string, limit int64) (structs.Releases, error)

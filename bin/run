@@ -1,0 +1,11 @@
+#!/bin/bash
+
+program=$1
+
+[ -n "$program" ] || (echo "usage: bin/run <program"; exit 1)
+
+if [ "$DEVELOPMENT" == "true" ]; then
+  $GOPATH/bin/rerun -watch $GOPATH/src/github.com/convox/praxis -build github.com/convox/praxis/cmd/$program
+else
+  exec $GOPATH/bin/$program
+fi
