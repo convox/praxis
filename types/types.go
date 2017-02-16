@@ -26,7 +26,7 @@ func Id(prefix string, length int) string {
 }
 
 func Key(length int) (string, error) {
-	data := make([]byte, 128)
+	data := make([]byte, 1024)
 
 	if _, err := rand.Read(data); err != nil {
 		return "", err

@@ -10,11 +10,15 @@ import (
 )
 
 func (c *Client) ObjectFetch(app string, key string) (io.Reader, error) {
-	return c.GetStream(fmt.Sprintf("/apps/%s/objects/%s", app, key))
+	return c.GetStream(fmt.Sprintf("/apps/%s/objects/%s", app, key), RequestOptions{})
 }
 
 func (c *Client) ObjectStore(app string, key string, r io.Reader) (*types.Object, error) {
-	r, err := c.PostStream(fmt.Sprintf("/apps/%s/objects/%s", app, key), r)
+	ro := RequestOptions{
+		Body: r,
+	}
+
+	r, err := c.PostStream(fmt.Sprintf("/apps/%s/objects/%s", app, key), ro)
 	if err != nil {
 		return nil, err
 	}
