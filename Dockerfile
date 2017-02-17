@@ -6,6 +6,7 @@ RUN go get github.com/convox/rerun
 
 WORKDIR $GOPATH/src/github.com/convox/praxis
 COPY . .
+RUN go get -t ./...
 RUN go install ./cmd/...
 
 CMD ["rack"]

@@ -184,27 +184,18 @@ func (_m *MockProvider) ObjectStore(app string, key string, r io.Reader, opts ty
 	return r0, r1
 }
 
-// ProcessRun provides a mock function with given fields: app, process, opts
-func (_m *MockProvider) ProcessRun(app string, process string, opts types.ProcessRunOptions) (*types.Process, error) {
-	ret := _m.Called(app, process, opts)
+// ProcessRun provides a mock function with given fields: app, opts
+func (_m *MockProvider) ProcessRun(app string, opts types.ProcessRunOptions) error {
+	ret := _m.Called(app, opts)
 
-	var r0 *types.Process
-	if rf, ok := ret.Get(0).(func(string, string, types.ProcessRunOptions) *types.Process); ok {
-		r0 = rf(app, process, opts)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, types.ProcessRunOptions) error); ok {
+		r0 = rf(app, opts)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.Process)
-		}
+		r0 = ret.Error(0)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, types.ProcessRunOptions) error); ok {
-		r1 = rf(app, process, opts)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // ReleaseCreate provides a mock function with given fields: app, opts

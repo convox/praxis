@@ -20,6 +20,10 @@ func (c *Context) Form(name string) string {
 	return c.request.FormValue(name)
 }
 
+func (c *Context) Header(name string) string {
+	return c.request.Header.Get(name)
+}
+
 func (c *Context) LogError(err error) {
 	log := c.logger.At("end")
 

@@ -4,7 +4,7 @@ balancers:
 services:
   rack:
     build: .
-    test: make ci
+    test: make check test
 workflows:
   change:
     create:

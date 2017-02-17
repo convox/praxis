@@ -3,11 +3,10 @@ package manifest
 import (
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/kr/text"
 )
 
 type BuildOptions struct {
@@ -97,8 +96,10 @@ func (o BuildOptions) docker(args ...string) error {
 
 	cmd := exec.Command("docker", args...)
 
-	cmd.Stdout = text.NewIndentWriter(o.Stdout, []byte("  "))
-	cmd.Stderr = text.NewIndentWriter(o.Stderr, []byte("  "))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	// cmd.Stdout = text.NewIndentWriter(o.Stdout, []byte("  "))
+	// cmd.Stderr = text.NewIndentWriter(o.Stderr, []byte("  "))
 
 	return cmd.Run()
 }

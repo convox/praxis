@@ -28,5 +28,6 @@ type ProcessRunOptions struct {
 	Height  int
 	Width   int
 	Release string
+	Service string
 	Stream  io.ReadWriter
 }

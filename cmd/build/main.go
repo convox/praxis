@@ -59,10 +59,10 @@ func main() {
 		flagManifest = v
 	}
 
-	fmt.Printf("flagApp = %+v\n", flagApp)
-	fmt.Printf("flagId = %+v\n", flagId)
-	fmt.Printf("flagManifest = %+v\n", flagManifest)
-	fmt.Printf("flagUrl = %+v\n", flagUrl)
+	// fmt.Printf("flagApp = %+v\n", flagApp)
+	// fmt.Printf("flagId = %+v\n", flagId)
+	// fmt.Printf("flagManifest = %+v\n", flagManifest)
+	// fmt.Printf("flagUrl = %+v\n", flagUrl)
 
 	if err := build(); err != nil {
 		fail(err)

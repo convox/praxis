@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/convox/praxis/manifest"
-	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
 	"github.com/docker/docker/builder/dockerignore"
@@ -51,13 +50,23 @@ func runTest(c *cli.Context) error {
 
 	for _, s := range m.Services {
 		if s.Test != "" {
-			ps, err := Rack.ProcessRun(app.Name, s.Name, rack.ProcessRunOptions{
-				Output: os.Stdout,
+			w := m.PrefixWriter(os.Stdout, s.Name)
+
+			if _, err := w.Write([]byte(fmt.Sprintf("running: %s\n", s.Test))); err != nil {
+				return err
+			}
+
+			err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+				Command: s.Test,
+				Service: s.Name,
+				Stream: types.Stream{
+					Reader: nil,
+					Writer: w,
+				},
 			})
 			if err != nil {
 				return err
 			}
-			fmt.Printf("ps = %+v\n", ps)
 		}
 	}
 
@@ -112,23 +121,28 @@ func buildDirectory(app, dir string) (*types.Release, error) {
 		return nil, err
 	}
 
-	for {
-		build, err := Rack.BuildGet(app, build.Id)
-		if err != nil {
-			return nil, err
-		}
-
-		fmt.Printf("build = %+v\n", build)
-
-		break
+	m, err := manifest.Load([]byte(build.Manifest))
+	if err != nil {
+		return nil, err
 	}
+
+	// for {
+	//   build, err := Rack.BuildGet(app, build.Id)
+	//   if err != nil {
+	//     return nil, err
+	//   }
+
+	//   fmt.Printf("build = %+v\n", build)
+
+	//   break
+	// }
 
 	logs, err := Rack.BuildLogs(app, build.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := io.Copy(os.Stdout, logs); err != nil {
+	if _, err := io.Copy(types.Stream{Writer: m.PrefixWriter(os.Stdout, "build")}, logs); err != nil {
 		return nil, err
 	}
 

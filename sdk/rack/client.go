@@ -206,6 +206,18 @@ func (c *Client) handleRequest(req *http.Request) (*http.Response, error) {
 	return res, nil
 }
 
+func responseError(res *http.Response) error {
+	if !res.ProtoAtLeast(2, 0) {
+		return fmt.Errorf("server did not respond with http/2")
+	}
+
+	if res.StatusCode < 400 {
+		return nil
+	}
+
+	return fmt.Errorf("response status %d", res.StatusCode)
+}
+
 func unmarshalReader(r io.ReadCloser, out interface{}) error {
 	defer r.Close()
 

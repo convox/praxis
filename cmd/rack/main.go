@@ -9,7 +9,7 @@ import (
 
 func main() {
 	if err := server.New().Listen("tcp", ":3000"); err != nil {
-		fmt.Printf("err = %+v\n", err)
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
 		os.Exit(1)
 	}
 }

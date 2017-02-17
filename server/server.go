@@ -20,11 +20,13 @@ func New() *Server {
 	api.Route("build.logs", "GET", "/apps/{app}/builds/{id}/logs", controllers.BuildLogs)
 	api.Route("build.update", "PUT", "/apps/{app}/builds/{id}", controllers.BuildUpdate)
 
-	api.Route("release.create", "POST", "/apps/{app}/releases", controllers.ReleaseCreate)
-	api.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
-
 	api.Route("object.fetch", "GET", "/apps/{app}/objects/{key:.*}", controllers.ObjectFetch)
 	api.Route("object.store", "POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)
+
+	api.Route("process.run", "POST", "/apps/{app}/processes", controllers.ProcessRun)
+
+	api.Route("release.create", "POST", "/apps/{app}/releases", controllers.ReleaseCreate)
+	api.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
 
 	return &Server{Server: api}
 }

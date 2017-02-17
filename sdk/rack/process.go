@@ -1,17 +1,38 @@
 package rack
 
-import "io"
+import (
+	"fmt"
+	"io"
+	"strconv"
 
-type Process struct {
-	Id string
-}
+	"github.com/convox/praxis/types"
+)
 
-type ProcessRunOptions struct {
-	Command string
-	Input   io.Reader
-	Output  io.Writer
-}
+func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) error {
+	ro := RequestOptions{
+		Body: opts.Stream,
+		Headers: Headers{
+			"Command": opts.Command,
+			"Service": opts.Service,
+		},
+	}
 
-func (c *Client) ProcessRun(app, service string, opts ProcessRunOptions) (*Process, error) {
-	return &Process{Id: "1234"}, nil
+	if opts.Height > 0 {
+		ro.Headers["Height"] = strconv.Itoa(opts.Height)
+	}
+
+	if opts.Width > 0 {
+		ro.Headers["Width"] = strconv.Itoa(opts.Width)
+	}
+
+	r, err := c.PostStream(fmt.Sprintf("/apps/%s/processes", app), ro)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(opts.Stream, r); err != nil {
+		return err
+	}
+
+	return nil
 }
