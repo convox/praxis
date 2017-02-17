@@ -9,8 +9,13 @@ import (
 	"github.com/convox/praxis/types"
 )
 
-func (c *Client) ObjectFetch(app string, key string) (io.Reader, error) {
-	return c.GetStream(fmt.Sprintf("/apps/%s/objects/%s", app, key), RequestOptions{})
+func (c *Client) ObjectFetch(app string, key string) (io.ReadCloser, error) {
+	res, err := c.GetStream(fmt.Sprintf("/apps/%s/objects/%s", app, key), RequestOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body, nil
 }
 
 func (c *Client) ObjectStore(app string, key string, r io.Reader) (*types.Object, error) {
@@ -18,12 +23,14 @@ func (c *Client) ObjectStore(app string, key string, r io.Reader) (*types.Object
 		Body: r,
 	}
 
-	r, err := c.PostStream(fmt.Sprintf("/apps/%s/objects/%s", app, key), ro)
+	res, err := c.PostStream(fmt.Sprintf("/apps/%s/objects/%s", app, key), ro)
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := ioutil.ReadAll(r)
+	defer res.Body.Close()
+
+	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}

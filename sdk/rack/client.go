@@ -59,30 +59,27 @@ func (o *RequestOptions) ContentType() string {
 	return "application/octet-stream"
 }
 
-func (c *Client) GetStream(path string, opts RequestOptions) (io.ReadCloser, error) {
+func (c *Client) GetStream(path string, opts RequestOptions) (*http.Response, error) {
 	req, err := c.Request("GET", path, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := c.handleRequest(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return res.Body, nil
+	return c.handleRequest(req)
 }
 
 func (c *Client) Get(path string, opts RequestOptions, out interface{}) error {
-	r, err := c.GetStream(path, opts)
+	res, err := c.GetStream(path, opts)
 	if err != nil {
 		return err
 	}
 
-	return unmarshalReader(r, out)
+	defer res.Body.Close()
+
+	return unmarshalReader(res.Body, out)
 }
 
-func (c *Client) PostStream(path string, opts RequestOptions) (io.ReadCloser, error) {
+func (c *Client) PostStream(path string, opts RequestOptions) (*http.Response, error) {
 	req, err := c.Request("POST", path, opts)
 	if err != nil {
 		return nil, err
@@ -93,30 +90,27 @@ func (c *Client) PostStream(path string, opts RequestOptions) (io.ReadCloser, er
 		return nil, err
 	}
 
-	return res.Body, nil
+	return res, nil
 }
 
 func (c *Client) Post(path string, opts RequestOptions, out interface{}) error {
-	r, err := c.PostStream(path, opts)
+	res, err := c.PostStream(path, opts)
 	if err != nil {
 		return err
 	}
 
-	return unmarshalReader(r, out)
+	defer res.Body.Close()
+
+	return unmarshalReader(res.Body, out)
 }
 
-func (c *Client) PutStream(path string, opts RequestOptions) (io.ReadCloser, error) {
+func (c *Client) PutStream(path string, opts RequestOptions) (*http.Response, error) {
 	req, err := c.Request("PUT", path, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := c.handleRequest(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return res.Body, nil
+	return c.handleRequest(req)
 }
 
 func (c *Client) Put(path string, opts RequestOptions, out interface{}) error {
@@ -126,12 +120,14 @@ func (c *Client) Put(path string, opts RequestOptions, out interface{}) error {
 		uv.Set(k, v)
 	}
 
-	r, err := c.PutStream(path, opts)
+	res, err := c.PutStream(path, opts)
 	if err != nil {
 		return err
 	}
 
-	return unmarshalReader(r, out)
+	defer res.Body.Close()
+
+	return unmarshalReader(res.Body, out)
 }
 
 func (c *Client) Delete(path string, opts RequestOptions, out interface{}) error {

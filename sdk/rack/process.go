@@ -25,12 +25,14 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) error {
 		ro.Headers["Width"] = strconv.Itoa(opts.Width)
 	}
 
-	r, err := c.PostStream(fmt.Sprintf("/apps/%s/processes", app), ro)
+	res, err := c.PostStream(fmt.Sprintf("/apps/%s/processes", app), ro)
 	if err != nil {
 		return err
 	}
 
-	if _, err := io.Copy(opts.Stream, r); err != nil {
+	defer res.Body.Close()
+
+	if _, err := io.Copy(opts.Stream, res.Body); err != nil {
 		return err
 	}
 

@@ -42,11 +42,13 @@ func ProcessRun(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		opts.Width = w
 	}
 
-	w.WriteHeader(200)
+	w.Header().Add("Trailer", "Exit-Code")
 
 	if err := Provider.ProcessRun(app, opts); err != nil {
 		return err
 	}
+
+	w.Header().Set("Exit-Code", "2")
 
 	return nil
 }

@@ -23,8 +23,13 @@ func (c *Client) BuildGet(app, id string) (build *types.Build, err error) {
 	return
 }
 
-func (c *Client) BuildLogs(app, id string) (io.Reader, error) {
-	return c.GetStream(fmt.Sprintf("/apps/%s/builds/%s/logs", app, id), RequestOptions{})
+func (c *Client) BuildLogs(app, id string) (io.ReadCloser, error) {
+	res, err := c.GetStream(fmt.Sprintf("/apps/%s/builds/%s/logs", app, id), RequestOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body, nil
 }
 
 func (c *Client) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (build *types.Build, err error) {
