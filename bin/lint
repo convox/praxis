@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+cd $(dirname $(dirname $0))
+
+[ -n "$TEST" ] && (go test -coverprofile=coverage.txt -covermode=atomic $TEST; exit)
+
+find . -name '*.go' -exec dirname {} \; | grep -v '^\./vendor/' | sort -u | while read dir; do
+  golint -set_exit_status $dir
+done
