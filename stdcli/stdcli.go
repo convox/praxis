@@ -169,8 +169,9 @@ func IsTerminal(f *os.File) bool {
 	return (stat.Mode() & os.ModeCharDevice) != 0
 }
 
-func Usage(c *cli.Context, name string) {
-	cli.ShowCommandHelp(c, name)
+func Usage(c *cli.Context) error {
+	cli.ShowCommandHelp(c, c.Command.Name)
+	return nil
 }
 
 func runExecCommand(bin string, args ...string) error {

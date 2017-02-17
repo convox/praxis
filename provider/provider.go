@@ -12,10 +12,10 @@ type Provider interface {
 	// Initialize(opts structs.ProviderOptions) error
 
 	// AppCancel(name string) error
-
 	AppCreate(name string) (*types.App, error)
-	// AppGet(name string) (*structs.App, error)
 	AppDelete(name string) error
+	AppGet(name string) (*types.App, error)
+	AppList() (types.Apps, error)
 
 	BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error)
 	// BuildDelete(app, id string) (*structs.Build, error)

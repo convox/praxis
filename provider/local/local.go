@@ -87,6 +87,20 @@ func (p *Provider) Read(key string) (io.ReadCloser, error) {
 	return os.Open(path)
 }
 
+func (p *Provider) List(key string) ([]string, error) {
+	path, err := filepath.Abs(filepath.Join(p.Root, key))
+	if err != nil {
+		return nil, err
+	}
+
+	fd, err := os.Open(path)
+	if err != nil {
+		return []string{}, nil
+	}
+
+	return fd.Readdirnames(-1)
+}
+
 func (p *Provider) Load(key string, v interface{}) error {
 	r, err := p.Read(key)
 	if err != nil {

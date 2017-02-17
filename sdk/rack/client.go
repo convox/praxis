@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"golang.org/x/net/http2"
@@ -213,6 +214,17 @@ func responseError(res *http.Response) error {
 
 	if res.StatusCode < 400 {
 		return nil
+	}
+
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	msg := strings.TrimSpace(string(data))
+
+	if len(msg) > 0 {
+		return fmt.Errorf(msg)
 	}
 
 	return fmt.Errorf("response status %d", res.StatusCode)

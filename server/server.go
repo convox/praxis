@@ -14,6 +14,7 @@ func New() *Server {
 
 	api.Route("app.create", "POST", "/apps", controllers.AppCreate)
 	api.Route("app.delete", "DELETE", "/apps/{app}", controllers.AppDelete)
+	api.Route("app.list", "GET", "/apps", controllers.AppList)
 
 	api.Route("build.create", "POST", "/apps/{app}/builds", controllers.BuildCreate)
 	api.Route("build.get", "GET", "/apps/{app}/builds/{id}", controllers.BuildGet)

@@ -10,6 +10,11 @@ import (
 )
 
 func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error) {
+	_, err := p.AppGet(app)
+	if err != nil {
+		return nil, err
+	}
+
 	bid := types.Id("B", 10)
 
 	args := []string{"run"}

@@ -46,6 +46,52 @@ func (_m *MockProvider) AppDelete(name string) error {
 	return r0
 }
 
+// AppGet provides a mock function with given fields: name
+func (_m *MockProvider) AppGet(name string) (*types.App, error) {
+	ret := _m.Called(name)
+
+	var r0 *types.App
+	if rf, ok := ret.Get(0).(func(string) *types.App); ok {
+		r0 = rf(name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.App)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// AppList provides a mock function with given fields:
+func (_m *MockProvider) AppList() (types.Apps, error) {
+	ret := _m.Called()
+
+	var r0 types.Apps
+	if rf, ok := ret.Get(0).(func() types.Apps); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Apps)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // BuildCreate provides a mock function with given fields: app, url, opts
 func (_m *MockProvider) BuildCreate(app string, url string, opts types.BuildCreateOptions) (*types.Build, error) {
 	ret := _m.Called(app, url, opts)

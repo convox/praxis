@@ -89,7 +89,7 @@ func build() error {
 		return err
 	}
 
-	fmt.Println("loading source")
+	fmt.Println("preparing source")
 
 	r, err := Rack.ObjectFetch(flagApp, u.Path)
 	if err != nil {
@@ -99,8 +99,6 @@ func build() error {
 	if err := archive.Untar(r, tmp, &archive.TarOptions{Compression: archive.Gzip}); err != nil {
 		return err
 	}
-
-	fmt.Println("loading manifest")
 
 	mf := filepath.Join(tmp, flagManifest)
 
@@ -140,6 +138,8 @@ func release() error {
 	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Release: release.Id}); err != nil {
 		return err
 	}
+
+	fmt.Printf("release: %s\n", release.Id)
 
 	return nil
 }

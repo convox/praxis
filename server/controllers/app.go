@@ -28,3 +28,12 @@ func AppDelete(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	return nil
 }
+
+func AppList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	apps, err := Provider.AppList()
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(apps)
+}

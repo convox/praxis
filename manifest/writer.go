@@ -3,6 +3,7 @@ package manifest
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/kr/text"
 )
@@ -23,6 +24,25 @@ func (m *Manifest) PrefixWriter(w io.Writer, label string) PrefixWriter {
 	}
 }
 
+func (m *Manifest) Write(p []byte) (int, error) {
+	prefix := fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), "convox")
+
+	if _, err := os.Stdout.Write([]byte(prefix)); err != nil {
+		return 0, err
+	}
+
+	return os.Stdout.Write(p)
+}
+
+func (m *Manifest) Writef(format string, args ...interface{}) error {
+	return m.WriteString(fmt.Sprintf(format, args...))
+}
+
+func (m *Manifest) WriteString(s string) error {
+	_, err := m.Write([]byte(s))
+	return err
+}
+
 func (w PrefixWriter) Write(p []byte) (int, error) {
 	q := []byte{}
 
@@ -40,6 +60,15 @@ func (w PrefixWriter) Write(p []byte) (int, error) {
 	}
 
 	return len(p), nil
+}
+
+func (w PrefixWriter) Writef(format string, args ...interface{}) error {
+	return w.WriteString(fmt.Sprintf(format, args...))
+}
+
+func (w PrefixWriter) WriteString(s string) error {
+	_, err := w.Write([]byte(s))
+	return err
 }
 
 func (m *Manifest) prefixLength() int {
