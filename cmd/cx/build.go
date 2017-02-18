@@ -47,6 +47,10 @@ func runBuild(c *cli.Context) error {
 }
 
 func buildDirectory(app, dir string) (*types.Build, error) {
+	if _, err := Rack.AppGet(app); err != nil {
+		return nil, err
+	}
+
 	r, err := createTarball(dir)
 	if err != nil {
 		return nil, err

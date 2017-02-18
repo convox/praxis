@@ -290,4 +290,27 @@ func (_m *MockProvider) ReleaseGet(app string, id string) (*types.Release, error
 	return r0, r1
 }
 
+// SystemGet provides a mock function with given fields:
+func (_m *MockProvider) SystemGet() (*types.System, error) {
+	ret := _m.Called()
+
+	var r0 *types.System
+	if rf, ok := ret.Get(0).(func() *types.System); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.System)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 var _ Provider = (*MockProvider)(nil)

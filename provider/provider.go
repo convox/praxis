@@ -72,7 +72,7 @@ type Provider interface {
 	// ReleasePromote(*structs.Release) error
 	// ReleaseSave(*structs.Release) error
 
-	// SystemGet() (*structs.System, error)
+	SystemGet() (*types.System, error)
 	// SystemLogs(w io.Writer, opts structs.LogStreamOptions) error
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
 	// SystemSave(system structs.System) error

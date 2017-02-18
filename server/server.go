@@ -29,5 +29,7 @@ func New() *Server {
 	api.Route("release.create", "POST", "/apps/{app}/releases", controllers.ReleaseCreate)
 	api.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
 
+	api.Route("system.get", "GET", "/system", controllers.SystemGet)
+
 	return &Server{Server: api}
 }

@@ -8,6 +8,10 @@ import (
 )
 
 func (p *Provider) ObjectFetch(app, key string) (io.ReadCloser, error) {
+	if _, err := p.AppGet(app); err != nil {
+		return nil, err
+	}
+
 	token := fmt.Sprintf("apps/%s/objects/%s", app, key)
 
 	if !p.Exists(token) {
@@ -18,6 +22,10 @@ func (p *Provider) ObjectFetch(app, key string) (io.ReadCloser, error) {
 }
 
 func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error) {
+	if _, err := p.AppGet(app); err != nil {
+		return nil, err
+	}
+
 	if key == "" {
 		key = "tmp/test"
 	}
