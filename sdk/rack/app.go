@@ -21,6 +21,11 @@ func (c *Client) AppDelete(name string) error {
 	return c.Delete(fmt.Sprintf("/apps/%s", name), RequestOptions{}, nil)
 }
 
+func (c *Client) AppGet(name string) (app *types.App, err error) {
+	err = c.Get(fmt.Sprintf("/apps/%s", name), RequestOptions{}, &app)
+	return
+}
+
 func (c *Client) AppList() (apps types.Apps, err error) {
 	err = c.Get("/apps", RequestOptions{}, &apps)
 	return

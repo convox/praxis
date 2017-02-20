@@ -20,13 +20,24 @@ func AppCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 }
 
 func AppDelete(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	app := c.Var("app")
+	name := c.Var("name")
 
-	if err := Provider.AppDelete(app); err != nil {
+	if err := Provider.AppDelete(name); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func AppGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	name := c.Var("name")
+
+	app, err := Provider.AppGet(name)
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(app)
 }
 
 func AppList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
