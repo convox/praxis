@@ -27,7 +27,7 @@ func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectSt
 	}
 
 	if key == "" {
-		key = "tmp/test"
+		return nil, fmt.Errorf("key must not be blank")
 	}
 
 	if err := p.Store(fmt.Sprintf("apps/%s/objects/%s", app, key), r); err != nil {

@@ -42,6 +42,8 @@ func ProcessRun(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		opts.Width = w
 	}
 
+	c.Logf("at=params service=%q height=%d width=%d", service, opts.Height, opts.Width)
+
 	w.Header().Add("Trailer", "Exit-Code")
 
 	if err := Provider.ProcessRun(app, opts); err != nil {
