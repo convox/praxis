@@ -1,4 +1,4 @@
-.PHONY: all build check ci coverage deps lint mocks test test-deps
+.PHONY: all build check ci coverage dev lint mocks test test-deps vendor
 
 all: build
 
@@ -13,11 +13,6 @@ ci: test
 
 coverage: ci
 	open https://codecov.io/github/ddollar/praxis/commit/$$(git rev-parse HEAD)
-
-deps:
-	go get -u github.com/tools/godep
-	go get -d ./...
-	godep save ./...
 
 dev: build
 	go install ./cmd/cx
@@ -34,3 +29,8 @@ test: test-deps check
 
 test-deps:
 	go get -t ./...
+
+vendor:
+	go get -u github.com/tools/godep
+	go get -d -t -u ./...
+	godep save ./...
