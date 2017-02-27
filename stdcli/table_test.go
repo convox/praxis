@@ -5,13 +5,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/convox/rack/cmd/convox/stdcli"
+	"github.com/convox/praxis/stdcli"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTableOutput(t *testing.T) {
 	buf := &bytes.Buffer{}
 	old := stdcli.DefaultWriter
+	stdcli.DefaultWriter.Color = false
 	stdcli.DefaultWriter.Stdout = buf
 	defer func() {
 		stdcli.DefaultWriter = old

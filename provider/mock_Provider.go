@@ -244,6 +244,29 @@ func (_m *MockProvider) ProcessRun(app string, opts types.ProcessRunOptions) err
 	return r0
 }
 
+// ProxyStart provides a mock function with given fields: app, pid, port
+func (_m *MockProvider) ProxyStart(app string, pid string, port int) (io.ReadWriter, error) {
+	ret := _m.Called(app, pid, port)
+
+	var r0 io.ReadWriter
+	if rf, ok := ret.Get(0).(func(string, string, int) io.ReadWriter); ok {
+		r0 = rf(app, pid, port)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadWriter)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, int) error); ok {
+		r1 = rf(app, pid, port)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ReleaseCreate provides a mock function with given fields: app, opts
 func (_m *MockProvider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error) {
 	ret := _m.Called(app, opts)

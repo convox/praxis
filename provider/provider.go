@@ -61,6 +61,8 @@ type Provider interface {
 	ProcessRun(app string, opts types.ProcessRunOptions) error
 	// ProcessStop(app, pid string) error
 
+	ProxyStart(app, pid string, port int) (io.ReadWriter, error)
+
 	// RegistryAdd(server, username, password string) (*structs.Registry, error)
 	// RegistryDelete(server string) error
 	// RegistryList() (structs.Registries, error)
