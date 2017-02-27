@@ -1,4 +1,4 @@
-FROM golang:1.7.5-alpine
+FROM golang:1.8-alpine
 
 RUN apk add --update bash build-base curl docker git
 
