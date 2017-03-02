@@ -10,6 +10,7 @@ dependencies:
   override:
     - mkdir -p ${GOPATH}/src/${PROJECT}
     - rsync -azC --delete ./ ${GOPATH}/src/${PROJECT}
+    - docker build --rm=false -t convox/praxis .
 
 test:
   override:
