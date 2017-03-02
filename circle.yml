@@ -1,6 +1,6 @@
 machine:
   environment:
-    GODIST: "go1.8.0.linux-amd64.tar.gz"
+    GODIST: "go1.8.linux-amd64.tar.gz"
     GOPATH: "/home/ubuntu/go"
     PATH: "$GOPATH/bin:$PATH"
     PROJECT: "github.com/convox/praxis"
