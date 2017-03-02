@@ -21,4 +21,4 @@ dependencies:
 test:
   override:
     - make ci:
-        pwd: ${GOPATH}/src/github.com/convox/praxis
+        pwd: /home/ubuntu/go/src/github.com/convox/praxis
