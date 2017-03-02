@@ -3,8 +3,6 @@ machine:
     GOPATH: "/home/ubuntu/go"
     PATH: "$GOPATH/bin:$PATH"
     PROJECT: "github.com/convox/praxis"
-  services:
-    - docker
 
 dependencies:
   override:
