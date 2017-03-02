@@ -15,4 +15,5 @@ test:
   override:
     - go get ${PROJECT}/cmd/cx
     - cx rack start &
+    - sleep 5
     - cx test
