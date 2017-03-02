@@ -1,14 +1,24 @@
 machine:
   environment:
+    GODIST: "go1.8.0.linux-amd64.tar.gz"
     GOPATH: "/home/ubuntu/go"
     PATH: "$GOPATH/bin:$PATH"
     PROJECT: "github.com/convox/praxis"
+  post:
+    - mkdir -p download
+    - test -e download/$GODIST || curl -o download/$GODIST https://storage.googleapis.com/golang/$GODIST
+    - sudo rm -rf /usr/local/go
+    - sudo tar -C /usr/local -xzf download/$GODIST
 
 checkout:
   post:
     - mkdir -p ${GOPATH}/src/github.com/convox
     - ln -sf $(pwd) ${GOPATH}/src/github.com/convox/praxis
 
+dependencies:
+  cache_directories:
+    - ~/download
+
 test:
   override:
-    - make test
+    - make ci
