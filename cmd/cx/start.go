@@ -75,6 +75,8 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 
 	w := m.PrefixWriter(os.Stdout, "convox")
 
+	w.Writef("stopping\n")
+
 	ps, err := Rack.ProcessList(app, types.ProcessListOptions{})
 	if err != nil {
 		errch <- err
@@ -83,10 +85,7 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 
 	for _, p := range ps {
 		w.Writef("stopping %s.%s\n", p.Service, p.Id)
-
-		if err := Rack.ProcessStop(app, p.Id); err != nil {
-			w.Writef("unable to stop process: %s: %v\n", p.Id, err)
-		}
+		go Rack.ProcessStop(app, p.Id)
 	}
 
 	os.Exit(1)
