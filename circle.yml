@@ -7,7 +7,7 @@ machine:
 checkout:
   post:
     - mkdir -p ${GOPATH}/src/github.com/convox
-    - ln -sf . ${GOPATH}/src/github.com/convox/praxis
+    - ln -sf $(pwd) ${GOPATH}/src/github.com/convox/praxis
 
 test:
   override:
