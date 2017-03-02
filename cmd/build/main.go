@@ -122,7 +122,7 @@ func build() error {
 		Stderr: os.Stderr,
 	}
 
-	if err := m.Build(flagApp, opts); err != nil {
+	if err := m.Build(flagApp, flagId, opts); err != nil {
 		return err
 	}
 

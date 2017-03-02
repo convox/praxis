@@ -6,11 +6,19 @@ import (
 
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
 	Rack    *rack.Client
 	Version = "dev"
+)
+
+var (
+	appFlag = cli.StringFlag{
+		Name:  "app, a",
+		Usage: "app name",
+	}
 )
 
 func init() {

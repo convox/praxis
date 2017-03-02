@@ -24,6 +24,8 @@ func ProxyStart(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	w.WriteHeader(200)
 
+	go stream(proxy, r.Body)
+
 	if err := stream(w, proxy); err != nil {
 		return err
 	}

@@ -146,20 +146,6 @@ func (p *Provider) Store(key string, v interface{}) error {
 	return ioutil.WriteFile(path, data, 0600)
 }
 
-func (p *Provider) Run(app, service, image, command string, args ...string) (string, error) {
-	a := []string{"run", "--detach", "-i", image, command}
-	a = append(a, args...)
-
-	cmd := exec.Command("docker", a...)
-
-	data, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-
-	return string(data)[0:10], nil
-}
-
 func (p *Provider) Logs(pid string) (io.Reader, error) {
 	r, w := io.Pipe()
 

@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"time"
+	"os/signal"
+	"syscall"
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/stdcli"
@@ -33,14 +34,11 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	for _, b := range m.Balancers {
-		if err := startBalancer(app.Name, b); err != nil {
-			return err
-		}
-	}
+	ch := make(chan error)
 
-	time.Sleep(1 * time.Second)
-	os.Exit(1)
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	go handleSignals(sig, ch, m, app.Name)
 
 	build, err := buildDirectory(app.Name, ".")
 	if err != nil {
@@ -57,40 +55,61 @@ func runStart(c *cli.Context) error {
 	}
 
 	for _, s := range m.Services {
-		if s.Test == "" {
-			continue
-		}
-
 		w := m.PrefixWriter(os.Stdout, s.Name)
+		go startService(app.Name, s.Name, build.Release, w, ch)
+	}
 
-		w.Writef("starting\n")
+	for _, b := range m.Balancers {
+		go startBalancer(app.Name, b, ch)
+	}
 
-		err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{
-			Service: s.Name,
-			Stream: types.Stream{
-				Reader: nil,
-				Writer: w,
-			},
-		})
-		if err != nil {
-			return err
+	return <-ch
+}
+
+func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, app string) {
+	sig := <-ch
+
+	if sig == syscall.SIGINT {
+		fmt.Println("")
+	}
+
+	w := m.PrefixWriter(os.Stdout, "convox")
+
+	ps, err := Rack.ProcessList(app, types.ProcessListOptions{})
+	if err != nil {
+		errch <- err
+		return
+	}
+
+	for _, p := range ps {
+		w.Writef("stopping %s.%s\n", p.Service, p.Id)
+
+		if err := Rack.ProcessStop(app, p.Id); err != nil {
+			w.Writef("unable to stop process: %s: %v\n", p.Id, err)
 		}
 	}
 
-	// proxy
-
-	// changes
-
-	return nil
+	os.Exit(1)
 }
 
-func startBalancer(app string, balancer manifest.Balancer) error {
-	fmt.Printf("balancer = %+v\n", balancer)
+func startService(app, service, release string, w manifest.PrefixWriter, ch chan error) {
+	w.Writef("starting\n")
 
+	_, err := Rack.ProcessRun(app, types.ProcessRunOptions{
+		Release: release,
+		Service: service,
+		Stream: types.Stream{
+			Reader: nil,
+			Writer: w,
+		},
+	})
+
+	ch <- err
+}
+
+func startBalancer(app string, balancer manifest.Balancer, ch chan error) {
 	for _, e := range balancer.Endpoints {
-		fmt.Printf("e = %+v\n", e)
-
-		name := fmt.Sprintf("%s-%s-%s", app, balancer.Name, e.Port)
+		name := fmt.Sprintf("balancer-%s-%s-%s", app, balancer.Name, e.Port)
 
 		exec.Command("docker", "rm", "-f", name).Run()
 
@@ -98,6 +117,9 @@ func startBalancer(app string, balancer manifest.Balancer) error {
 
 		args = append(args, "--rm", "--name", name)
 		args = append(args, "-p", fmt.Sprintf("%s:3000", e.Port))
+		args = append(args, "--link", "rack")
+		args = append(args, "-e", "RACK_URL=https://rack:3000")
+		args = append(args, "-e", fmt.Sprintf("APP=%s", app))
 		args = append(args, "convox/praxis", "proxy")
 		args = append(args, e.Protocol)
 
@@ -107,24 +129,22 @@ func startBalancer(app string, balancer manifest.Balancer) error {
 		case e.Target != "":
 			args = append(args, "target", e.Target)
 		default:
-			return fmt.Errorf("invalid balancer endpoint: %s:%s", balancer.Name, e.Port)
+			ch <- fmt.Errorf("invalid balancer endpoint: %s:%s", balancer.Name, e.Port)
+			return
 		}
 
 		// if p.Secure {
 		//   args = append(args, "secure")
 		// }
 
-		fmt.Printf("args = %+v\n", args)
-
 		cmd := exec.Command("docker", args...)
 
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 
-		if err := cmd.Run(); err != nil {
-			return err
+		if err := cmd.Start(); err != nil {
+			ch <- err
+			return
 		}
 	}
-
-	return nil
 }

@@ -15,14 +15,14 @@ type BuildOptions struct {
 	Stderr io.Writer
 }
 
-func (m *Manifest) Build(app string, opts BuildOptions) error {
+func (m *Manifest) Build(app string, id string, opts BuildOptions) error {
 	builds := map[string]Service{}
 	tags := map[string]string{}
 
 	for _, s := range m.Services {
 		hash := s.BuildHash()
 		builds[hash] = s
-		tags[hash] = fmt.Sprintf("%s/%s", app, s.Name)
+		tags[hash] = fmt.Sprintf("%s/%s:%s", app, s.Name, id)
 	}
 
 	for hash, service := range builds {

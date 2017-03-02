@@ -230,13 +230,57 @@ func (_m *MockProvider) ObjectStore(app string, key string, r io.Reader, opts ty
 	return r0, r1
 }
 
-// ProcessRun provides a mock function with given fields: app, opts
-func (_m *MockProvider) ProcessRun(app string, opts types.ProcessRunOptions) error {
+// ProcessList provides a mock function with given fields: app, opts
+func (_m *MockProvider) ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error) {
 	ret := _m.Called(app, opts)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, types.ProcessRunOptions) error); ok {
+	var r0 types.Processes
+	if rf, ok := ret.Get(0).(func(string, types.ProcessListOptions) types.Processes); ok {
 		r0 = rf(app, opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Processes)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, types.ProcessListOptions) error); ok {
+		r1 = rf(app, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ProcessRun provides a mock function with given fields: app, opts
+func (_m *MockProvider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
+	ret := _m.Called(app, opts)
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(string, types.ProcessRunOptions) int); ok {
+		r0 = rf(app, opts)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, types.ProcessRunOptions) error); ok {
+		r1 = rf(app, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ProcessStop provides a mock function with given fields: app, pid
+func (_m *MockProvider) ProcessStop(app string, pid string) error {
+	ret := _m.Called(app, pid)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(app, pid)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -306,6 +350,29 @@ func (_m *MockProvider) ReleaseGet(app string, id string) (*types.Release, error
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string) error); ok {
 		r1 = rf(app, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ReleaseList provides a mock function with given fields: app
+func (_m *MockProvider) ReleaseList(app string) (types.Releases, error) {
+	ret := _m.Called(app)
+
+	var r0 types.Releases
+	if rf, ok := ret.Get(0).(func(string) types.Releases); ok {
+		r0 = rf(app)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Releases)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(app)
 	} else {
 		r1 = ret.Error(1)
 	}

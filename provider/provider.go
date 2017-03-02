@@ -57,9 +57,9 @@ type Provider interface {
 	ObjectStore(app, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error)
 
 	// ProcessExec(app, pid, command string, stream io.ReadWriter, opts structs.ProcessExecOptions) error
-	// ProcessList(app string) (structs.Processes, error)
-	ProcessRun(app string, opts types.ProcessRunOptions) error
-	// ProcessStop(app, pid string) error
+	ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error)
+	ProcessRun(app string, opts types.ProcessRunOptions) (int, error)
+	ProcessStop(app, pid string) error
 
 	ProxyStart(app, pid string, port int) (io.ReadWriter, error)
 
@@ -70,7 +70,7 @@ type Provider interface {
 	ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error)
 	// ReleaseDelete(app, buildID string) error
 	ReleaseGet(app, id string) (*types.Release, error)
-	// ReleaseList(app string, limit int64) (structs.Releases, error)
+	ReleaseList(app string) (types.Releases, error)
 	// ReleasePromote(*structs.Release) error
 	// ReleaseSave(*structs.Release) error
 

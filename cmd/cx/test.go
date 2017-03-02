@@ -59,7 +59,7 @@ func runTest(c *cli.Context) error {
 			return err
 		}
 
-		err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+		code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{
 			Command: s.Test,
 			Service: s.Name,
 			Stream: types.Stream{
@@ -69,6 +69,9 @@ func runTest(c *cli.Context) error {
 		})
 		if err != nil {
 			return err
+		}
+		if code > 0 {
+			return cli.NewExitError(fmt.Sprintf("exit status %d", code), code)
 		}
 	}
 

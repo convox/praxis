@@ -5,24 +5,28 @@ import (
 	"time"
 )
 
-// Process represents a running Process
 type Process struct {
 	Id string `json:"id"`
 
 	App     string `json:"app"`
+	Command string `json:"command"`
 	Release string `json:"release"`
 	Service string `json:"service"`
 
 	Started time.Time `json:"started"`
 }
 
-// ProcessExecOptions are options for ProcessExec
+type Processes []Process
+
 type ProcessExecOptions struct {
 	Height int
 	Width  int
 }
 
-// ProcessRunOptions are options for ProcessRun
+type ProcessListOptions struct {
+	Service string
+}
+
 type ProcessRunOptions struct {
 	Command string
 	Height  int

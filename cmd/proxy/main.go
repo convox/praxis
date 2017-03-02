@@ -2,10 +2,29 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
+	"strings"
+
+	"github.com/convox/praxis/sdk/rack"
+	"github.com/convox/praxis/types"
 )
+
+var (
+	Rack *rack.Client
+)
+
+func init() {
+	r, err := rack.NewFromEnv()
+	if err != nil {
+		die(err)
+	}
+
+	Rack = r
+}
 
 func main() {
 	if len(os.Args) != 4 {
@@ -15,10 +34,6 @@ func main() {
 	protocol := os.Args[1]
 	style := os.Args[2]
 	target := os.Args[3]
-
-	fmt.Printf("protocol = %+v\n", protocol)
-	fmt.Printf("style = %+v\n", style)
-	fmt.Printf("target = %+v\n", target)
 
 	switch style {
 	case "redirect":
@@ -32,62 +47,98 @@ func main() {
 	default:
 		usage()
 	}
-
-	fmt.Printf("os.Args = %+v\n", os.Args)
 }
 
 func handleRedirect(protocol, target string) error {
-	handler, err := redirect(target)
+	return http.ListenAndServe(":3000", redirect(target))
+}
+
+func redirect(target string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t, err := url.Parse(target)
+		if err != nil {
+			http.Error(w, "could not parse target", 500)
+			return
+		}
+
+		if t.Scheme == "" {
+			t.Scheme = r.URL.Scheme
+		}
+
+		if t.Host == "" {
+			t.Host = r.Host
+		}
+
+		hp := strings.Split(r.Host, ":")
+
+		if t.Hostname() == "" {
+			t.Host = hp[0] + t.Host
+		}
+
+		if t.Port() == "" && len(hp) > 1 && hp[1] != "" {
+			t.Host += fmt.Sprintf(":%s", hp[1])
+		}
+
+		if len(r.URL.Path) > 0 {
+			t.Path = strings.Replace(t.Path, "*", r.URL.Path[1:], -1)
+		}
+
+		http.Redirect(w, r, t.String(), 301)
+	})
+}
+
+func handleTarget(protocol, target string) error {
+	app := os.Getenv("APP")
+
+	u, err := url.Parse(target)
 	if err != nil {
 		return err
 	}
 
-	return http.ListenAndServe(":3000", handler)
-}
-
-func redirect(target string) (http.Handler, error) {
-	t, err := url.Parse(target)
+	ln, err := net.Listen("tcp", ":3000")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rdr := ""
+	defer ln.Close()
 
-		fmt.Printf("t = %#v\n", t)
-
-		if t.Scheme != "" {
-			rdr += fmt.Sprintf("%s://", t.Scheme)
+	for {
+		cn, err := ln.Accept()
+		if err != nil {
+			return err
 		}
 
-		if h := t.Hostname(); h != "" {
-			rdr += h
+		ps, err := Rack.ProcessList(app, types.ProcessListOptions{Service: u.Hostname()})
+		if err != nil {
+			return err
 		}
 
-		if p := t.Port(); p != "" {
-			rdr += fmt.Sprintf(":%s", p)
+		if len(ps) < 1 {
+			return fmt.Errorf("no processes for service: %s", u.Hostname())
 		}
 
-		if p := t.Path; p != "" {
-			rdr += p
-		} else {
-			rdr += r.URL.Path
+		port, err := strconv.Atoi(u.Port())
+		if err != nil {
+			return err
 		}
 
-		fmt.Printf("rdr = %+v\n", rdr)
-		// proto := r
-		// rdr := fmt.Sprintf("%s://%s:%s%s", proto, host, port, path)
-		// fmt.Printf("rdr = %+v\n", rdr)
-		// host := r.Host
-		// fmt.Printf("w = %+v\n", w)
-		// fmt.Printf("r = %+v\n", r)
-	}), nil
+		go Rack.ProxyStart(app, ps[0].Id, port, cn)
+	}
+
+	return nil
 }
 
-func handleTarget(protocol, target string) error {
-	fmt.Printf("protocol = %+v\n", protocol)
-	fmt.Printf("target = %+v\n", target)
-	return nil
+func handleRequest(in net.Conn, service, port string) {
+	defer in.Close()
+
+	// out, err := net.Dial("tcp", addr)
+	// if err != nil {
+	//   fmt.Fprintf(os.Stderr, "error: %s\n", err)
+	//   return
+	// }
+
+	// go io.Copy(out, in)
+	// io.Copy(in, out)
 }
 
 func die(err error) {

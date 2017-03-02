@@ -19,7 +19,9 @@ func Routes(api *api.Server) {
 	api.Route("object.fetch", "GET", "/apps/{app}/objects/{key:.*}", controllers.ObjectFetch)
 	api.Route("object.store", "POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)
 
+	api.Route("process.list", "GET", "/apps/{app}/processes", controllers.ProcessList)
 	api.Route("process.run", "POST", "/apps/{app}/processes", controllers.ProcessRun)
+	api.Route("process.stop", "DELETE", "/apps/{app}/processes/{pid}", controllers.ProcessStop)
 
 	api.Route("proxy.start", "POST", "/apps/{app}/processes/{process}/proxy/{port}", controllers.ProxyStart)
 
