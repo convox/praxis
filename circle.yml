@@ -4,12 +4,11 @@ machine:
     PATH: "$GOPATH/bin:$PATH"
     PROJECT: "github.com/convox/praxis"
 
-dependencies:
-  override:
-    - mkdir -p ${GOPATH}/src/${PROJECT}
-    - rsync -azC --delete ./ ${GOPATH}/src/${PROJECT}
+checkout:
+  post:
+    - mkdir -p ${GOPATH}/src/github.com/convox
+    - ln -sf . ${GOPATH}/src/github.com/convox/praxis
 
 test:
   override:
-    - make test:
-        pwd: ${GOPATH}/src/${PROJECT}
+    - make test
