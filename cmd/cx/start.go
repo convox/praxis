@@ -22,6 +22,10 @@ func init() {
 }
 
 func runStart(c *cli.Context) error {
+	if err := startLocalRack(); err != nil {
+		return err
+	}
+
 	name := "test"
 
 	app, err := Rack.AppGet(name)

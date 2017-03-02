@@ -5,7 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"time"
 
+	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	homedir "github.com/mitchellh/go-homedir"
 	cli "gopkg.in/urfave/cli.v1"
@@ -54,9 +57,25 @@ func runRackStart(c *cli.Context) error {
 		return stdcli.Usage(c)
 	}
 
-	home, err := homedir.Dir()
+	cmd, err := rackCommand(version)
 	if err != nil {
 		return err
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+func runRackUpdate(c *cli.Context) error {
+	return nil
+}
+
+func rackCommand(version string) (*exec.Cmd, error) {
+	home, err := homedir.Dir()
+	if err != nil {
+		return nil, err
 	}
 
 	exec.Command("docker", "rm", "-f", "rack").Run()
@@ -68,14 +87,55 @@ func runRackStart(c *cli.Context) error {
 	args = append(args, "-v", "/var/run/docker.sock:/var/run/docker.sock")
 	args = append(args, fmt.Sprintf("convox/praxis:%s", version))
 
-	cmd := exec.Command("docker", args...)
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	return cmd.Run()
+	return exec.Command("docker", args...), nil
 }
 
-func runRackUpdate(c *cli.Context) error {
+func rackRunning() bool {
+	data, err := exec.Command("docker", "ps", "--filter", "name=rack", "--format", "{{json .}}").CombinedOutput()
+	if err != nil {
+		return false
+	}
+
+	return len(strings.Split(string(data), "\n")) > 1
+}
+
+func startLocalRack() error {
+	if rackRunning() {
+		return nil
+	}
+
+	home, err := homedir.Dir()
+	if err != nil {
+		return err
+	}
+
+	// TODO: make directory, etc
+	fd, err := os.OpenFile(filepath.Join(home, ".convox", "rack.log"), os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		return err
+	}
+
+	cmd, err := rackCommand("latest")
+	if err != nil {
+		return err
+	}
+
+	cmd.Stdout = fd
+	cmd.Stderr = fd
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	rk := rack.New("localhost:5443")
+
+	for {
+		if _, err := rk.AppList(); err == nil {
+			break
+		}
+
+		time.Sleep(20 * time.Millisecond)
+	}
+
 	return nil
 }

@@ -14,4 +14,4 @@ dependencies:
 test:
   override:
     - go get ${PROJECT}/cmd/cx
-    - cx rack start & && sleep 2 && cx test
+    - cx test
