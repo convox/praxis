@@ -1,12 +1,15 @@
-.PHONY: all build check ci coverage dev lint mocks test test-deps vendor
+.PHONY: all build check cli ci coverage dev image lint mocks test test-deps vendor
 
 all: build
 
 build:
-	docker build -t convox/praxis .
+	go install ./...
 
 check:
 	bin/check
+
+cli:
+	go install ./cmd/cx
 
 ci: test
 	bin/ci
@@ -14,9 +17,11 @@ ci: test
 coverage: ci
 	open https://codecov.io/github/ddollar/praxis/commit/$$(git rev-parse HEAD)
 
-dev: build
-	go install ./cmd/cx
+dev: cli image
 	cx rack start
+
+image:
+	docker build -t convox/praxis .
 
 lint:
 	bin/lint

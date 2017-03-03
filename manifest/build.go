@@ -1,8 +1,12 @@
 package manifest
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +17,11 @@ type BuildOptions struct {
 	Root   string
 	Stdout io.Writer
 	Stderr io.Writer
+}
+
+type BuildSource struct {
+	Local  string
+	Remote string
 }
 
 func (m *Manifest) Build(app string, id string, opts BuildOptions) error {
@@ -46,6 +55,68 @@ func (m *Manifest) Build(app string, id string, opts BuildOptions) error {
 	return nil
 }
 
+func (m *Manifest) BuildManifest(service string) ([]byte, error) {
+	s, err := m.Services.Find(service)
+	if err != nil {
+		return nil, err
+	}
+
+	path, err := filepath.Abs(filepath.Join(m.Root, s.Build.Path, "Dockerfile"))
+	if err != nil {
+		return nil, err
+	}
+
+	return ioutil.ReadFile(path)
+}
+
+func (m *Manifest) BuildSources(service string) ([]BuildSource, error) {
+	data, err := m.BuildManifest(service)
+	if err != nil {
+		return nil, err
+	}
+
+	bs := []BuildSource{}
+	env := map[string]string{}
+
+	s := bufio.NewScanner(bytes.NewReader(data))
+
+	for s.Scan() {
+		parts := strings.Fields(s.Text())
+
+		if len(parts) < 1 {
+			continue
+		}
+
+		switch parts[0] {
+		case "ENV":
+			if len(parts) > 2 {
+				env[parts[1]] = parts[2]
+			}
+		case "ADD", "COPY":
+			if len(parts) > 2 {
+				u, err := url.Parse(parts[1])
+				if err != nil {
+					return nil, err
+				}
+
+				switch u.Scheme {
+				case "http", "https":
+					// do nothing
+				default:
+					path := parts[2]
+					for k, v := range env {
+						path = strings.Replace(path, fmt.Sprintf("$%s", k), v, -1)
+						path = strings.Replace(path, fmt.Sprintf("${%s}", k), v, -1)
+					}
+					bs = append(bs, BuildSource{Local: parts[1], Remote: path})
+				}
+			}
+		}
+	}
+
+	return bs, nil
+}
+
 func (s Service) build(tag string, opts BuildOptions) error {
 	if s.Build.Path == "" {
 		return fmt.Errorf("must have path to build")
@@ -56,8 +127,6 @@ func (s Service) build(tag string, opts BuildOptions) error {
 	// for _, arg := range build.Args {
 	//   fmt.Printf("arg = %+v\n", arg)
 	// }
-
-	args = append(args, "--rm=false")
 
 	args = append(args, "-t", tag)
 

@@ -5,8 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"sync"
 	"syscall"
 
+	"github.com/convox/praxis/changes"
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
@@ -61,6 +63,7 @@ func runStart(c *cli.Context) error {
 	for _, s := range m.Services {
 		w := m.PrefixWriter(os.Stdout, s.Name)
 		go startService(app.Name, s.Name, build.Release, w, ch)
+		go watchChanges(m, s.Name, ch)
 	}
 
 	for _, b := range m.Balancers {
@@ -87,12 +90,23 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 		return
 	}
 
+	var wg sync.WaitGroup
+
+	wg.Add(len(ps))
+
 	for _, p := range ps {
 		w.Writef("stopping %s.%s\n", p.Service, p.Id)
-		go Rack.ProcessStop(app, p.Id)
+		go func() {
+			defer wg.Done()
+			Rack.ProcessStop(app, p.Id)
+		}()
 	}
 
-	os.Exit(1)
+	wg.Wait()
+
+	w.Writef("stopped\n")
+
+	os.Exit(0)
 }
 
 func startService(app, service, release string, w manifest.PrefixWriter, ch chan error) {
@@ -149,5 +163,29 @@ func startBalancer(app string, balancer manifest.Balancer, ch chan error) {
 			ch <- err
 			return
 		}
+	}
+}
+
+func watchChanges(m *manifest.Manifest, service string, ch chan error) {
+	for _, s := range m.Services {
+		bss, err := m.BuildSources(s.Name)
+		if err != nil {
+			ch <- err
+			return
+		}
+
+		for _, bs := range bss {
+			go watchPath(m, s.Name, bs, ch)
+		}
+	}
+}
+
+func watchPath(m *manifest.Manifest, service string, bs manifest.BuildSource, ch chan error) {
+	cch := make(chan changes.Change, 1)
+
+	changes.Watch(bs.Local, cch)
+
+	for c := range cch {
+		fmt.Printf("c = %+v\n", c)
 	}
 }

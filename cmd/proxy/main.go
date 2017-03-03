@@ -126,19 +126,6 @@ func handleTarget(protocol, target string) error {
 	}
 }
 
-func handleRequest(in net.Conn, service, port string) {
-	defer in.Close()
-
-	// out, err := net.Dial("tcp", addr)
-	// if err != nil {
-	//   fmt.Fprintf(os.Stderr, "error: %s\n", err)
-	//   return
-	// }
-
-	// go io.Copy(out, in)
-	// io.Copy(in, out)
-}
-
 func die(err error) {
 	fmt.Fprintf(os.Stderr, "error: %s\n", err)
 	os.Exit(1)
