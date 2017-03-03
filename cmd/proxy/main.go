@@ -124,8 +124,6 @@ func handleTarget(protocol, target string) error {
 
 		go Rack.ProxyStart(app, ps[0].Id, port, cn)
 	}
-
-	return nil
 }
 
 func handleRequest(in net.Conn, service, port string) {
