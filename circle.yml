@@ -12,7 +12,7 @@ machine:
 checkout:
   post:
     - mkdir -p ${GOPATH}/src/github.com/convox
-    - ln -sf $(pwd) ${GOPATH}/src/github.com/convox/praxis
+    - rsync -azC --delete ./ ${GOPATH}/src/github.com/convox/praxis
 
 dependencies:
   cache_directories:
