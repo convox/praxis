@@ -20,5 +20,4 @@ dependencies:
 
 test:
   override:
-    - make ci:
-        pwd: go/src/github.com/convox/praxis
+    - make ci
