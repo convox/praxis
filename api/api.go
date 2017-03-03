@@ -26,8 +26,6 @@ func New(ns, hostname string) *Server {
 		logger:   logger,
 	}
 
-	logger.At("listen").Logf("hostname=%q", hostname)
-
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 		id, _ := types.Key(12)

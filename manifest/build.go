@@ -3,6 +3,7 @@ package manifest
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,6 +12,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/docker/docker/builder/dockerignore"
 )
 
 type BuildOptions struct {
@@ -55,13 +58,65 @@ func (m *Manifest) Build(app string, id string, opts BuildOptions) error {
 	return nil
 }
 
+func (m *Manifest) BuildIgnores(service string) ([]string, error) {
+	ignore := []string{}
+
+	root, err := m.Path("")
+	if err != nil {
+		return nil, err
+	}
+
+	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			return nil
+		}
+
+		ip := filepath.Join(path, ".dockerignore")
+
+		if _, err := os.Stat(ip); os.IsNotExist(err) {
+			return nil
+		}
+
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+
+		fd, err := os.Open(ip)
+		if err != nil {
+			return err
+		}
+
+		lines, err := dockerignore.ReadAll(fd)
+		if err != nil {
+			return err
+		}
+
+		for _, line := range lines {
+			ignore = append(ignore, filepath.Join(rel, line))
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return ignore, nil
+}
+
 func (m *Manifest) BuildManifest(service string) ([]byte, error) {
 	s, err := m.Services.Find(service)
 	if err != nil {
 		return nil, err
 	}
 
-	path, err := filepath.Abs(filepath.Join(m.Root, s.Build.Path, "Dockerfile"))
+	root, err := m.Path("")
+	if err != nil {
+		return nil, err
+	}
+
+	path, err := filepath.Abs(filepath.Join(root, s.Build.Path, "Dockerfile"))
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +132,7 @@ func (m *Manifest) BuildSources(service string) ([]BuildSource, error) {
 
 	bs := []BuildSource{}
 	env := map[string]string{}
+	wd := "/"
 
 	s := bufio.NewScanner(bytes.NewReader(data))
 
@@ -88,10 +144,6 @@ func (m *Manifest) BuildSources(service string) ([]BuildSource, error) {
 		}
 
 		switch parts[0] {
-		case "ENV":
-			if len(parts) > 2 {
-				env[parts[1]] = parts[2]
-			}
 		case "ADD", "COPY":
 			if len(parts) > 2 {
 				u, err := url.Parse(parts[1])
@@ -103,18 +155,51 @@ func (m *Manifest) BuildSources(service string) ([]BuildSource, error) {
 				case "http", "https":
 					// do nothing
 				default:
-					path := parts[2]
-					for k, v := range env {
-						path = strings.Replace(path, fmt.Sprintf("$%s", k), v, -1)
-						path = strings.Replace(path, fmt.Sprintf("${%s}", k), v, -1)
-					}
-					bs = append(bs, BuildSource{Local: parts[1], Remote: path})
+					bs = append(bs, BuildSource{Local: parts[1], Remote: filepath.Join(wd, replaceEnv(parts[2], env))})
 				}
+			}
+		case "ENV":
+			if len(parts) > 2 {
+				env[parts[1]] = parts[2]
+			}
+		case "FROM":
+			if len(parts) > 1 {
+				var ee []string
+
+				data, err := exec.Command("docker", "inspect", parts[1], "--format", "{{json .Config.Env}}").CombinedOutput()
+				if err != nil {
+					return nil, err
+				}
+
+				if err := json.Unmarshal(data, &ee); err != nil {
+					return nil, err
+				}
+
+				for _, e := range ee {
+					parts := strings.SplitN(e, "=", 2)
+
+					if len(parts) == 2 {
+						env[parts[0]] = parts[1]
+					}
+				}
+			}
+		case "WORKDIR":
+			if len(parts) > 1 {
+				wd = replaceEnv(parts[1], env)
 			}
 		}
 	}
 
 	return bs, nil
+}
+
+func replaceEnv(s string, env map[string]string) string {
+	for k, v := range env {
+		s = strings.Replace(s, fmt.Sprintf("${%s}", k), v, -1)
+		s = strings.Replace(s, fmt.Sprintf("$%s", k), v, -1)
+	}
+
+	return s
 }
 
 func (s Service) build(tag string, opts BuildOptions) error {

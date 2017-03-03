@@ -15,7 +15,7 @@ type Manifest struct {
 	Services  Services
 	Tables    Tables
 
-	Root string
+	root string
 }
 
 func Load(data []byte) (*Manifest, error) {
@@ -44,18 +44,18 @@ func LoadFile(path string) (*Manifest, error) {
 		return nil, err
 	}
 
-	m.Root = root
+	m.root = root
 
 	return m, nil
 }
 
-// func (m *Manifest) Path(sub string) (string, error) {
-//   if m.Root == "" {
-//     return "", fmt.Errorf("path undefined for a manifest with no root")
-//   }
+func (m *Manifest) Path(sub string) (string, error) {
+	if m.root == "" {
+		return "", fmt.Errorf("path undefined for a manifest with no root")
+	}
 
-//   return filepath.Join(m.Root, sub), nil
-// }
+	return filepath.Join(m.root, sub), nil
+}
 
 func message(w io.Writer, format string, args ...interface{}) {
 	if w != nil {

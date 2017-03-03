@@ -17,8 +17,10 @@ type Server struct {
 	logger   *logger.Logger
 }
 
-func (s *Server) Listen(addr, port string) error {
-	l, err := net.Listen(addr, port)
+func (s *Server) Listen(proto, addr string) error {
+	s.logger.At("listen").Logf("hostname=%q addr=%q", s.Hostname, addr)
+
+	l, err := net.Listen(proto, addr)
 	if err != nil {
 		return err
 	}
@@ -38,7 +40,6 @@ func (s *Server) Listen(addr, port string) error {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// fmt.Printf("r = %+v\n", r)
 	s.Router.ServeHTTP(w, r)
 }
 

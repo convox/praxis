@@ -114,12 +114,6 @@ func (c *Client) PutStream(path string, opts RequestOptions) (*http.Response, er
 }
 
 func (c *Client) Put(path string, opts RequestOptions, out interface{}) error {
-	uv := url.Values{}
-
-	for k, v := range opts.Params {
-		uv.Set(k, v)
-	}
-
 	res, err := c.PutStream(path, opts)
 	if err != nil {
 		return err

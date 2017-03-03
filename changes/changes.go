@@ -3,9 +3,9 @@ package changes
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
-	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
 )
 
@@ -13,6 +13,22 @@ type Change struct {
 	Operation string
 	Base      string
 	Path      string
+}
+
+type WatchOptions struct {
+	Ignores []string
+}
+
+func Files(cc []Change) []string {
+	files := make([]string, len(cc))
+
+	for i, c := range cc {
+		files[i] = c.Path
+	}
+
+	sort.Strings(files)
+
+	return files
 }
 
 func Partition(changes []Change) (adds []Change, removes []Change) {
@@ -28,13 +44,8 @@ func Partition(changes []Change) (adds []Change, removes []Change) {
 	return
 }
 
-func Watch(dir string, ch chan Change) error {
+func Watch(dir string, ch chan Change, opts WatchOptions) error {
 	abs, err := filepath.Abs(dir)
-	if err != nil {
-		return err
-	}
-
-	ignore, err := readDockerIgnoreRecursive(abs)
 	if err != nil {
 		return err
 	}
@@ -44,52 +55,7 @@ func Watch(dir string, ch chan Change) error {
 		return err
 	}
 
-	return watchForChanges(sym, ignore, ch)
-}
-
-func readDockerIgnoreRecursive(root string) ([]string, error) {
-	ignore := []string{}
-
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if info != nil && info.Name() == ".dockerignore" {
-			lines, err := readDockerIgnore(path)
-			if err != nil {
-				return err
-			}
-
-			// get the relative base between the root of the docker context and this dockerignore
-			rel, err := filepath.Rel(root, filepath.Dir(path))
-			if err != nil {
-				return err
-			}
-
-			for _, line := range lines {
-				// append the dockerignore lines including the relative base
-				ignore = append(ignore, filepath.Join(rel, line))
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return ignore, nil
-}
-
-func readDockerIgnore(file string) ([]string, error) {
-	fd, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-
-	ignore, err := dockerignore.ReadAll(fd)
-	if err != nil {
-		return nil, err
-	}
-
-	return ignore, nil
+	return watchForChanges(sym, opts.Ignores, ch)
 }
 
 func watchForChanges(dir string, ignore []string, ch chan Change) error {

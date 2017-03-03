@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# cd to the api root
+cd $(dirname ${0:-})/..
+
+if [ "$DEVELOPMENT" == "true" ]; then
+  $GOPATH/bin/rerun -watch $GOPATH/src/github.com/convox/praxis -build github.com/convox/praxis/cmd/rack
+else
+  $GOPATH/bin/rack
+fi

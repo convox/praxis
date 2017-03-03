@@ -1,12 +1,18 @@
 package main
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/convox/praxis/changes"
 	"github.com/convox/praxis/manifest"
@@ -61,9 +67,10 @@ func runStart(c *cli.Context) error {
 	}
 
 	for _, s := range m.Services {
-		w := m.PrefixWriter(os.Stdout, s.Name)
-		go startService(app.Name, s.Name, build.Release, w, ch)
-		go watchChanges(m, s.Name, ch)
+		m.PrefixWriter(os.Stdout, "convox").Writef("starting: %s\n", s.Name)
+
+		go startService(m, app.Name, s.Name, build.Release, ch)
+		go watchChanges(m, app.Name, s.Name, ch)
 	}
 
 	for _, b := range m.Balancers {
@@ -81,8 +88,6 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 	}
 
 	w := m.PrefixWriter(os.Stdout, "convox")
-
-	w.Writef("stopping\n")
 
 	ps, err := Rack.ProcessList(app, types.ProcessListOptions{})
 	if err != nil {
@@ -109,12 +114,26 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 	os.Exit(0)
 }
 
-func startService(app, service, release string, w manifest.PrefixWriter, ch chan error) {
-	w.Writef("starting\n")
+func startService(m *manifest.Manifest, app, service, release string, ch chan error) {
+	w := m.PrefixWriter(os.Stdout, service)
 
-	_, err := Rack.ProcessRun(app, types.ProcessRunOptions{
-		Release: release,
-		Service: service,
+	pss, err := Rack.ProcessList(app, types.ProcessListOptions{Service: service})
+	if err != nil {
+		ch <- err
+		return
+	}
+
+	for _, ps := range pss {
+		if err := Rack.ProcessStop(app, ps.Id); err != nil {
+			ch <- err
+			return
+		}
+	}
+
+	_, err = Rack.ProcessRun(app, types.ProcessRunOptions{
+		Environment: env,
+		Release:     release,
+		Service:     service,
 		Stream: types.Stream{
 			Reader: nil,
 			Writer: w,
@@ -166,7 +185,7 @@ func startBalancer(app string, balancer manifest.Balancer, ch chan error) {
 	}
 }
 
-func watchChanges(m *manifest.Manifest, service string, ch chan error) {
+func watchChanges(m *manifest.Manifest, app, service string, ch chan error) {
 	for _, s := range m.Services {
 		bss, err := m.BuildSources(s.Name)
 		if err != nil {
@@ -175,17 +194,148 @@ func watchChanges(m *manifest.Manifest, service string, ch chan error) {
 		}
 
 		for _, bs := range bss {
-			go watchPath(m, s.Name, bs, ch)
+			go watchPath(m, app, s.Name, bs, ch)
 		}
 	}
 }
 
-func watchPath(m *manifest.Manifest, service string, bs manifest.BuildSource, ch chan error) {
+func watchPath(m *manifest.Manifest, app, service string, bs manifest.BuildSource, ch chan error) {
 	cch := make(chan changes.Change, 1)
+	w := m.PrefixWriter(os.Stdout, "convox")
 
-	changes.Watch(bs.Local, cch)
-
-	for c := range cch {
-		fmt.Printf("c = %+v\n", c)
+	abs, err := filepath.Abs(bs.Local)
+	if err != nil {
+		ch <- err
+		return
 	}
+
+	ignores, err := m.BuildIgnores(service)
+	if err != nil {
+		ch <- err
+		return
+	}
+
+	w.Writef("syncing: %s to %s:%s\n", bs.Local, service, bs.Remote)
+
+	go changes.Watch(abs, cch, changes.WatchOptions{
+		Ignores: ignores,
+	})
+
+	tick := time.Tick(1000 * time.Millisecond)
+	chgs := []changes.Change{}
+
+	for {
+		select {
+		case c := <-cch:
+			chgs = append(chgs, c)
+		case <-tick:
+			if len(chgs) == 0 {
+				continue
+			}
+
+			pss, err := Rack.ProcessList(app, types.ProcessListOptions{Service: service})
+			if err != nil {
+				w.Writef("sync error: %s\n", err)
+				continue
+			}
+
+			adds, removes := changes.Partition(chgs)
+
+			for _, ps := range pss {
+				switch {
+				case len(adds) > 3:
+					w.Writef("sync: %d files\n", len(adds))
+				case len(adds) > 0:
+					w.Writef("sync: %s\n", strings.Join(changes.Files(adds), ", "))
+				}
+
+				if err := handleAdds(app, ps.Id, bs.Remote, adds); err != nil {
+					w.Writef("sync add error: %s\n", err)
+				}
+
+				switch {
+				case len(removes) > 3:
+					w.Writef("remove: %d files\n", len(removes))
+				case len(removes) > 0:
+					w.Writef("remove: %s\n", strings.Join(changes.Files(removes), ", "))
+				}
+
+				if len(removes) > 0 {
+					if err := handleRemoves(app, ps.Id, removes); err != nil {
+						w.Writef("sync remove error: %s\n", err)
+					}
+				}
+			}
+
+			chgs = []changes.Change{}
+		}
+	}
+}
+
+func handleAdds(app, pid, remote string, adds []changes.Change) error {
+	if len(adds) == 0 {
+		return nil
+	}
+
+	r, w := io.Pipe()
+
+	ch := make(chan error)
+
+	go func() {
+		ch <- Rack.FilesUpload(app, pid, r)
+	}()
+
+	tgz := gzip.NewWriter(w)
+	tw := tar.NewWriter(tgz)
+
+	for _, add := range adds {
+		local := filepath.Join(add.Base, add.Path)
+
+		stat, err := os.Stat(local)
+		if err != nil {
+			return err
+		}
+
+		tw.WriteHeader(&tar.Header{
+			Name:    filepath.Join(remote, add.Path),
+			Mode:    int64(stat.Mode()),
+			Size:    stat.Size(),
+			ModTime: stat.ModTime(),
+		})
+
+		fd, err := os.Open(local)
+		if err != nil {
+			return err
+		}
+
+		defer fd.Close()
+
+		if _, err := io.Copy(tw, fd); err != nil {
+			return err
+		}
+
+		fd.Close()
+	}
+
+	if err := tw.Close(); err != nil {
+		return err
+	}
+
+	if err := tgz.Close(); err != nil {
+		return err
+	}
+
+	if err := w.Close(); err != nil {
+		return err
+	}
+
+	return <-ch
+}
+
+func handleRemoves(app, pid string, removes []changes.Change) error {
+	if len(removes) == 0 {
+		return nil
+	}
+
+	return Rack.FilesDelete(app, pid, changes.Files(removes))
 }

@@ -16,6 +16,9 @@ func Routes(api *api.Server) {
 	api.Route("build.logs", "GET", "/apps/{app}/builds/{id}/logs", controllers.BuildLogs)
 	api.Route("build.update", "PUT", "/apps/{app}/builds/{id}", controllers.BuildUpdate)
 
+	api.Route("files.delete", "DELETE", "/apps/{app}/processes/{process}/files", controllers.FilesDelete)
+	api.Route("files.upload", "POST", "/apps/{app}/processes/{process}/files", controllers.FilesUpload)
+
 	api.Route("object.fetch", "GET", "/apps/{app}/objects/{key:.*}", controllers.ObjectFetch)
 	api.Route("object.store", "POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)
 

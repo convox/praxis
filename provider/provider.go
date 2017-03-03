@@ -41,6 +41,9 @@ type Provider interface {
 
 	// EnvironmentGet(app string) (structs.Environment, error)
 
+	FilesDelete(app, pid string, files []string) error
+	FilesUpload(app, pid string, r io.Reader) error
+
 	// FormationList(app string) (structs.Formation, error)
 	// FormationGet(app, process string) (*structs.ProcessFormation, error)
 	// FormationSave(app string, pf *structs.ProcessFormation) error
