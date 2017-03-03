@@ -93,8 +93,9 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 		args = append(args, "-v", v)
 	}
 
-	// TODO remove
-	args = append(args, "-e", "DEVELOPMENT=true")
+	for k, v := range opts.Environment {
+		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
+	}
 
 	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
 	args = append(args, "--label", fmt.Sprintf("convox.release=%s", release.Id))

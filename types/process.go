@@ -28,10 +28,11 @@ type ProcessListOptions struct {
 }
 
 type ProcessRunOptions struct {
-	Command string
-	Height  int
-	Width   int
-	Release string
-	Service string
-	Stream  io.ReadWriter
+	Command     string
+	Environment map[string]string
+	Height      int
+	Width       int
+	Release     string
+	Service     string
+	Stream      io.ReadWriter
 }

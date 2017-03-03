@@ -46,6 +46,15 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
+	env, err := manifest.LoadEnvironment(".env")
+	if err != nil {
+		return err
+	}
+
+	if err := m.Validate(env); err != nil {
+		return err
+	}
+
 	ch := make(chan error)
 
 	sig := make(chan os.Signal, 1)
@@ -69,7 +78,7 @@ func runStart(c *cli.Context) error {
 	for _, s := range m.Services {
 		m.PrefixWriter(os.Stdout, "convox").Writef("starting: %s\n", s.Name)
 
-		go startService(m, app.Name, s.Name, build.Release, ch)
+		go startService(m, app.Name, s.Name, build.Release, env, ch)
 		go watchChanges(m, app.Name, s.Name, ch)
 	}
 
@@ -114,7 +123,7 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 	os.Exit(0)
 }
 
-func startService(m *manifest.Manifest, app, service, release string, ch chan error) {
+func startService(m *manifest.Manifest, app, service, release string, env []string, ch chan error) {
 	w := m.PrefixWriter(os.Stdout, service)
 
 	pss, err := Rack.ProcessList(app, types.ProcessListOptions{Service: service})
@@ -130,8 +139,20 @@ func startService(m *manifest.Manifest, app, service, release string, ch chan er
 		}
 	}
 
+	s, err := m.Services.Find(service)
+	if err != nil {
+		ch <- err
+		return
+	}
+
+	senv, err := s.Env(env)
+	if err != nil {
+		ch <- err
+		return
+	}
+
 	_, err = Rack.ProcessRun(app, types.ProcessRunOptions{
-		Environment: env,
+		Environment: senv,
 		Release:     release,
 		Service:     service,
 		Stream: types.Stream{

@@ -3,6 +3,7 @@ package rack
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"strconv"
 
 	"github.com/convox/praxis/types"
@@ -20,12 +21,19 @@ func (c *Client) ProcessList(app string, opts types.ProcessListOptions) (ps type
 }
 
 func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
+	ev := url.Values{}
+
+	for k, v := range opts.Environment {
+		ev.Add(k, v)
+	}
+
 	ro := RequestOptions{
 		Body: opts.Stream,
 		Headers: Headers{
-			"Command": opts.Command,
-			"Release": opts.Release,
-			"Service": opts.Service,
+			"Command":     opts.Command,
+			"Environment": ev.Encode(),
+			"Release":     opts.Release,
+			"Service":     opts.Service,
 		},
 	}
 

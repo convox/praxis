@@ -1,9 +1,11 @@
 package manifest
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	yaml "gopkg.in/yaml.v2"
@@ -49,12 +51,45 @@ func LoadFile(path string) (*Manifest, error) {
 	return m, nil
 }
 
+func LoadEnvironment(file string) ([]string, error) {
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		return []string{}, nil
+	}
+
+	fd, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+
+	defer fd.Close()
+
+	env := []string{}
+
+	s := bufio.NewScanner(fd)
+
+	for s.Scan() {
+		env = append(env, s.Text())
+	}
+
+	return env, nil
+}
+
 func (m *Manifest) Path(sub string) (string, error) {
 	if m.root == "" {
 		return "", fmt.Errorf("path undefined for a manifest with no root")
 	}
 
 	return filepath.Join(m.root, sub), nil
+}
+
+func (m *Manifest) Validate(env []string) error {
+	for _, s := range m.Services {
+		if _, err := s.Env(env); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func message(w io.Writer, format string, args ...interface{}) {

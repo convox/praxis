@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/convox/praxis/api"
@@ -40,10 +41,22 @@ func ProcessRun(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	height := c.Header("Height")
 	width := c.Header("Width")
 
+	uenv, err := url.ParseQuery(c.Header("Environment"))
+	if err != nil {
+		return err
+	}
+
+	env := map[string]string{}
+
+	for k := range uenv {
+		env[k] = uenv.Get(k)
+	}
+
 	opts := types.ProcessRunOptions{
-		Command: command,
-		Release: release,
-		Service: service,
+		Command:     command,
+		Environment: env,
+		Release:     release,
+		Service:     service,
 		Stream: types.Stream{
 			Reader: r.Body,
 			Writer: w,

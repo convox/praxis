@@ -5,6 +5,9 @@ balancers:
 services:
   rack:
     build: .
+    environment:
+      - DEVELOPMENT
+      - FOO=bar
     test: make check test
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

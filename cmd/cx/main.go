@@ -22,7 +22,13 @@ var (
 )
 
 func init() {
-	Rack = rack.New("localhost:5443")
+	host := "localhost:5443"
+
+	if rh := os.Getenv("RACK_HOST"); rh != "" {
+		host = rh
+	}
+
+	Rack = rack.New(host)
 }
 
 func main() {
