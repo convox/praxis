@@ -78,8 +78,6 @@ func watchForChanges(dir string, ignore []string, ch chan Change) error {
 
 		waitForNextScan(dir)
 	}
-
-	return nil
 }
 
 func notify(ch chan Change, from, to map[string]time.Time, base string, ignore []string) {
