@@ -20,8 +20,9 @@ func (v *Balancer) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return unmarshalMapSlice(unmarshal, &v.Endpoints)
 }
 
-func (v *Balancer) SetName(name string) {
+func (v *Balancer) SetName(name string) error {
 	v.Name = name
+	return nil
 }
 
 func (v BalancerEndpoints) MarshalYAML() (interface{}, error) {
@@ -49,7 +50,7 @@ func (v *BalancerEndpoint) UnmarshalYAML(unmarshal func(interface{}) error) erro
 	return nil
 }
 
-func (v *BalancerEndpoint) SetName(name string) {
+func (v *BalancerEndpoint) SetName(name string) error {
 	parts := strings.Split(name, "/")
 
 	switch len(parts) {
@@ -66,8 +67,12 @@ func (v *BalancerEndpoint) SetName(name string) {
 		case "301":
 			v.Redirect = v.Target
 			v.Target = ""
+		default:
+			return fmt.Errorf("unknown code: %s", parts[2])
 		}
 	}
+
+	return nil
 }
 
 func (v Queues) MarshalYAML() (interface{}, error) {
@@ -78,8 +83,9 @@ func (v *Queues) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return unmarshalMapSlice(unmarshal, v)
 }
 
-func (v *Queue) SetName(name string) {
+func (v *Queue) SetName(name string) error {
 	v.Name = name
+	return nil
 }
 
 func (v Services) MarshalYAML() (interface{}, error) {
@@ -90,8 +96,9 @@ func (v *Services) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return unmarshalMapSlice(unmarshal, v)
 }
 
-func (v *Service) SetName(name string) {
+func (v *Service) SetName(name string) error {
 	v.Name = name
+	return nil
 }
 
 func (v *ServiceBuild) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -127,12 +134,13 @@ func (v *Tables) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return unmarshalMapSlice(unmarshal, v)
 }
 
-func (v *Table) SetName(name string) {
+func (v *Table) SetName(name string) error {
 	v.Name = name
+	return nil
 }
 
 type NameSetter interface {
-	SetName(name string)
+	SetName(name string) error
 }
 
 func remarshal(in, out interface{}) error {
@@ -164,9 +172,13 @@ func unmarshalMapSlice(unmarshal func(interface{}) error, v interface{}) error {
 		if ns, ok := item.(NameSetter); ok {
 			switch t := msi.Key.(type) {
 			case int:
-				ns.SetName(fmt.Sprintf("%d", t))
+				if err := ns.SetName(fmt.Sprintf("%d", t)); err != nil {
+					return err
+				}
 			case string:
-				ns.SetName(t)
+				if err := ns.SetName(t); err != nil {
+					return err
+				}
 			default:
 				return fmt.Errorf("unknown key type: %T", t)
 			}
