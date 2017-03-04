@@ -1,7 +1,6 @@
 balancers:
   rack:
-    80/http/301: https://:443/*
-    443/https: https://rack:3000
+    6443/https: https://rack:3000
 services:
   rack:
     build: .

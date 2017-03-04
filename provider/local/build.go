@@ -3,6 +3,7 @@ package local
 import (
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -17,9 +18,14 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 
 	bid := types.Id("B", 10)
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
 	args := []string{"run"}
 	args = append(args, "--detach", "-i")
-	args = append(args, "--link", "rack", "-e", "RACK_URL=https://rack:3000")
+	args = append(args, "--link", hostname, "-e", fmt.Sprintf("RACK_URL=https://%s:3000", hostname))
 	args = append(args, "-v", "/var/run/docker.sock:/var/run/docker.sock")
 	args = append(args, "-e", fmt.Sprintf("BUILD_APP=%s", app))
 	args = append(args, "convox/praxis", "build", "-id", bid, "-url", url)

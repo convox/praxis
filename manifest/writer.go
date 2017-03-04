@@ -9,39 +9,52 @@ import (
 )
 
 type PrefixWriter struct {
-	Label  string
+	Prefix string
 	Writer io.Writer
-	prefix string
 }
 
-func (m *Manifest) PrefixWriter(w io.Writer, label string) PrefixWriter {
+// func (m *Manifest) PrefixWriter(w io.Writer, label string) PrefixWriter {
+//   prefix := fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), label)
+
+//   return PrefixWriter{
+//     Label:  label,
+//     Writer: text.NewIndentWriter(w, []byte(prefix)),
+//     prefix: prefix,
+//   }
+// }
+
+func (m *Manifest) Writef(label string, format string, args ...interface{}) {
+	m.Writer(label, os.Stdout).Write([]byte(fmt.Sprintf(format, args...)))
+
+}
+
+func (m *Manifest) Writer(label string, w io.Writer) PrefixWriter {
 	prefix := fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), label)
 
 	return PrefixWriter{
-		Label:  label,
+		Prefix: prefix,
 		Writer: text.NewIndentWriter(w, []byte(prefix)),
-		prefix: prefix,
 	}
 }
 
-func (m *Manifest) Write(p []byte) (int, error) {
-	prefix := fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), "convox")
+// func (m *Manifest) Write(p []byte) (int, error) {
+//   prefix := fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), "convox")
 
-	if _, err := os.Stdout.Write([]byte(prefix)); err != nil {
-		return 0, err
-	}
+//   if _, err := os.Stdout.Write([]byte(prefix)); err != nil {
+//     return 0, err
+//   }
 
-	return os.Stdout.Write(p)
-}
+//   return os.Stdout.Write(p)
+// }
 
-func (m *Manifest) Writef(format string, args ...interface{}) error {
-	return m.WriteString(fmt.Sprintf(format, args...))
-}
+// func (m *Manifest) Writef(format string, args ...interface{}) error {
+//   return m.WriteString(fmt.Sprintf(format, args...))
+// }
 
-func (m *Manifest) WriteString(s string) error {
-	_, err := m.Write([]byte(s))
-	return err
-}
+// func (m *Manifest) WriteString(s string) error {
+//   _, err := m.Write([]byte(s))
+//   return err
+// }
 
 func (w PrefixWriter) Write(p []byte) (int, error) {
 	q := []byte{}
@@ -51,7 +64,7 @@ func (w PrefixWriter) Write(p []byte) (int, error) {
 	for i, b := range p {
 		q = append(q, b)
 		if b == 13 && i < len(p)-1 && p[i+1] != 10 {
-			q = append(q, []byte(w.prefix)...)
+			q = append(q, []byte(w.Prefix)...)
 		}
 	}
 

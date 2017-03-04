@@ -43,7 +43,7 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	if err := buildLogs(build, types.Stream{Writer: m.PrefixWriter(os.Stdout, "build")}); err != nil {
+	if err := buildLogs(build, types.Stream{Writer: m.Writer("build", os.Stdout)}); err != nil {
 		return err
 	}
 
@@ -57,7 +57,7 @@ func runTest(c *cli.Context) error {
 			continue
 		}
 
-		w := m.PrefixWriter(os.Stdout, s.Name)
+		w := m.Writer(s.Name, os.Stdout)
 
 		if err := w.Writef("running: %s\n", s.Test); err != nil {
 			return err

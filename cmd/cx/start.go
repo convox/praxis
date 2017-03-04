@@ -33,12 +33,25 @@ func runStart(c *cli.Context) error {
 	if err := startLocalRack(); err != nil {
 		return err
 	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 
-	name := "test"
+	abs, err := filepath.Abs(wd)
+	if err != nil {
+		return err
+	}
+
+	name := filepath.Base(abs)
 
 	app, err := Rack.AppGet(name)
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "no such app:") {
+			app, err = Rack.AppCreate(name)
+		} else {
+			return err
+		}
 	}
 
 	m, err := manifest.LoadFile("convox.yml")
@@ -66,7 +79,7 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	if err := buildLogs(build, types.Stream{Writer: m.PrefixWriter(os.Stdout, "build")}); err != nil {
+	if err := buildLogs(build, types.Stream{Writer: m.Writer("build", os.Stdout)}); err != nil {
 		return err
 	}
 
@@ -76,7 +89,7 @@ func runStart(c *cli.Context) error {
 	}
 
 	for _, s := range m.Services {
-		m.PrefixWriter(os.Stdout, "convox").Writef("starting: %s\n", s.Name)
+		m.Writef("convox", "starting: %s\n", s.Name)
 
 		go startService(m, app.Name, s.Name, build.Release, env, ch)
 		go watchChanges(m, app.Name, s.Name, ch)
@@ -96,8 +109,6 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 		fmt.Println("")
 	}
 
-	w := m.PrefixWriter(os.Stdout, "convox")
-
 	ps, err := Rack.ProcessList(app, types.ProcessListOptions{})
 	if err != nil {
 		errch <- err
@@ -109,7 +120,8 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 	wg.Add(len(ps))
 
 	for _, p := range ps {
-		w.Writef("stopping %s.%s\n", p.Service, p.Id)
+		m.Writef("convox", "stopping %s\n", p.Id)
+
 		go func() {
 			defer wg.Done()
 			Rack.ProcessStop(app, p.Id)
@@ -118,13 +130,13 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 
 	wg.Wait()
 
-	w.Writef("stopped\n")
+	m.Writef("convox", "stopped\n")
 
 	os.Exit(0)
 }
 
 func startService(m *manifest.Manifest, app, service, release string, env []string, ch chan error) {
-	w := m.PrefixWriter(os.Stdout, service)
+	w := m.Writer(service, os.Stdout)
 
 	pss, err := Rack.ProcessList(app, types.ProcessListOptions{Service: service})
 	if err != nil {
@@ -222,7 +234,8 @@ func watchChanges(m *manifest.Manifest, app, service string, ch chan error) {
 
 func watchPath(m *manifest.Manifest, app, service string, bs manifest.BuildSource, ch chan error) {
 	cch := make(chan changes.Change, 1)
-	w := m.PrefixWriter(os.Stdout, "convox")
+
+	w := m.Writer("convox", os.Stdout)
 
 	abs, err := filepath.Abs(bs.Local)
 	if err != nil {
