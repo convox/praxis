@@ -13,16 +13,6 @@ type PrefixWriter struct {
 	Writer io.Writer
 }
 
-// func (m *Manifest) PrefixWriter(w io.Writer, label string) PrefixWriter {
-//   prefix := fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), label)
-
-//   return PrefixWriter{
-//     Label:  label,
-//     Writer: text.NewIndentWriter(w, []byte(prefix)),
-//     prefix: prefix,
-//   }
-// }
-
 func (m *Manifest) Writef(label string, format string, args ...interface{}) {
 	m.Writer(label, os.Stdout).Write([]byte(fmt.Sprintf(format, args...)))
 
@@ -36,25 +26,6 @@ func (m *Manifest) Writer(label string, w io.Writer) PrefixWriter {
 		Writer: text.NewIndentWriter(w, []byte(prefix)),
 	}
 }
-
-// func (m *Manifest) Write(p []byte) (int, error) {
-//   prefix := fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), "convox")
-
-//   if _, err := os.Stdout.Write([]byte(prefix)); err != nil {
-//     return 0, err
-//   }
-
-//   return os.Stdout.Write(p)
-// }
-
-// func (m *Manifest) Writef(format string, args ...interface{}) error {
-//   return m.WriteString(fmt.Sprintf(format, args...))
-// }
-
-// func (m *Manifest) WriteString(s string) error {
-//   _, err := m.Write([]byte(s))
-//   return err
-// }
 
 func (w PrefixWriter) Write(p []byte) (int, error) {
 	q := []byte{}
@@ -76,11 +47,7 @@ func (w PrefixWriter) Write(p []byte) (int, error) {
 }
 
 func (w PrefixWriter) Writef(format string, args ...interface{}) error {
-	return w.WriteString(fmt.Sprintf(format, args...))
-}
-
-func (w PrefixWriter) WriteString(s string) error {
-	_, err := w.Write([]byte(s))
+	_, err := w.Write([]byte(fmt.Sprintf(format, args...)))
 	return err
 }
 
