@@ -1,46 +1,64 @@
 package manifest
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/kr/text"
+	"sync"
 )
 
 type PrefixWriter struct {
-	Prefix string
-	Writer io.Writer
+	Buffer bytes.Buffer
+	Writer func(string) error
+}
+
+var writeLock sync.Mutex
+
+func (m *Manifest) WriteLine(line string) {
+	writeLock.Lock()
+	defer writeLock.Unlock()
+	fmt.Println(line)
 }
 
 func (m *Manifest) Writef(label string, format string, args ...interface{}) {
 	m.Writer(label, os.Stdout).Write([]byte(fmt.Sprintf(format, args...)))
-
 }
 
 func (m *Manifest) Writer(label string, w io.Writer) PrefixWriter {
-	prefix := fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), label)
+	prefix := []byte(fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), label))
+
+	var lock sync.Mutex
 
 	return PrefixWriter{
-		Prefix: prefix,
-		Writer: text.NewIndentWriter(w, []byte(prefix)),
+		Writer: func(s string) error {
+			lock.Lock()
+			defer lock.Unlock()
+
+			if _, err := w.Write(prefix); err != nil {
+				return err
+			}
+
+			if _, err := w.Write([]byte(s)); err != nil {
+				return err
+			}
+
+			return nil
+		},
 	}
 }
 
 func (w PrefixWriter) Write(p []byte) (int, error) {
-	q := []byte{}
+	q := bytes.Replace(p, []byte{10, 13}, []byte{10}, -1)
 
-	// inject prefix after line feeds unless they are followed by
-	// a carriage return
-	for i, b := range p {
-		q = append(q, b)
-		if b == 13 && i < len(p)-1 && p[i+1] != 10 {
-			q = append(q, []byte(w.Prefix)...)
-		}
+	if _, err := w.Buffer.Write(q); err != nil {
+		return 0, err
 	}
 
-	if _, err := w.Writer.Write(q); err != nil {
-		return 0, err
+	if idx := bytes.Index(w.Buffer.Bytes(), []byte{10}); idx > -1 {
+		if err := w.Writer(string(w.Buffer.Next(idx + 1))); err != nil {
+			return 0, err
+		}
 	}
 
 	return len(p), nil

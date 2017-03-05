@@ -18,6 +18,16 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 
 	bid := types.Id("B", 10)
 
+	build := &types.Build{
+		Id:     bid,
+		App:    app,
+		Status: "created",
+	}
+
+	if err := p.Store(fmt.Sprintf("apps/%s/builds/%s", app, bid), build); err != nil {
+		return nil, err
+	}
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -37,14 +47,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, err
 	}
 
-	pid := strings.TrimSpace(string(data))[0:10]
-
-	build := &types.Build{
-		Id:      bid,
-		App:     app,
-		Process: pid,
-		Status:  "created",
-	}
+	build.Process = strings.TrimSpace(string(data))[0:10]
 
 	if err := p.Store(fmt.Sprintf("apps/%s/builds/%s", app, bid), build); err != nil {
 		return nil, err

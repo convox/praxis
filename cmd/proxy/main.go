@@ -1,13 +1,21 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/types"
@@ -102,6 +110,19 @@ func handleTarget(protocol, target string) error {
 
 	defer ln.Close()
 
+	switch protocol {
+	case "https", "tls":
+		cert, err := generateSelfSignedCertificate("convox.local")
+
+		if err != nil {
+			return err
+		}
+
+		ln = tls.NewListener(ln, &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		})
+	}
+
 	for {
 		cn, err := ln.Accept()
 		if err != nil {
@@ -133,4 +154,43 @@ func die(err error) {
 
 func usage() {
 	die(fmt.Errorf("usage: proxy <protocol> <style> <target>"))
+}
+
+func generateSelfSignedCertificate(host string) (tls.Certificate, error) {
+	rkey, err := rsa.GenerateKey(rand.Reader, 2048)
+
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	serial, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: serial,
+		Subject: pkix.Name{
+			CommonName:   host,
+			Organization: []string{"convox"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(365 * 24 * time.Hour),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		DNSNames:              []string{host},
+	}
+
+	data, err := x509.CreateCertificate(rand.Reader, &template, &template, &rkey.PublicKey, rkey)
+
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	pub := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: data})
+	key := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(rkey)})
+
+	return tls.X509KeyPair(pub, key)
 }
