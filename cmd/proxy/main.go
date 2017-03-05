@@ -8,6 +8,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"math/big"
 	"net"
 	"net/http"
@@ -141,6 +142,20 @@ func handleTarget(protocol, target string) error {
 		port, err := strconv.Atoi(u.Port())
 		if err != nil {
 			return err
+		}
+
+		switch u.Scheme {
+		case "https", "tls":
+			r, w := net.Pipe()
+
+			tc := tls.Client(w, &tls.Config{
+				InsecureSkipVerify: true,
+			})
+
+			go io.Copy(cn, tc)
+			go io.Copy(tc, cn)
+
+			cn = r
 		}
 
 		go Rack.ProxyStart(app, ps[0].Id, port, cn)
