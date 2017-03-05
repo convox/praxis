@@ -35,6 +35,15 @@ func init() {
 	Rack = r
 }
 
+func die(err error) {
+	fmt.Fprintf(os.Stderr, "error: %s\n", err)
+	os.Exit(1)
+}
+
+func usage() {
+	die(fmt.Errorf("usage: proxy <protocol> <style> <target>"))
+}
+
 func main() {
 	if len(os.Args) != 4 {
 		usage()
@@ -160,15 +169,6 @@ func handleTarget(protocol, target string) error {
 
 		go Rack.ProxyStart(app, ps[0].Id, port, cn)
 	}
-}
-
-func die(err error) {
-	fmt.Fprintf(os.Stderr, "error: %s\n", err)
-	os.Exit(1)
-}
-
-func usage() {
-	die(fmt.Errorf("usage: proxy <protocol> <style> <target>"))
 }
 
 func generateSelfSignedCertificate(host string) (tls.Certificate, error) {
