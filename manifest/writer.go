@@ -55,7 +55,12 @@ func (w PrefixWriter) Write(p []byte) (int, error) {
 		return 0, err
 	}
 
-	if idx := bytes.Index(w.Buffer.Bytes(), []byte{10}); idx > -1 {
+	for {
+		idx := bytes.Index(w.Buffer.Bytes(), []byte{10})
+		if idx == -1 {
+			break
+		}
+
 		if err := w.Writer(string(w.Buffer.Next(idx + 1))); err != nil {
 			return 0, err
 		}
