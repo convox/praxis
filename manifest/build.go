@@ -121,6 +121,10 @@ func (m *Manifest) BuildManifest(service string) ([]byte, error) {
 		return nil, err
 	}
 
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil, fmt.Errorf("no such file: %s", filepath.Join(s.Build.Path, "Dockerfile"))
+	}
+
 	return ioutil.ReadFile(path)
 }
 

@@ -5,8 +5,7 @@ services:
   rack:
     build: .
     environment:
-      - DEVELOPMENT
-      - FOO=bar
+      - DEVELOPMENT=false
     test: make check test
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

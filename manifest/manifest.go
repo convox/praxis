@@ -84,7 +84,7 @@ func (m *Manifest) Path(sub string) (string, error) {
 
 func (m *Manifest) Validate(env []string) error {
 	for _, s := range m.Services {
-		if _, err := s.Env(env); err != nil {
+		if err := s.Validate(env); err != nil {
 			return err
 		}
 	}

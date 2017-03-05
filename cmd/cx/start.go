@@ -88,6 +88,14 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
+	switch build.Status {
+	case "created":
+	case "failed":
+		return fmt.Errorf("build failed")
+	default:
+		return fmt.Errorf("unknown build status: %s", build.Status)
+	}
+
 	for _, s := range m.Services {
 		m.Writef("convox", "starting: %s\n", s.Name)
 

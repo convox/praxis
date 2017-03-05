@@ -59,11 +59,6 @@ func main() {
 		flagManifest = v
 	}
 
-	// fmt.Printf("flagApp = %+v\n", flagApp)
-	// fmt.Printf("flagId = %+v\n", flagId)
-	// fmt.Printf("flagManifest = %+v\n", flagManifest)
-	// fmt.Printf("flagUrl = %+v\n", flagUrl)
-
 	if err := build(); err != nil {
 		fail(err)
 	}
@@ -74,11 +69,6 @@ func main() {
 }
 
 func build() error {
-	// build, err := Rack.BuildGet(flagApp, flagId)
-	// if err != nil {
-	//   return err
-	// }
-
 	tmp, err := ioutil.TempDir("", "")
 	if err != nil {
 		return err
@@ -104,6 +94,10 @@ func build() error {
 
 	m, err := manifest.LoadFile(mf)
 	if err != nil {
+		return err
+	}
+
+	if err := m.Validate([]string{}); err != nil {
 		return err
 	}
 
@@ -145,23 +139,16 @@ func release() error {
 }
 
 func fail(err error) {
-	fmt.Fprintf(os.Stderr, "ERROR: %s", err)
+	fmt.Fprintf(os.Stderr, "build error: %s\n", err)
 
-	// log(fmt.Sprintf("ERROR: %s", err))
-	// if e := currentProvider.EventSend(event, err); e != nil {
-	//   fmt.Fprintf(os.Stderr, "ERROR: %s\n", e)
-	// }
+	opts := types.BuildUpdateOptions{
+		Status: "failed",
+	}
 
-	// url, _ := currentProvider.ObjectStore(fmt.Sprintf("build/%s/logs", currentBuild.Id), bytes.NewReader([]byte(currentLogs)), structs.ObjectOptions{})
-
-	// currentBuild.Ended = time.Now()
-	// currentBuild.Logs = url
-	// currentBuild.Reason = err.Error()
-	// currentBuild.Status = "failed"
-
-	// if err := currentProvider.BuildSave(currentBuild); err != nil {
-	//   fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
-	// }
+	if _, err := Rack.BuildUpdate(flagApp, flagId, opts); err != nil {
+		fmt.Fprintf(os.Stderr, "error: could not update build: %s\n", err)
+		return
+	}
 
 	os.Exit(1)
 }

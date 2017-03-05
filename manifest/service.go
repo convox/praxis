@@ -57,6 +57,14 @@ func (s Service) Env(env []string) (map[string]string, error) {
 	return full, nil
 }
 
+func (s *Service) Validate(env []string) error {
+	if _, err := s.Env(env); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func parseEnv(env []string) map[string]string {
 	parsed := map[string]string{}
 

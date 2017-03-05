@@ -25,10 +25,10 @@ func (m *Manifest) Writef(label string, format string, args ...interface{}) {
 	m.Writer(label, os.Stdout).Write([]byte(fmt.Sprintf(format, args...)))
 }
 
+var lock sync.Mutex
+
 func (m *Manifest) Writer(label string, w io.Writer) PrefixWriter {
 	prefix := []byte(fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), label))
-
-	var lock sync.Mutex
 
 	return PrefixWriter{
 		Writer: func(s string) error {

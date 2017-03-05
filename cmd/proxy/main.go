@@ -130,6 +130,7 @@ func handleTarget(protocol, target string) error {
 
 		ln = tls.NewListener(ln, &tls.Config{
 			Certificates: []tls.Certificate{cert},
+			NextProtos:   []string{"h2"},
 		})
 	}
 
@@ -160,6 +161,22 @@ func handleTarget(protocol, target string) error {
 			tc := tls.Client(w, &tls.Config{
 				InsecureSkipVerify: true,
 			})
+
+			if tcn, ok := cn.(*tls.Conn); ok {
+				if err := tcn.Handshake(); err != nil {
+					return err
+				}
+
+				cs := tcn.ConnectionState()
+
+				switch cs.NegotiatedProtocol {
+				case "h2":
+					tc = tls.Client(w, &tls.Config{
+						InsecureSkipVerify: true,
+						NextProtos:         []string{"h2"},
+					})
+				}
+			}
 
 			go io.Copy(cn, tc)
 			go io.Copy(tc, cn)
