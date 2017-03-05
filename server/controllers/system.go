@@ -3,7 +3,7 @@ package controllers
 import (
 	"net/http"
 
-	"github.com/convox/praxis/api"
+	"github.com/convox/api"
 )
 
 func SystemGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {

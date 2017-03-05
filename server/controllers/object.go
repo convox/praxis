@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/convox/praxis/api"
+	"github.com/convox/api"
 	"github.com/convox/praxis/types"
 )
 

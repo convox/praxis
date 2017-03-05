@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/convox/praxis/api"
+	"github.com/convox/api"
 )
 
 func ProxyStart(w http.ResponseWriter, r *http.Request, c *api.Context) error {

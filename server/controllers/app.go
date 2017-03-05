@@ -3,7 +3,7 @@ package controllers
 import (
 	"net/http"
 
-	"github.com/convox/praxis/api"
+	"github.com/convox/api"
 )
 
 func AppCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {

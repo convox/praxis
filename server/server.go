@@ -1,6 +1,6 @@
 package server
 
-import "github.com/convox/praxis/api"
+import "github.com/convox/api"
 
 type Server struct {
 	*api.Server
