@@ -17,6 +17,10 @@
 			"Rev": "0208149b40d863d2c1a2f8fe5753096a9cf2cc8b"
 		},
 		{
+			"ImportPath": "github.com/convox/api",
+			"Rev": "b9eb277fa0117ae8de90eb1d372608c2a3cbfd0e"
+		},
+		{
 			"ImportPath": "github.com/convox/logger",
 			"Rev": "ebae2557e3b133bcd3088869d078a5af39eac834"
 		},
