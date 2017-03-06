@@ -22,6 +22,8 @@ func Proxy(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		return err
 	}
 
+	defer out.Close()
+
 	w.WriteHeader(200)
 
 	if err := stream(w, out); err != nil {

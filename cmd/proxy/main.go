@@ -16,6 +16,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/convox/praxis/sdk/rack"
@@ -183,13 +184,10 @@ func handleConnection(cn net.Conn, app string, scheme, host string, port int) er
 			}
 		}
 
-		go io.Copy(cn, tc)
-		go io.Copy(tc, cn)
+		go stream(cn, tc)
 
 		cn = r
 	}
-
-	fmt.Println("before")
 
 	out, err := Rack.Proxy(app, ps[0].Id, port, cn)
 	if err != nil {
@@ -199,6 +197,12 @@ func handleConnection(cn net.Conn, app string, scheme, host string, port int) er
 	if _, err := io.Copy(cn, out); err != nil {
 		return err
 	}
+
+	if err := cn.Close(); err != nil {
+		return err
+	}
+
+	out.Close()
 
 	return nil
 }
@@ -240,4 +244,19 @@ func generateSelfSignedCertificate(host string) (tls.Certificate, error) {
 	key := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(rkey)})
 
 	return tls.X509KeyPair(pub, key)
+}
+
+func stream(a, b net.Conn) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go copyWait(a, b, &wg)
+	go copyWait(b, a, &wg)
+	wg.Wait()
+	a.Close()
+	b.Close()
+}
+
+func copyWait(w io.Writer, r io.Reader, wg *sync.WaitGroup) {
+	defer wg.Done()
+	io.Copy(w, r)
 }
