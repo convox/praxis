@@ -32,4 +32,7 @@ func Routes(api *api.Server) {
 	api.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
 
 	api.Route("system.get", "GET", "/system", controllers.SystemGet)
+
+	api.Route("table.fetch", "GET", "/apps/{app}/tables/{table}/id/{id}", controllers.TableFetch)
+	api.Route("table.store", "POST", "/apps/{app}/tables/{table}", controllers.TableStore)
 }

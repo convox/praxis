@@ -431,13 +431,13 @@ func (_m *MockProvider) SystemGet() (*types.System, error) {
 	return r0, r1
 }
 
-// TableFetch provides a mock function with given fields: table, id
-func (_m *MockProvider) TableFetch(table string, id string) (map[string]string, error) {
-	ret := _m.Called(table, id)
+// TableFetch provides a mock function with given fields: app, table, id
+func (_m *MockProvider) TableFetch(app string, table string, id string) (map[string]string, error) {
+	ret := _m.Called(app, table, id)
 
 	var r0 map[string]string
-	if rf, ok := ret.Get(0).(func(string, string) map[string]string); ok {
-		r0 = rf(table, id)
+	if rf, ok := ret.Get(0).(func(string, string, string) map[string]string); ok {
+		r0 = rf(app, table, id)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]string)
@@ -445,8 +445,8 @@ func (_m *MockProvider) TableFetch(table string, id string) (map[string]string, 
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(table, id)
+	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = rf(app, table, id)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -454,20 +454,20 @@ func (_m *MockProvider) TableFetch(table string, id string) (map[string]string, 
 	return r0, r1
 }
 
-// TableStore provides a mock function with given fields: table, attrs
-func (_m *MockProvider) TableStore(table string, attrs map[string]string) (string, error) {
-	ret := _m.Called(table, attrs)
+// TableStore provides a mock function with given fields: app, table, attrs
+func (_m *MockProvider) TableStore(app string, table string, attrs map[string]string) (string, error) {
+	ret := _m.Called(app, table, attrs)
 
 	var r0 string
-	if rf, ok := ret.Get(0).(func(string, map[string]string) string); ok {
-		r0 = rf(table, attrs)
+	if rf, ok := ret.Get(0).(func(string, string, map[string]string) string); ok {
+		r0 = rf(app, table, attrs)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, map[string]string) error); ok {
-		r1 = rf(table, attrs)
+	if rf, ok := ret.Get(1).(func(string, string, map[string]string) error); ok {
+		r1 = rf(app, table, attrs)
 	} else {
 		r1 = ret.Error(1)
 	}

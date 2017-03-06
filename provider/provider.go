@@ -82,8 +82,8 @@ type Provider interface {
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
 	// SystemSave(system structs.System) error
 
-	TableFetch(table string, id string) (map[string]string, error)
-	TableStore(table string, attrs map[string]string) (string, error)
+	TableFetch(app, table, id string) (map[string]string, error)
+	TableStore(app, table string, attrs map[string]string) (string, error)
 }
 
 // FromEnv returns a new Provider from env vars
