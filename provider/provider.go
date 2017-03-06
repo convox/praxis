@@ -81,6 +81,9 @@ type Provider interface {
 	// SystemLogs(w io.Writer, opts structs.LogStreamOptions) error
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
 	// SystemSave(system structs.System) error
+
+	TableFetch(table string, id string) (map[string]string, error)
+	TableStore(table string, attrs map[string]string) (string, error)
 }
 
 // FromEnv returns a new Provider from env vars

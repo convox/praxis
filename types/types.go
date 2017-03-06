@@ -1,7 +1,7 @@
 package types
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"fmt"
 	"math/rand"
 	"time"
@@ -32,7 +32,7 @@ func Key(length int) (string, error) {
 		return "", err
 	}
 
-	key := fmt.Sprintf("%x", sha1.Sum(data))
+	key := fmt.Sprintf("%x", sha256.Sum256(data))
 
 	if len(key) < length {
 		return "", fmt.Errorf("key too long")
