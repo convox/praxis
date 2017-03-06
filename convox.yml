@@ -9,21 +9,3 @@ services:
     test: make check test
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-workflows:
-  change:
-    create:
-      - create: staging/praxis-$branch
-      - build: staging/praxis-$branch
-      - test
-      - promote
-    close:
-      - delete: staging/praxis-$branch
-  merge:
-    demo:
-      - deploy: demo/praxis-demo
-    master:
-      - build: staging/praxis-staging
-      - test
-      - promote
-      - copy: production/praxis-production
-      - promote
