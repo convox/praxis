@@ -47,9 +47,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, err
 	}
 
-	build.Process = strings.TrimSpace(string(data))[0:10]
-
-	if err := p.Store(fmt.Sprintf("apps/%s/builds/%s", app, bid), build); err != nil {
+	if _, err := p.BuildUpdate(app, bid, types.BuildUpdateOptions{Process: strings.TrimSpace(string(data))}); err != nil {
 		return nil, err
 	}
 
@@ -78,6 +76,10 @@ func (p *Provider) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*
 
 	if opts.Manifest != "" {
 		build.Manifest = opts.Manifest
+	}
+
+	if opts.Process != "" {
+		build.Process = opts.Process
 	}
 
 	if opts.Release != "" {

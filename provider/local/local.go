@@ -131,6 +131,8 @@ func (p *Provider) Store(key string, v interface{}) error {
 			return err
 		}
 
+		defer fd.Close()
+
 		if _, err := io.Copy(fd, r); err != nil {
 			return err
 		}

@@ -21,6 +21,7 @@ type BuildCreateOptions struct {
 
 type BuildUpdateOptions struct {
 	Manifest string
+	Process  string
 	Release  string
 	Status   string
 }
