@@ -339,6 +339,43 @@ func (_m *MockProvider) Proxy(app string, pid string, port int, in io.Reader) (i
 	return r0, r1
 }
 
+// QueueFetch provides a mock function with given fields: app, queue, opts
+func (_m *MockProvider) QueueFetch(app string, queue string, opts types.QueueFetchOptions) (map[string]string, error) {
+	ret := _m.Called(app, queue, opts)
+
+	var r0 map[string]string
+	if rf, ok := ret.Get(0).(func(string, string, types.QueueFetchOptions) map[string]string); ok {
+		r0 = rf(app, queue, opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, types.QueueFetchOptions) error); ok {
+		r1 = rf(app, queue, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// QueueStore provides a mock function with given fields: app, queue, attrs
+func (_m *MockProvider) QueueStore(app string, queue string, attrs map[string]string) error {
+	ret := _m.Called(app, queue, attrs)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, map[string]string) error); ok {
+		r0 = rf(app, queue, attrs)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ReleaseCreate provides a mock function with given fields: app, opts
 func (_m *MockProvider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error) {
 	ret := _m.Called(app, opts)

@@ -28,6 +28,9 @@ func Routes(api *api.Server) {
 
 	api.Route("proxy", "POST", "/apps/{app}/processes/{process}/proxy/{port}", controllers.Proxy)
 
+	api.Route("queue.fetch", "GET", "/apps/{app}/queues/{queue}", controllers.QueueFetch)
+	api.Route("queue.store", "POST", "/apps/{app}/queues/{queue}", controllers.QueueStore)
+
 	api.Route("release.create", "POST", "/apps/{app}/releases", controllers.ReleaseCreate)
 	api.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
 
