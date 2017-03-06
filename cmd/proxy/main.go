@@ -29,19 +29,15 @@ var (
 func init() {
 	r, err := rack.NewFromEnv()
 	if err != nil {
-		die(err)
+		panic(err)
 	}
 
 	Rack = r
 }
 
-func die(err error) {
-	fmt.Fprintf(os.Stderr, "error: %s\n", err)
-	os.Exit(1)
-}
-
 func usage() {
-	die(fmt.Errorf("usage: proxy <protocol> <style> <target>"))
+	fmt.Fprintf(os.Stderr, "usage: proxy <protocol> <style> <target>\n")
+	os.Exit(1)
 }
 
 func main() {
@@ -56,11 +52,11 @@ func main() {
 	switch style {
 	case "redirect":
 		if err := handleRedirect(protocol, target); err != nil {
-			die(err)
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
 		}
 	case "target":
 		if err := handleTarget(protocol, target); err != nil {
-			die(err)
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
 		}
 	default:
 		usage()
@@ -113,6 +109,11 @@ func handleTarget(protocol, target string) error {
 		return err
 	}
 
+	port, err := strconv.Atoi(u.Port())
+	if err != nil {
+		return err
+	}
+
 	ln, err := net.Listen("tcp", ":3000")
 	if err != nil {
 		return err
@@ -140,59 +141,66 @@ func handleTarget(protocol, target string) error {
 			return err
 		}
 
-		ps, err := Rack.ProcessList(app, types.ProcessListOptions{Service: u.Hostname()})
-		if err != nil {
-			return err
-		}
+		go func() {
+			if err := handleConnection(cn, app, u.Scheme, u.Hostname(), port); err != nil {
+				fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			}
+		}()
+	}
+}
 
-		if len(ps) < 1 {
-			return fmt.Errorf("no processes for service: %s", u.Hostname())
-		}
+func handleConnection(cn net.Conn, app string, scheme, host string, port int) error {
+	ps, err := Rack.ProcessList(app, types.ProcessListOptions{Service: host})
+	if err != nil {
+		return err
+	}
 
-		port, err := strconv.Atoi(u.Port())
-		if err != nil {
-			return err
-		}
+	if len(ps) < 1 {
+		return fmt.Errorf("no processes for service: %s", host)
+	}
 
-		switch u.Scheme {
-		case "https", "tls":
-			r, w := net.Pipe()
+	switch scheme {
+	case "https", "tls":
+		r, w := net.Pipe()
 
-			tc := tls.Client(w, &tls.Config{
-				InsecureSkipVerify: true,
-			})
+		tc := tls.Client(w, &tls.Config{
+			InsecureSkipVerify: true,
+		})
 
-			if tcn, ok := cn.(*tls.Conn); ok {
-				if err := tcn.Handshake(); err != nil {
-					return err
-				}
-
-				cs := tcn.ConnectionState()
-
-				switch cs.NegotiatedProtocol {
-				case "h2":
-					tc = tls.Client(w, &tls.Config{
-						InsecureSkipVerify: true,
-						NextProtos:         []string{"h2"},
-					})
-				}
+		if tcn, ok := cn.(*tls.Conn); ok {
+			if err := tcn.Handshake(); err != nil {
+				return err
 			}
 
-			go io.Copy(cn, tc)
-			go io.Copy(tc, cn)
+			cs := tcn.ConnectionState()
 
-			cn = r
+			switch cs.NegotiatedProtocol {
+			case "h2":
+				tc = tls.Client(w, &tls.Config{
+					InsecureSkipVerify: true,
+					NextProtos:         []string{"h2"},
+				})
+			}
 		}
 
-		fmt.Println("before")
+		go io.Copy(cn, tc)
+		go io.Copy(tc, cn)
 
-		out, err := Rack.Proxy(app, ps[0].Id, port, cn)
-		if err != nil {
-			return err
-		}
-
-		go io.Copy(cn, out)
+		cn = r
 	}
+
+	fmt.Println("before")
+
+	out, err := Rack.Proxy(app, ps[0].Id, port, cn)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(cn, out); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func generateSelfSignedCertificate(host string) (tls.Certificate, error) {
