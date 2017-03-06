@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (p *Provider) ProxyStart(app, pid string, port int) (io.ReadWriter, error) {
+func (p *Provider) Proxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error) {
 	_, err := p.AppGet(app)
 	if err != nil {
 		return nil, err
@@ -21,5 +21,12 @@ func (p *Provider) ProxyStart(app, pid string, port int) (io.ReadWriter, error) 
 
 	ip := strings.TrimSpace(string(data))
 
-	return net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
+	cn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
+	if err != nil {
+		return nil, err
+	}
+
+	go io.Copy(cn, in)
+
+	return cn, nil
 }

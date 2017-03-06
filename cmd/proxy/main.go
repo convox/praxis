@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	Rack *rack.Client
+	Rack rack.Rack
 )
 
 func init() {
@@ -184,7 +184,14 @@ func handleTarget(protocol, target string) error {
 			cn = r
 		}
 
-		go Rack.ProxyStart(app, ps[0].Id, port, cn)
+		fmt.Println("before")
+
+		out, err := Rack.Proxy(app, ps[0].Id, port, cn)
+		if err != nil {
+			return err
+		}
+
+		go io.Copy(cn, out)
 	}
 }
 

@@ -148,7 +148,7 @@ func (p *Provider) Store(key string, v interface{}) error {
 	return ioutil.WriteFile(path, data, 0600)
 }
 
-func (p *Provider) Logs(pid string) (io.Reader, error) {
+func (p *Provider) Logs(pid string) (io.ReadCloser, error) {
 	r, w := io.Pipe()
 
 	cmd := exec.Command("docker", "logs", "--follow", pid)

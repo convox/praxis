@@ -7,7 +7,7 @@ import (
 	"github.com/convox/praxis/types"
 )
 
-func (c *Client) BuildCreate(app, url string) (build *types.Build, err error) {
+func (c *Client) BuildCreate(app, url string, opts types.BuildCreateOptions) (build *types.Build, err error) {
 	ro := RequestOptions{
 		Params: Params{
 			"url": url,

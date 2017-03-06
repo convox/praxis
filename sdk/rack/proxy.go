@@ -5,21 +5,17 @@ import (
 	"io"
 )
 
-func (c *Client) ProxyStart(app, pid string, port int, stream io.ReadWriter) error {
+func (c *Client) Proxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error) {
 	ro := RequestOptions{
-		Body: stream,
+		Body: in,
 	}
+
+	fmt.Println("000")
 
 	res, err := c.PostStream(fmt.Sprintf("/apps/%s/processes/%s/proxy/%d", app, pid, port), ro)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	defer res.Body.Close()
-
-	if _, err := io.Copy(stream, res.Body); err != nil {
-		return err
-	}
-
-	return nil
+	return res.Body, nil
 }

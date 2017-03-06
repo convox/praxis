@@ -18,7 +18,7 @@ func (c *Client) ObjectFetch(app string, key string) (io.ReadCloser, error) {
 	return res.Body, nil
 }
 
-func (c *Client) ObjectStore(app string, key string, r io.Reader) (*types.Object, error) {
+func (c *Client) ObjectStore(app string, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error) {
 	ro := RequestOptions{
 		Body: r,
 	}

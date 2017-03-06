@@ -58,12 +58,12 @@ func buildDirectory(app, dir string) (*types.Build, error) {
 
 	defer r.Close()
 
-	object, err := Rack.ObjectStore(app, "", r)
+	object, err := Rack.ObjectStore(app, "", r, types.ObjectStoreOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	return Rack.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key))
+	return Rack.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key), types.BuildCreateOptions{})
 }
 
 func buildLogs(build *types.Build, w io.Writer) error {

@@ -139,15 +139,15 @@ func (_m *MockProvider) BuildGet(app string, id string) (*types.Build, error) {
 }
 
 // BuildLogs provides a mock function with given fields: app, id
-func (_m *MockProvider) BuildLogs(app string, id string) (io.Reader, error) {
+func (_m *MockProvider) BuildLogs(app string, id string) (io.ReadCloser, error) {
 	ret := _m.Called(app, id)
 
-	var r0 io.Reader
-	if rf, ok := ret.Get(0).(func(string, string) io.Reader); ok {
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(string, string) io.ReadCloser); ok {
 		r0 = rf(app, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(io.Reader)
+			r0 = ret.Get(0).(io.ReadCloser)
 		}
 	}
 
@@ -316,22 +316,22 @@ func (_m *MockProvider) ProcessStop(app string, pid string) error {
 	return r0
 }
 
-// ProxyStart provides a mock function with given fields: app, pid, port
-func (_m *MockProvider) ProxyStart(app string, pid string, port int) (io.ReadWriter, error) {
-	ret := _m.Called(app, pid, port)
+// Proxy provides a mock function with given fields: app, pid, port, in
+func (_m *MockProvider) Proxy(app string, pid string, port int, in io.Reader) (io.ReadCloser, error) {
+	ret := _m.Called(app, pid, port, in)
 
-	var r0 io.ReadWriter
-	if rf, ok := ret.Get(0).(func(string, string, int) io.ReadWriter); ok {
-		r0 = rf(app, pid, port)
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(string, string, int, io.Reader) io.ReadCloser); ok {
+		r0 = rf(app, pid, port, in)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(io.ReadWriter)
+			r0 = ret.Get(0).(io.ReadCloser)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, int) error); ok {
-		r1 = rf(app, pid, port)
+	if rf, ok := ret.Get(1).(func(string, string, int, io.Reader) error); ok {
+		r1 = rf(app, pid, port, in)
 	} else {
 		r1 = ret.Error(1)
 	}

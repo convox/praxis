@@ -3,15 +3,19 @@ package rack
 import (
 	"net/url"
 	"os"
+
+	"github.com/convox/praxis/provider"
 )
 
-func New(host string) *Client {
+type Rack provider.Provider
+
+func New(host string) Rack {
 	return &Client{
 		Host: host,
 	}
 }
 
-func NewFromEnv() (*Client, error) {
+func NewFromEnv() (Rack, error) {
 	u, err := url.Parse(os.Getenv("RACK_URL"))
 	if err != nil {
 		return nil, err

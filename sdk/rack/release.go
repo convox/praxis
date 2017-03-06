@@ -23,3 +23,7 @@ func (c *Client) ReleaseGet(app, id string) (release *types.Release, err error) 
 	err = c.Get(fmt.Sprintf("/apps/%s/releases/%s", app, id), RequestOptions{}, &release)
 	return
 }
+
+func (c *Client) ReleaseList(app string) (types.Releases, error) {
+	return nil, nil
+}

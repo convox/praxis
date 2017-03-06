@@ -59,7 +59,7 @@ func (p *Provider) BuildGet(app, id string) (build *types.Build, err error) {
 	return
 }
 
-func (p *Provider) BuildLogs(app, id string) (io.Reader, error) {
+func (p *Provider) BuildLogs(app, id string) (io.ReadCloser, error) {
 	build, err := p.BuildGet(app, id)
 	if err != nil {
 		return nil, err

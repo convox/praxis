@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	Rack *rack.Client
+	Rack rack.Rack
 
 	flagApp      string
 	flagId       string

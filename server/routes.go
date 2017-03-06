@@ -26,7 +26,7 @@ func Routes(api *api.Server) {
 	api.Route("process.run", "POST", "/apps/{app}/processes", controllers.ProcessRun)
 	api.Route("process.stop", "DELETE", "/apps/{app}/processes/{pid}", controllers.ProcessStop)
 
-	api.Route("proxy.start", "POST", "/apps/{app}/processes/{process}/proxy/{port}", controllers.ProxyStart)
+	api.Route("proxy", "POST", "/apps/{app}/processes/{process}/proxy/{port}", controllers.Proxy)
 
 	api.Route("release.create", "POST", "/apps/{app}/releases", controllers.ReleaseCreate)
 	api.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)

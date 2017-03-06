@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Rack    *rack.Client
+	Rack    rack.Rack
 	Version = "dev"
 )
 

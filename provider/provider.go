@@ -22,7 +22,7 @@ type Provider interface {
 	// BuildExport(app, id string, w io.Writer) error
 	BuildGet(app, id string) (*types.Build, error)
 	// BuildImport(app string, r io.Reader) (*structs.Build, error)
-	BuildLogs(app, id string) (io.Reader, error)
+	BuildLogs(app, id string) (io.ReadCloser, error)
 	// BuildList(app string, limit int64) (structs.Builds, error)
 	// BuildRelease(*structs.Build) (*structs.Release, error)
 	BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*types.Build, error)
@@ -64,7 +64,7 @@ type Provider interface {
 	ProcessRun(app string, opts types.ProcessRunOptions) (int, error)
 	ProcessStop(app, pid string) error
 
-	ProxyStart(app, pid string, port int) (io.ReadWriter, error)
+	Proxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error)
 
 	// RegistryAdd(server, username, password string) (*structs.Registry, error)
 	// RegistryDelete(server string) error
