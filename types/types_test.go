@@ -30,7 +30,7 @@ func TestKey(t *testing.T) {
 }
 
 func TestKeyTooLong(t *testing.T) {
-	key, err := types.Key(50)
+	key, err := types.Key(100)
 
 	assert.Error(t, err, "key too long")
 	assert.Equal(t, "", key)
