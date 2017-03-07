@@ -25,13 +25,12 @@ type Client struct {
 }
 
 type Headers map[string]string
-type Params map[string]string
+type Params map[string]interface{}
 
 type RequestOptions struct {
 	Body    io.Reader
 	Headers Headers
 	Params  Params
-	UrlForm url.Values
 }
 
 func (o *RequestOptions) Reader() (io.Reader, error) {
@@ -46,7 +45,16 @@ func (o *RequestOptions) Reader() (io.Reader, error) {
 	u := url.Values{}
 
 	for k, v := range o.Params {
-		u.Set(k, v)
+		switch t := v.(type) {
+		case string:
+			u.Set(k, t)
+		case []string:
+			for _, s := range t {
+				u.Set(k, s)
+			}
+		default:
+			return nil, fmt.Errorf("unknown param type: %T", t)
+		}
 	}
 
 	return bytes.NewReader([]byte(u.Encode())), nil
@@ -178,10 +186,6 @@ func (c *Client) Request(method, path string, opts RequestOptions) (*http.Reques
 
 	for k, v := range opts.Headers {
 		req.Header.Set(k, v)
-	}
-
-	if len(opts.UrlForm) != 0 {
-		req.URL.RawQuery = opts.UrlForm.Encode()
 	}
 
 	req.SetBasicAuth("convox", string(c.Key))

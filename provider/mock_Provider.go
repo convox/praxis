@@ -469,13 +469,13 @@ func (_m *MockProvider) SystemGet() (*types.System, error) {
 	return r0, r1
 }
 
-// TableFetch provides a mock function with given fields: app, table, id
-func (_m *MockProvider) TableFetch(app string, table string, id string) (map[string]string, error) {
-	ret := _m.Called(app, table, id)
+// TableFetch provides a mock function with given fields: app, table, key, opts
+func (_m *MockProvider) TableFetch(app string, table string, key string, opts types.TableFetchOptions) (map[string]string, error) {
+	ret := _m.Called(app, table, key, opts)
 
 	var r0 map[string]string
-	if rf, ok := ret.Get(0).(func(string, string, string) map[string]string); ok {
-		r0 = rf(app, table, id)
+	if rf, ok := ret.Get(0).(func(string, string, string, types.TableFetchOptions) map[string]string); ok {
+		r0 = rf(app, table, key, opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]string)
@@ -483,8 +483,8 @@ func (_m *MockProvider) TableFetch(app string, table string, id string) (map[str
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
-		r1 = rf(app, table, id)
+	if rf, ok := ret.Get(1).(func(string, string, string, types.TableFetchOptions) error); ok {
+		r1 = rf(app, table, key, opts)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -492,13 +492,13 @@ func (_m *MockProvider) TableFetch(app string, table string, id string) (map[str
 	return r0, r1
 }
 
-// TableFetchIndex provides a mock function with given fields: app, table, index, key
-func (_m *MockProvider) TableFetchIndex(app string, table string, index string, key string) ([]map[string]string, error) {
-	ret := _m.Called(app, table, index, key)
+// TableFetchBatch provides a mock function with given fields: app, table, key, opts
+func (_m *MockProvider) TableFetchBatch(app string, table string, key []string, opts types.TableFetchOptions) ([]map[string]string, error) {
+	ret := _m.Called(app, table, key, opts)
 
 	var r0 []map[string]string
-	if rf, ok := ret.Get(0).(func(string, string, string, string) []map[string]string); ok {
-		r0 = rf(app, table, index, key)
+	if rf, ok := ret.Get(0).(func(string, string, []string, types.TableFetchOptions) []map[string]string); ok {
+		r0 = rf(app, table, key, opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]map[string]string)
@@ -506,31 +506,8 @@ func (_m *MockProvider) TableFetchIndex(app string, table string, index string, 
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string, string) error); ok {
-		r1 = rf(app, table, index, key)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// TableFetchIndexBatch provides a mock function with given fields: app, table, index, keys
-func (_m *MockProvider) TableFetchIndexBatch(app string, table string, index string, keys []string) ([]map[string]string, error) {
-	ret := _m.Called(app, table, index, keys)
-
-	var r0 []map[string]string
-	if rf, ok := ret.Get(0).(func(string, string, string, []string) []map[string]string); ok {
-		r0 = rf(app, table, index, keys)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]map[string]string)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string, []string) error); ok {
-		r1 = rf(app, table, index, keys)
+	if rf, ok := ret.Get(1).(func(string, string, []string, types.TableFetchOptions) error); ok {
+		r1 = rf(app, table, key, opts)
 	} else {
 		r1 = ret.Error(1)
 	}
