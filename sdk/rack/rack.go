@@ -7,6 +7,7 @@ import (
 	"github.com/convox/praxis/provider"
 )
 
+type Mock provider.MockProvider
 type Rack provider.Provider
 
 func New(host string) Rack {
