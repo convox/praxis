@@ -48,6 +48,8 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
+	env = append(env, fmt.Sprintf("APP=%s", name))
+
 	if err := m.Validate(env); err != nil {
 		return err
 	}
