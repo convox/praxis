@@ -5,38 +5,38 @@ import (
 	"github.com/convox/praxis/server/controllers"
 )
 
-func Routes(api *api.Server) {
-	api.Route("app.create", "POST", "/apps", controllers.AppCreate)
-	api.Route("app.delete", "DELETE", "/apps/{name}", controllers.AppDelete)
-	api.Route("app.get", "GET", "/apps/{name}", controllers.AppGet)
-	api.Route("app.list", "GET", "/apps", controllers.AppList)
+func Routes(server *api.Server) {
+	server.Route("app.create", "POST", "/apps", controllers.AppCreate)
+	server.Route("app.delete", "DELETE", "/apps/{name}", controllers.AppDelete)
+	server.Route("app.get", "GET", "/apps/{name}", controllers.AppGet)
+	server.Route("app.list", "GET", "/apps", controllers.AppList)
 
-	api.Route("build.create", "POST", "/apps/{app}/builds", controllers.BuildCreate)
-	api.Route("build.get", "GET", "/apps/{app}/builds/{id}", controllers.BuildGet)
-	api.Route("build.logs", "GET", "/apps/{app}/builds/{id}/logs", controllers.BuildLogs)
-	api.Route("build.update", "PUT", "/apps/{app}/builds/{id}", controllers.BuildUpdate)
+	server.Route("build.create", "POST", "/apps/{app}/builds", controllers.BuildCreate)
+	server.Route("build.get", "GET", "/apps/{app}/builds/{id}", controllers.BuildGet)
+	server.Route("build.logs", "GET", "/apps/{app}/builds/{id}/logs", controllers.BuildLogs)
+	server.Route("build.update", "PUT", "/apps/{app}/builds/{id}", controllers.BuildUpdate)
 
-	api.Route("files.delete", "DELETE", "/apps/{app}/processes/{process}/files", controllers.FilesDelete)
-	api.Route("files.upload", "POST", "/apps/{app}/processes/{process}/files", controllers.FilesUpload)
+	server.Route("files.delete", "DELETE", "/apps/{app}/processes/{process}/files", controllers.FilesDelete)
+	server.Route("files.upload", "POST", "/apps/{app}/processes/{process}/files", controllers.FilesUpload)
 
-	api.Route("object.fetch", "GET", "/apps/{app}/objects/{key:.*}", controllers.ObjectFetch)
-	api.Route("object.store", "POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)
+	server.Route("object.fetch", "GET", "/apps/{app}/objects/{key:.*}", controllers.ObjectFetch)
+	server.Route("object.store", "POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)
 
-	api.Route("process.list", "GET", "/apps/{app}/processes", controllers.ProcessList)
-	api.Route("process.run", "POST", "/apps/{app}/processes", controllers.ProcessRun)
-	api.Route("process.stop", "DELETE", "/apps/{app}/processes/{pid}", controllers.ProcessStop)
+	server.Route("process.list", "GET", "/apps/{app}/processes", controllers.ProcessList)
+	server.Route("process.run", "POST", "/apps/{app}/processes", controllers.ProcessRun)
+	server.Route("process.stop", "DELETE", "/apps/{app}/processes/{pid}", controllers.ProcessStop)
 
-	api.Route("proxy", "POST", "/apps/{app}/processes/{process}/proxy/{port}", controllers.Proxy)
+	server.Route("proxy", "POST", "/apps/{app}/processes/{process}/proxy/{port}", controllers.Proxy)
 
-	api.Route("queue.fetch", "GET", "/apps/{app}/queues/{queue}", controllers.QueueFetch)
-	api.Route("queue.store", "POST", "/apps/{app}/queues/{queue}", controllers.QueueStore)
+	server.Route("queue.fetch", "GET", "/apps/{app}/queues/{queue}", controllers.QueueFetch)
+	server.Route("queue.store", "POST", "/apps/{app}/queues/{queue}", controllers.QueueStore)
 
-	api.Route("release.create", "POST", "/apps/{app}/releases", controllers.ReleaseCreate)
-	api.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
+	server.Route("release.create", "POST", "/apps/{app}/releases", controllers.ReleaseCreate)
+	server.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
 
-	api.Route("system.get", "GET", "/system", controllers.SystemGet)
+	server.Route("system.get", "GET", "/system", controllers.SystemGet)
 
-	api.Route("table.fetch", "GET", "/apps/{app}/tables/{table}/{index}", controllers.TableFetch)
-	api.Route("table.get", "GET", "/apps/{app}/tables/{table}", controllers.TableGet)
-	api.Route("table.store", "POST", "/apps/{app}/tables/{table}", controllers.TableStore)
+	server.Route("table.fetch", "GET", "/apps/{app}/tables/{table}/id/{id}", controllers.TableFetch)
+	server.Route("table.get", "GET", "/apps/{app}/tables/{table}", controllers.TableGet)
+	server.Route("table.store", "POST", "/apps/{app}/tables/{table}", controllers.TableStore)
 }
