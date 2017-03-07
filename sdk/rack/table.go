@@ -2,33 +2,24 @@ package rack
 
 import (
 	"fmt"
-	"net/url"
 
 	"github.com/convox/praxis/manifest"
+	"github.com/convox/praxis/types"
 )
 
-func (c *Client) TableFetch(app, table, id string) (map[string]string, error) {
-	attrs, err := c.TableFetchIndex(app, table, "id", id)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(attrs) > 0 {
-		return attrs[0], nil
-	}
-
-	return nil, nil
+func (c *Client) TableFetch(app, table, key string, opts types.TableFetchOptions) (attrs map[string]string, err error) {
+	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/%s", app, table, coalesce(opts.Index, "id"), key), RequestOptions{}, &attrs)
+	return
 }
 
-func (c *Client) TableFetchIndex(app, table, index, key string) ([]map[string]string, error) {
-	return c.TableFetchIndexBatch(app, table, index, []string{key})
-}
+func (c *Client) TableFetchBatch(app, table string, keys []string, opts types.TableFetchOptions) (items []map[string]string, err error) {
+	ro := RequestOptions{
+		Params: Params{
+			"key": keys,
+		},
+	}
 
-func (c *Client) TableFetchIndexBatch(app, table, index string, keys []string) (attrs []map[string]string, err error) {
-	form := url.Values{}
-	form["id"] = keys
-
-	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/%s", app, table, index), RequestOptions{UrlForm: form}, &attrs)
+	err = c.Post(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/batch", app, table, coalesce(opts.Index, "id")), ro, &items)
 	return
 }
 
@@ -38,8 +29,14 @@ func (c *Client) TableGet(app, table string) (m *manifest.Table, err error) {
 }
 
 func (c *Client) TableStore(app, table string, attrs map[string]string) (id string, err error) {
+	params := map[string]interface{}{}
+
+	for k, v := range attrs {
+		params[k] = v
+	}
+
 	ro := RequestOptions{
-		Params: attrs,
+		Params: params,
 	}
 
 	err = c.Post(fmt.Sprintf("/apps/%s/tables/%s", app, table), ro, &id)

@@ -7,44 +7,43 @@ import (
 	"github.com/convox/praxis/types"
 )
 
-func (p *Provider) TableFetch(app, table, id string) (attrs map[string]string, err error) {
-	err = p.Load(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, "id", id, id), &attrs)
-	return
-}
-
-func (p *Provider) TableFetchIndex(app, table, index, key string) ([]map[string]string, error) {
-	files, err := p.List(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s", app, table, index, key))
+func (p *Provider) TableFetch(app, table, key string, opts types.TableFetchOptions) (map[string]string, error) {
+	items, err := p.TableFetchBatch(app, table, []string{key}, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	var items []map[string]string
-
-	for _, f := range files {
-		attrs := map[string]string{}
-		if err := p.Load(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s", app, table, index, key, f), &attrs); err != nil {
-			return nil, err
-		}
-
-		items = append(items, attrs)
+	switch len(items) {
+	case 0:
+		return nil, fmt.Errorf("not found")
+	case 1:
+		return items[0], nil
+	default:
+		return nil, fmt.Errorf("multiple items found")
 	}
-
-	return items, nil
 }
 
-func (p *Provider) TableFetchIndexBatch(app, table, index string, keys []string) ([]map[string]string, error) {
-	var batch []map[string]string
+func (p *Provider) TableFetchBatch(app, table string, keys []string, opts types.TableFetchOptions) ([]map[string]string, error) {
+	items := []map[string]string{}
 
-	for _, k := range keys {
-		attrs, err := p.TableFetchIndex(app, table, index, k)
+	for _, key := range keys {
+		entries, err := p.List(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, coalesce(opts.Index, "id"), key))
 		if err != nil {
 			return nil, err
 		}
 
-		batch = append(batch, attrs...)
+		for _, e := range entries {
+			var item map[string]string
+
+			if err := p.Load(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s", app, table, coalesce(opts.Index, "id"), key, e), &item); err != nil {
+				return nil, err
+			}
+
+			items = append(items, item)
+		}
 	}
 
-	return batch, nil
+	return items, nil
 }
 
 func (p *Provider) TableGet(app, table string) (*manifest.Table, error) {
@@ -90,22 +89,14 @@ func (p *Provider) TableStore(app, table string, attrs map[string]string) (strin
 		return "", err
 	}
 
-	key := "apps/%s/tables/%s/indexes/%s/%s/%s.json"
-	var idFound bool
-	for _, i := range t.Indexes {
-		if attrs[i] != "" {
-			if err := p.Store(fmt.Sprintf(key, app, table, i, attrs[i], attrs["id"]), attrs); err != nil {
-				return "", err
-			}
+	indexes := append(t.Indexes, "id")
+
+	for _, index := range indexes {
+		if attrs[index] == "" {
+			continue
 		}
 
-		if i == "id" {
-			idFound = true
-		}
-	}
-
-	if !idFound {
-		if err := p.Store(fmt.Sprintf(key, app, table, "id", attrs["id"], attrs["id"]), attrs); err != nil {
+		if err := p.Store(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, index, attrs[index], attrs["id"]), attrs); err != nil {
 			return "", err
 		}
 	}

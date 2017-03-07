@@ -4,46 +4,37 @@ import (
 	"net/http"
 
 	"github.com/convox/api"
+	"github.com/convox/praxis/types"
 )
 
 func TableFetch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	table := c.Var("table")
 	index := c.Var("index")
+	key := c.Var("key")
 
-	if err := r.ParseForm(); err != nil {
+	attrs, err := Provider.TableFetch(app, table, key, types.TableFetchOptions{Index: index})
+	if err != nil {
 		return err
 	}
 
-	if len(r.Form["id"]) == 0 {
-		return api.Errorf(400, "no id provided")
-	}
-
-	if index == "id" {
-		attrs, err := Provider.TableFetch(app, table, r.Form.Get("id"))
-		if err != nil {
-			return err
-		}
-
-		return c.RenderJSON([]map[string]string{attrs})
-	}
-
-	var attrs []map[string]string
-	var err error
-	if len(r.Form["id"]) == 1 {
-		attrs, err = Provider.TableFetchIndex(app, table, index, r.Form.Get("id"))
-		if err != nil {
-			return err
-		}
-
-	} else {
-		attrs, err = Provider.TableFetchIndexBatch(app, table, index, r.Form["id"])
-		if err != nil {
-			return err
-		}
-	}
-
 	return c.RenderJSON(attrs)
+}
+
+func TableFetchBatch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	r.ParseForm()
+
+	app := c.Var("app")
+	table := c.Var("table")
+	index := c.Var("index")
+	keys := r.Form["key"]
+
+	items, err := Provider.TableFetchBatch(app, table, keys, types.TableFetchOptions{Index: index})
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(items)
 }
 
 func TableGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
