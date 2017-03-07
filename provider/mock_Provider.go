@@ -515,6 +515,29 @@ func (_m *MockProvider) TableFetchIndex(app string, table string, index string, 
 	return r0, r1
 }
 
+// TableFetchIndexBatch provides a mock function with given fields: app, table, index, keys
+func (_m *MockProvider) TableFetchIndexBatch(app string, table string, index string, keys []string) ([]map[string]string, error) {
+	ret := _m.Called(app, table, index, keys)
+
+	var r0 []map[string]string
+	if rf, ok := ret.Get(0).(func(string, string, string, []string) []map[string]string); ok {
+		r0 = rf(app, table, index, keys)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]map[string]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string, []string) error); ok {
+		r1 = rf(app, table, index, keys)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // TableGet provides a mock function with given fields: app, table
 func (_m *MockProvider) TableGet(app string, table string) (*manifest.Table, error) {
 	ret := _m.Called(app, table)
@@ -558,5 +581,3 @@ func (_m *MockProvider) TableStore(app string, table string, attrs map[string]st
 
 	return r0, r1
 }
-
-var _ Provider = (*MockProvider)(nil)

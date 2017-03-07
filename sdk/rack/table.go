@@ -2,17 +2,25 @@ package rack
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/convox/praxis/manifest"
 )
 
 func (c *Client) TableFetch(app, table, id string) (attrs map[string]string, err error) {
-	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/id/%s", app, table, id), RequestOptions{}, &attrs)
+	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/id?id=%s", app, table, id), RequestOptions{}, &attrs)
 	return
 }
 
-func (c *Client) TableFetchIndex(app, table, index, key string) (attrs []map[string]string, err error) {
-	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/%s/%s", app, table, index, key), RequestOptions{}, &attrs)
+func (c *Client) TableFetchIndex(app, table, index, key string) ([]map[string]string, error) {
+	return c.TableFetchIndexBatch(app, table, index, []string{key})
+}
+
+func (c *Client) TableFetchIndexBatch(app, table, index string, keys []string) (attrs []map[string]string, err error) {
+	form := url.Values{}
+	form["id"] = keys
+
+	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/%s?", app, table, index), RequestOptions{UrlForm: form}, &attrs)
 	return
 }
 

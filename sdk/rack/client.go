@@ -31,6 +31,7 @@ type RequestOptions struct {
 	Body    io.Reader
 	Headers Headers
 	Params  Params
+	UrlForm url.Values
 }
 
 func (o *RequestOptions) Reader() (io.Reader, error) {
@@ -177,6 +178,10 @@ func (c *Client) Request(method, path string, opts RequestOptions) (*http.Reques
 
 	for k, v := range opts.Headers {
 		req.Header.Set(k, v)
+	}
+
+	if len(opts.UrlForm) != 0 {
+		req.URL.RawQuery = opts.UrlForm.Encode()
 	}
 
 	req.SetBasicAuth("convox", string(c.Key))

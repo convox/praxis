@@ -88,6 +88,7 @@ type Provider interface {
 
 	TableFetch(app, table, id string) (map[string]string, error)
 	TableFetchIndex(app, table, index, key string) ([]map[string]string, error)
+	TableFetchIndexBatch(app, table, index string, keys []string) ([]map[string]string, error)
 	TableGet(app, table string) (*manifest.Table, error)
 	TableStore(app, table string, attrs map[string]string) (string, error)
 }

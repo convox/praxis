@@ -32,6 +32,21 @@ func (p *Provider) TableFetchIndex(app, table, index, key string) ([]map[string]
 	return items, nil
 }
 
+func (p *Provider) TableFetchIndexBatch(app, table, index string, keys []string) ([]map[string]string, error) {
+	var batch []map[string]string
+
+	for _, k := range keys {
+		attrs, err := p.TableFetchIndex(app, table, index, k)
+		if err != nil {
+			return nil, err
+		}
+
+		batch = append(batch, attrs...)
+	}
+
+	return batch, nil
+}
+
 func (p *Provider) TableGet(app, table string) (*manifest.Table, error) {
 	releases, err := p.ReleaseList(app)
 	if err != nil {
