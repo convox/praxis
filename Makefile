@@ -1,4 +1,4 @@
-.PHONY: all build check cli ci coverage dev image lint mocks test test-deps vendor
+.PHONY: all build check cli ci coverage dev image lint mocks test vendor
 
 all: build
 
@@ -29,11 +29,8 @@ lint:
 mocks:
 	make -C provider mocks
 
-test: test-deps check
+test: check
 	bin/test
-
-test-deps:
-	go get -t ./...
 
 vendor:
 	go get -u github.com/kardianos/govendor
