@@ -28,7 +28,7 @@ func (c *Client) TableFetchIndexBatch(app, table, index string, keys []string) (
 	form := url.Values{}
 	form["id"] = keys
 
-	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/%s?", app, table, index), RequestOptions{UrlForm: form}, &attrs)
+	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/%s", app, table, index), RequestOptions{UrlForm: form}, &attrs)
 	return
 }
 
