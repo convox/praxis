@@ -8,6 +8,7 @@ import (
 )
 
 type Mock provider.MockProvider
+
 type Rack provider.Provider
 
 func New(host string) Rack {
