@@ -1,6 +1,7 @@
 package provider
 
 import io "io"
+import manifest "github.com/convox/praxis/manifest"
 import mock "github.com/stretchr/testify/mock"
 import types "github.com/convox/praxis/types"
 
@@ -484,6 +485,52 @@ func (_m *MockProvider) TableFetch(app string, table string, id string) (map[str
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
 		r1 = rf(app, table, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// TableFetchIndex provides a mock function with given fields: app, table, index, key
+func (_m *MockProvider) TableFetchIndex(app string, table string, index string, key string) ([]map[string]string, error) {
+	ret := _m.Called(app, table, index, key)
+
+	var r0 []map[string]string
+	if rf, ok := ret.Get(0).(func(string, string, string, string) []map[string]string); ok {
+		r0 = rf(app, table, index, key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]map[string]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string, string) error); ok {
+		r1 = rf(app, table, index, key)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// TableGet provides a mock function with given fields: app, table
+func (_m *MockProvider) TableGet(app string, table string) (*manifest.Table, error) {
+	ret := _m.Called(app, table)
+
+	var r0 *manifest.Table
+	if rf, ok := ret.Get(0).(func(string, string) *manifest.Table); ok {
+		r0 = rf(app, table)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*manifest.Table)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, table)
 	} else {
 		r1 = ret.Error(1)
 	}

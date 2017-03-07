@@ -2,8 +2,6 @@ package local
 
 import (
 	"fmt"
-	"io/ioutil"
-	"path"
 	"time"
 
 	"github.com/convox/praxis/types"
@@ -23,14 +21,14 @@ func (p *Provider) QueueFetch(app, queue string, opts types.QueueFetchOptions) (
 		for {
 			select {
 			case <-time.Tick(100 * time.Millisecond):
-				dirs, err := ioutil.ReadDir(path.Join(p.Root, fmt.Sprintf("apps/%s/queues/%s/", app, queue)))
+				dirs, err := p.List(fmt.Sprintf("apps/%s/queues/%s/", app, queue))
 				if err != nil {
 					errChan <- err
 					return
 				}
 
 				if len(dirs) > 0 {
-					tsChan <- dirs[0].Name()
+					tsChan <- dirs[0]
 					return
 				}
 

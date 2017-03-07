@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/provider/local"
 	"github.com/convox/praxis/types"
 )
@@ -86,6 +87,8 @@ type Provider interface {
 	// SystemSave(system structs.System) error
 
 	TableFetch(app, table, id string) (map[string]string, error)
+	TableFetchIndex(app, table, index, key string) ([]map[string]string, error)
+	TableGet(app, table string) (*manifest.Table, error)
 	TableStore(app, table string, attrs map[string]string) (string, error)
 }
 
