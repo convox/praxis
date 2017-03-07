@@ -7,9 +7,17 @@ import (
 	"github.com/convox/praxis/manifest"
 )
 
-func (c *Client) TableFetch(app, table, id string) (attrs map[string]string, err error) {
-	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/id?id=%s", app, table, id), RequestOptions{}, &attrs)
-	return
+func (c *Client) TableFetch(app, table, id string) (map[string]string, error) {
+	attrs, err := c.TableFetchIndex(app, table, "id", id)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(attrs) > 0 {
+		return attrs[0], nil
+	}
+
+	return nil, nil
 }
 
 func (c *Client) TableFetchIndex(app, table, index, key string) ([]map[string]string, error) {

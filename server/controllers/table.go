@@ -25,7 +25,7 @@ func TableFetch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 			return err
 		}
 
-		return c.RenderJSON(attrs)
+		return c.RenderJSON([]map[string]string{attrs})
 	}
 
 	var attrs []map[string]string
