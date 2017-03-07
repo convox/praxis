@@ -27,6 +27,10 @@ func (p *Provider) TableFetchBatch(app, table string, keys []string, opts types.
 	items := []map[string]string{}
 
 	for _, key := range keys {
+		if key == "" {
+			continue
+		}
+
 		entries, err := p.List(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, coalesce(opts.Index, "id"), key))
 		if err != nil {
 			return nil, err
