@@ -7,7 +7,9 @@ import (
 	"github.com/convox/praxis/provider"
 )
 
-type Mock provider.MockProvider
+type Mock struct {
+	provider.MockProvider
+}
 
 type Rack provider.Provider
 

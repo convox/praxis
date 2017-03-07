@@ -33,6 +33,7 @@ func runStart(c *cli.Context) error {
 	if err := startLocalRack(); err != nil {
 		return err
 	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return err

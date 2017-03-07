@@ -43,6 +43,15 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
+	env, err := manifest.LoadEnvironment(".env")
+	if err != nil {
+		return err
+	}
+
+	if err := m.Validate(env); err != nil {
+		return err
+	}
+
 	if err := buildLogs(build, types.Stream{Writer: m.Writer("build", os.Stdout)}); err != nil {
 		return err
 	}
@@ -63,9 +72,15 @@ func runTest(c *cli.Context) error {
 			return err
 		}
 
+		senv, err := s.Env(env)
+		if err != nil {
+			return err
+		}
+
 		code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{
-			Command: s.Test,
-			Service: s.Name,
+			Command:     s.Test,
+			Environment: senv,
+			Service:     s.Name,
 			Stream: types.Stream{
 				Reader: nil,
 				Writer: w,
