@@ -60,8 +60,11 @@ type Provider interface {
 	ObjectStore(app, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error)
 
 	// ProcessExec(app, pid, command string, stream io.ReadWriter, opts structs.ProcessExecOptions) error
+	ProcessGet(app, pid string) (*types.Process, error)
 	ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error)
+	ProcessLogs(app, pid string) (io.ReadCloser, error)
 	ProcessRun(app string, opts types.ProcessRunOptions) (int, error)
+	ProcessStart(app string, opts types.ProcessStartOptions) (string, error)
 	ProcessStop(app, pid string) error
 
 	Proxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error)

@@ -304,6 +304,29 @@ func (_m *MockProvider) ObjectStore(app string, key string, r io.Reader, opts ty
 	return r0, r1
 }
 
+// ProcessGet provides a mock function with given fields: app, pid
+func (_m *MockProvider) ProcessGet(app string, pid string) (*types.Process, error) {
+	ret := _m.Called(app, pid)
+
+	var r0 *types.Process
+	if rf, ok := ret.Get(0).(func(string, string) *types.Process); ok {
+		r0 = rf(app, pid)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Process)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, pid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ProcessList provides a mock function with given fields: app, opts
 func (_m *MockProvider) ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error) {
 	ret := _m.Called(app, opts)
@@ -327,6 +350,29 @@ func (_m *MockProvider) ProcessList(app string, opts types.ProcessListOptions) (
 	return r0, r1
 }
 
+// ProcessLogs provides a mock function with given fields: app, pid
+func (_m *MockProvider) ProcessLogs(app string, pid string) (io.ReadCloser, error) {
+	ret := _m.Called(app, pid)
+
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(string, string) io.ReadCloser); ok {
+		r0 = rf(app, pid)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadCloser)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, pid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ProcessRun provides a mock function with given fields: app, opts
 func (_m *MockProvider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
 	ret := _m.Called(app, opts)
@@ -340,6 +386,27 @@ func (_m *MockProvider) ProcessRun(app string, opts types.ProcessRunOptions) (in
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, types.ProcessRunOptions) error); ok {
+		r1 = rf(app, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ProcessStart provides a mock function with given fields: app, opts
+func (_m *MockProvider) ProcessStart(app string, opts types.ProcessStartOptions) (string, error) {
+	ret := _m.Called(app, opts)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, types.ProcessStartOptions) string); ok {
+		r0 = rf(app, opts)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, types.ProcessStartOptions) error); ok {
 		r1 = rf(app, opts)
 	} else {
 		r1 = ret.Error(1)
