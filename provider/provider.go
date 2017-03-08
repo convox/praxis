@@ -74,11 +74,9 @@ type Provider interface {
 	QueueStore(app, queue string, attrs map[string]string) error
 
 	ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error)
-	// ReleaseDelete(app, buildID string) error
 	ReleaseGet(app, id string) (*types.Release, error)
 	ReleaseList(app string) (types.Releases, error)
 	ReleasePromote(app, id string) error
-	// ReleaseSave(*structs.Release) error
 
 	SystemGet() (*types.System, error)
 	// SystemLogs(w io.Writer, opts structs.LogStreamOptions) error
