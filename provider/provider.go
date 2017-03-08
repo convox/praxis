@@ -4,7 +4,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/provider/local"
 	"github.com/convox/praxis/types"
 )
@@ -88,7 +87,8 @@ type Provider interface {
 
 	TableFetch(app, table, key string, opts types.TableFetchOptions) (map[string]string, error)
 	TableFetchBatch(app, table string, key []string, opts types.TableFetchOptions) ([]map[string]string, error)
-	TableGet(app, table string) (*manifest.Table, error)
+	TableGet(app, table string) (*types.Table, error)
+	TableList(app string) (types.Tables, error)
 	TableStore(app, table string, attrs map[string]string) (string, error)
 	TableTruncate(app, table string) error
 }

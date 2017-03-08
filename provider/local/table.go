@@ -50,7 +50,7 @@ func (p *Provider) TableFetchBatch(app, table string, keys []string, opts types.
 	return items, nil
 }
 
-func (p *Provider) TableGet(app, table string) (*manifest.Table, error) {
+func (p *Provider) TableGet(app, table string) (*types.Table, error) {
 	releases, err := p.ReleaseList(app)
 	if err != nil {
 		return nil, err
@@ -72,11 +72,34 @@ func (p *Provider) TableGet(app, table string) (*manifest.Table, error) {
 
 	for _, t := range m.Tables {
 		if t.Name == table {
-			return &t, nil
+			return &types.Table{
+				Name:    t.Name,
+				Indexes: t.Indexes,
+			}, nil
 		}
 	}
 
-	return nil, fmt.Errorf("table %s not defined", table)
+	return nil, fmt.Errorf("no such table: %s", table)
+}
+
+func (p *Provider) TableList(app string) (types.Tables, error) {
+	tt, err := p.List(fmt.Sprintf("apps/%s/tables", app))
+	if err != nil {
+		return nil, err
+	}
+
+	tables := make(types.Tables, len(tt))
+
+	for i, t := range tt {
+		table, err := p.TableGet(app, t)
+		if err != nil {
+			return nil, err
+		}
+
+		tables[i] = *table
+	}
+
+	return tables, nil
 }
 
 func (p *Provider) TableStore(app, table string, attrs map[string]string) (string, error) {
