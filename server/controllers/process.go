@@ -10,6 +10,18 @@ import (
 	"github.com/convox/praxis/types"
 )
 
+func ProcessGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+	pid := c.Var("pid")
+
+	ps, err := Provider.ProcessGet(app, pid)
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(ps)
+}
+
 func ProcessList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	service := c.Form("service")
@@ -31,6 +43,22 @@ func ProcessList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	}
 
 	return c.RenderJSON(ps)
+}
+
+func ProcessLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+	pid := c.Var("pid")
+
+	logs, err := Provider.ProcessLogs(app, pid)
+	if err != nil {
+		return err
+	}
+
+	if err := stream(w, logs); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func ProcessRun(w http.ResponseWriter, r *http.Request, c *api.Context) error {
@@ -57,10 +85,7 @@ func ProcessRun(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		Environment: env,
 		Release:     release,
 		Service:     service,
-		Stream: types.Stream{
-			Reader: r.Body,
-			Writer: w,
-		},
+		Stream:      types.Stream{Reader: r.Body, Writer: w},
 	}
 
 	if height != "" {
@@ -82,16 +107,16 @@ func ProcessRun(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	}
 
 	if opts.Release == "" {
-		releases, err := Provider.ReleaseList(app)
+		a, err := Provider.AppGet(app)
 		if err != nil {
 			return err
 		}
 
-		if len(releases) == 0 {
+		if a.Release == "" {
 			return fmt.Errorf("no releases for app: %s", app)
 		}
 
-		opts.Release = releases[0].Id
+		opts.Release = a.Release
 	}
 
 	c.Logf("at=params release=%q service=%q height=%d width=%d", opts.Release, opts.Service, opts.Height, opts.Width)
@@ -103,6 +128,53 @@ func ProcessRun(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	w.Header().Set("Exit-Code", fmt.Sprintf("%d", code))
 
 	return err
+}
+
+func ProcessStart(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+	command := c.Form("command")
+	release := c.Form("release")
+	service := c.Form("service")
+
+	uenv, err := url.ParseQuery(c.Form("environment"))
+	if err != nil {
+		return err
+	}
+
+	env := map[string]string{}
+
+	for k := range uenv {
+		env[k] = uenv.Get(k)
+	}
+
+	opts := types.ProcessStartOptions{
+		Command:     command,
+		Environment: env,
+		Release:     release,
+		Service:     service,
+	}
+
+	if opts.Release == "" {
+		a, err := Provider.AppGet(app)
+		if err != nil {
+			return err
+		}
+
+		if a.Release == "" {
+			return fmt.Errorf("no releases for app: %s", app)
+		}
+
+		opts.Release = a.Release
+	}
+
+	c.LogParams("release", "service")
+
+	pid, err := Provider.ProcessStart(app, opts)
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(pid)
 }
 
 func ProcessStop(w http.ResponseWriter, r *http.Request, c *api.Context) error {

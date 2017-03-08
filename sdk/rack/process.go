@@ -9,6 +9,11 @@ import (
 	"github.com/convox/praxis/types"
 )
 
+func (c *Client) ProcessGet(app, pid string) (ps *types.Process, err error) {
+	err = c.Get(fmt.Sprintf("/apps/%s/processes/%s", app, pid), RequestOptions{}, &ps)
+	return
+}
+
 func (c *Client) ProcessList(app string, opts types.ProcessListOptions) (ps types.Processes, err error) {
 	ro := RequestOptions{
 		Params: Params{
@@ -18,6 +23,15 @@ func (c *Client) ProcessList(app string, opts types.ProcessListOptions) (ps type
 
 	err = c.Get(fmt.Sprintf("/apps/%s/processes", app), ro, &ps)
 	return
+}
+
+func (c *Client) ProcessLogs(app, pid string) (io.ReadCloser, error) {
+	res, err := c.GetStream(fmt.Sprintf("/apps/%s/processes/%s/logs", app, pid), RequestOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body, nil
 }
 
 func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
@@ -45,7 +59,7 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 		ro.Headers["Width"] = strconv.Itoa(opts.Width)
 	}
 
-	res, err := c.PostStream(fmt.Sprintf("/apps/%s/processes", app), ro)
+	res, err := c.PostStream(fmt.Sprintf("/apps/%s/processes/run", app), ro)
 	if err != nil {
 		return 0, err
 	}
@@ -61,6 +75,31 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 	}
 
 	return 0, nil
+}
+
+func (c *Client) ProcessStart(app string, opts types.ProcessStartOptions) (string, error) {
+	ev := url.Values{}
+
+	for k, v := range opts.Environment {
+		ev.Add(k, v)
+	}
+
+	ro := RequestOptions{
+		Params: Params{
+			"command":     opts.Command,
+			"environment": ev.Encode(),
+			"release":     opts.Release,
+			"service":     opts.Service,
+		},
+	}
+
+	var pid string
+
+	if err := c.Post(fmt.Sprintf("/apps/%s/processes/start", app), ro, &pid); err != nil {
+		return "", err
+	}
+
+	return pid, nil
 }
 
 func (c *Client) ProcessStop(app, pid string) error {

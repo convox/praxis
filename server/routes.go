@@ -25,8 +25,11 @@ func Routes(server *api.Server) {
 	server.Route("object.fetch", "GET", "/apps/{app}/objects/{key:.*}", controllers.ObjectFetch)
 	server.Route("object.store", "POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)
 
+	server.Route("process.get", "GET", "/apps/{app}/processes/{pid}", controllers.ProcessGet)
+	server.Route("process.logs", "GET", "/apps/{app}/processes/{pid}/logs", controllers.ProcessLogs)
 	server.Route("process.list", "GET", "/apps/{app}/processes", controllers.ProcessList)
-	server.Route("process.run", "POST", "/apps/{app}/processes", controllers.ProcessRun)
+	server.Route("process.run", "POST", "/apps/{app}/processes/run", controllers.ProcessRun)
+	server.Route("process.start", "POST", "/apps/{app}/processes/start", controllers.ProcessStart)
 	server.Route("process.stop", "DELETE", "/apps/{app}/processes/{pid}", controllers.ProcessStop)
 
 	server.Route("proxy", "POST", "/apps/{app}/processes/{process}/proxy/{port}", controllers.Proxy)

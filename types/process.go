@@ -36,3 +36,10 @@ type ProcessRunOptions struct {
 	Service     string
 	Stream      io.ReadWriter
 }
+
+type ProcessStartOptions struct {
+	Command     string
+	Environment map[string]string
+	Release     string
+	Service     string
+}
