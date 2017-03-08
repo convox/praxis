@@ -36,9 +36,6 @@ type Provider interface {
 
 	// EventSend(*structs.Event, error) error
 
-	// KeyDecrypt(data []byte) ([]byte, error)
-	// KeyEncrypt(data []byte) ([]byte, error)
-
 	// EnvironmentGet(app string) (structs.Environment, error)
 
 	FilesDelete(app, pid string, files []string) error
@@ -50,6 +47,9 @@ type Provider interface {
 
 	// InstanceList() (structs.Instances, error)
 	// InstanceTerminate(id string) error
+
+	KeyDecrypt(app, key string, data []byte) ([]byte, error)
+	KeyEncrypt(app, key string, data []byte) ([]byte, error)
 
 	// LogStream(app string, w io.Writer, opts structs.LogStreamOptions) error
 
