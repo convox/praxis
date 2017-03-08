@@ -6,14 +6,18 @@ import (
 	"encoding/hex"
 )
 
-func (p *Provider) KeyDecrypt(app, key string, data []byte) ([]byte, error) {
+const (
+	aesKey   = "AES256Key-32Characters1234567890"
+	nonceHex = "37b8e8a308c354048d245f6d"
+)
 
-	block, err := aes.NewCipher([]byte("AES256Key-32Characters1234567890"))
+func (p *Provider) KeyDecrypt(app, key string, data []byte) ([]byte, error) {
+	block, err := aes.NewCipher([]byte(aesKey))
 	if err != nil {
 		return nil, err
 	}
 
-	nonce, err := hex.DecodeString("37b8e8a308c354048d245f6d")
+	nonce, err := hex.DecodeString(nonceHex)
 	if err != nil {
 		return nil, err
 	}
@@ -27,13 +31,12 @@ func (p *Provider) KeyDecrypt(app, key string, data []byte) ([]byte, error) {
 }
 
 func (p *Provider) KeyEncrypt(app, key string, data []byte) ([]byte, error) {
-
-	block, err := aes.NewCipher([]byte("AES256Key-32Characters1234567890"))
+	block, err := aes.NewCipher([]byte(aesKey))
 	if err != nil {
 		return nil, err
 	}
 
-	nonce, err := hex.DecodeString("37b8e8a308c354048d245f6d")
+	nonce, err := hex.DecodeString(nonceHex)
 	if err != nil {
 		return nil, err
 	}
