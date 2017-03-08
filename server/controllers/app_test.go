@@ -39,7 +39,7 @@ func mockServer() (*httptest.Server, *provider.MockProvider) {
 	return ts, mp
 }
 
-func testRequest(ts *httptest.Server, method, path string, r io.Reader) ([]byte, error) {
+func testRequest(ts *httptest.Server, method, path string, r io.Reader) (*http.Response, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
@@ -58,14 +58,7 @@ func testRequest(ts *httptest.Server, method, path string, r io.Reader) ([]byte,
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	defer res.Body.Close()
-
-	return ioutil.ReadAll(res.Body)
+	return client.Do(req)
 }
 
 func TestAppCreate(t *testing.T) {
@@ -81,7 +74,13 @@ func TestAppCreate(t *testing.T) {
 	v := url.Values{}
 	v.Add("name", "test")
 
-	data, err := testRequest(ts, "POST", "/apps", bytes.NewReader([]byte(v.Encode())))
+	res, err := testRequest(ts, "POST", "/apps", bytes.NewReader([]byte(v.Encode())))
 	assert.NoError(t, err)
+	defer res.Body.Close()
+
+	data, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 200, res.StatusCode)
 	assert.Equal(t, []byte(`{"Name":"test"}`), data)
 }
