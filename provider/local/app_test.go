@@ -9,15 +9,29 @@ import (
 func TestAppCreate(t *testing.T) {
 	local, err := Provider()
 	assert.NoError(t, err)
+	defer cleanup(local)
 
 	app, err := local.AppCreate("test")
 	assert.NoError(t, err)
 	assert.Equal(t, "test", app.Name)
 }
 
+func TestAppCreateAlreadyExists(t *testing.T) {
+	local, err := Provider()
+	assert.NoError(t, err)
+	defer cleanup(local)
+
+	_, err = local.AppCreate("test")
+	assert.NoError(t, err)
+
+	_, err = local.AppCreate("test")
+	assert.EqualError(t, err, "app already exists: test")
+}
+
 func TestAppDelete(t *testing.T) {
 	local, err := Provider()
 	assert.NoError(t, err)
+	defer cleanup(local)
 
 	_, err = local.AppCreate("test")
 	assert.NoError(t, err)
@@ -32,9 +46,19 @@ func TestAppDelete(t *testing.T) {
 	assert.EqualError(t, err, "no such app: test")
 }
 
+func TestAppDeleteNonexistant(t *testing.T) {
+	local, err := Provider()
+	assert.NoError(t, err)
+	defer cleanup(local)
+
+	err = local.AppDelete("test")
+	assert.EqualError(t, err, "no such app: test")
+}
+
 func TestAppGet(t *testing.T) {
 	local, err := Provider()
 	assert.NoError(t, err)
+	defer cleanup(local)
 
 	_, err = local.AppGet("test")
 	assert.EqualError(t, err, "no such app: test")
@@ -47,9 +71,19 @@ func TestAppGet(t *testing.T) {
 	assert.Equal(t, "test", app.Name)
 }
 
+func TestAppGetNonexistant(t *testing.T) {
+	local, err := Provider()
+	assert.NoError(t, err)
+	defer cleanup(local)
+
+	_, err = local.AppGet("test")
+	assert.EqualError(t, err, "no such app: test")
+}
+
 func TestAppList(t *testing.T) {
 	local, err := Provider()
 	assert.NoError(t, err)
+	defer cleanup(local)
 
 	apps, err := local.AppList()
 	assert.NoError(t, err)

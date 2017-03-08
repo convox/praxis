@@ -2,6 +2,7 @@ package local_test
 
 import (
 	"io/ioutil"
+	"os"
 
 	"github.com/convox/praxis/provider/local"
 )
@@ -13,4 +14,10 @@ func Provider() (*local.Provider, error) {
 	}
 
 	return &local.Provider{Root: tmp}, nil
+}
+
+func cleanup(p *local.Provider) {
+	if p.Root != "" {
+		os.RemoveAll(p.Root)
+	}
 }
