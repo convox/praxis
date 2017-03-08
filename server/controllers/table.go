@@ -75,9 +75,5 @@ func TableTruncate(w http.ResponseWriter, r *http.Request, c *api.Context) error
 	app := c.Var("app")
 	table := c.Var("table")
 
-	if err := Provider.TableTruncate(app, table); err != nil {
-		return err
-	}
-
-	return c.RenderJSON("")
+	return Provider.TableTruncate(app, table)
 }
