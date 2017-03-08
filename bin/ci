@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export CODECOV_TOKEN=296de1c3-642d-42d7-9e4e-6ad019a0b548
+export CODECOV_TOKEN=9311f5de-365b-472d-a189-a4a8b7b138f4
 
 curl -s https://codecov.io/bash | bash
 

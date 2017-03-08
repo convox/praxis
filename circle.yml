@@ -9,15 +9,10 @@ machine:
     - sudo rm -rf /usr/local/go
     - sudo tar -C /usr/local -xzf download/$GODIST
 
-checkout:
-  post:
-    - mkdir -p ${GOPATH}/src/github.com/convox
-    - rsync -azC --delete ./ ${GOPATH}/src/github.com/convox/praxis
-
 dependencies:
   cache_directories:
     - ~/download
 
 test:
   override:
-    - make -C /home/ubuntu/go/src/github.com/convox/praxis ci
+    - make ci
