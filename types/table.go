@@ -8,6 +8,10 @@ type Table struct {
 
 type Tables []Table
 
+type TableCreateOptions struct {
+	Indexes []string
+}
+
 type TableFetchOptions struct {
 	Index string
 }

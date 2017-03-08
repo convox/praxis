@@ -77,7 +77,7 @@ type Provider interface {
 	// ReleaseDelete(app, buildID string) error
 	ReleaseGet(app, id string) (*types.Release, error)
 	ReleaseList(app string) (types.Releases, error)
-	// ReleasePromote(*structs.Release) error
+	ReleasePromote(app, id string) error
 	// ReleaseSave(*structs.Release) error
 
 	SystemGet() (*types.System, error)
@@ -85,6 +85,7 @@ type Provider interface {
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
 	// SystemSave(system structs.System) error
 
+	// TableCreate(app, name string, opts types.TableCreateOptions) error
 	TableFetch(app, table, key string, opts types.TableFetchOptions) (map[string]string, error)
 	TableFetchBatch(app, table string, key []string, opts types.TableFetchOptions) ([]map[string]string, error)
 	TableGet(app, table string) (*types.Table, error)

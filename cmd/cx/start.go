@@ -89,6 +89,10 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
+	if err := Rack.ReleasePromote(app.Name, build.Release); err != nil {
+		return err
+	}
+
 	switch build.Status {
 	case "created":
 	case "failed":

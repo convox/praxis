@@ -36,3 +36,10 @@ func ReleaseGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	return c.RenderJSON(release)
 }
+
+func ReleasePromote(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+	id := c.Var("id")
+
+	return Provider.ReleasePromote(app, id)
+}

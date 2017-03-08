@@ -2,10 +2,19 @@ package local
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
 )
+
+func (p *Provider) TableCreate(app, name string, opts types.TableCreateOptions) error {
+	t := types.Table{
+		Name:    name,
+		Indexes: opts.Indexes,
+	}
+
+	return p.Store(fmt.Sprintf("apps/%s/tables/%s/table.json", app, name), t)
+}
 
 func (p *Provider) TableFetch(app, table, key string, opts types.TableFetchOptions) (map[string]string, error) {
 	items, err := p.TableFetchBatch(app, table, []string{key}, opts)
@@ -51,35 +60,45 @@ func (p *Provider) TableFetchBatch(app, table string, keys []string, opts types.
 }
 
 func (p *Provider) TableGet(app, table string) (*types.Table, error) {
-	releases, err := p.ReleaseList(app)
-	if err != nil {
-		return nil, err
-	}
+	var t *types.Table
 
-	if len(releases) == 0 {
-		return nil, fmt.Errorf("no releases found")
-	}
-
-	build, err := p.BuildGet(app, releases[0].Build)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := manifest.Load([]byte(build.Manifest))
-	if err != nil {
-		return nil, err
-	}
-
-	for _, t := range m.Tables {
-		if t.Name == table {
-			return &types.Table{
-				Name:    t.Name,
-				Indexes: t.Indexes,
-			}, nil
+	if err := p.Load(fmt.Sprintf("apps/%s/tables/%s/table.json", app, table), &t); err != nil {
+		if strings.HasPrefix(err.Error(), "no such key:") {
+			return nil, fmt.Errorf("no such table: %s", table)
 		}
+		return nil, err
 	}
 
-	return nil, fmt.Errorf("no such table: %s", table)
+	return t, nil
+	// releases, err := p.ReleaseList(app)
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	// if len(releases) == 0 {
+	//   return nil, fmt.Errorf("no releases found")
+	// }
+
+	// build, err := p.BuildGet(app, releases[0].Build)
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	// m, err := manifest.Load([]byte(build.Manifest))
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	// for _, t := range m.Tables {
+	//   if t.Name == table {
+	//     return &types.Table{
+	//       Name:    t.Name,
+	//       Indexes: t.Indexes,
+	//     }, nil
+	//   }
+	// }
+
+	// return nil, fmt.Errorf("no such table: %s", table)
 }
 
 func (p *Provider) TableList(app string) (types.Tables, error) {
