@@ -27,9 +27,9 @@ type Provider struct {
 	Root string
 }
 
-// NewProviderFromEnv returns a new AWS provider from env vars
+// FromEnv returns a new local.Provider from env vars
 func FromEnv() *Provider {
-	return &Provider{Root: "/var/convox"}
+	return &Provider{Root: coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox")}
 }
 
 func init() {

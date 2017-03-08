@@ -7,7 +7,7 @@ import (
 )
 
 func (c *Client) QueueFetch(app, queue string, opts types.QueueFetchOptions) (attrs map[string]string, err error) {
-	err = c.Get(fmt.Sprintf("/apps/%s/queue/%s", app, queue), RequestOptions{}, &attrs)
+	err = c.Get(fmt.Sprintf("/apps/%s/queues/%s", app, queue), RequestOptions{}, &attrs)
 	return
 }
 
@@ -22,5 +22,5 @@ func (c *Client) QueueStore(app, queue string, attrs map[string]string) error {
 		Params: params,
 	}
 
-	return c.Post(fmt.Sprintf("/apps/%s/tables/%s", app, queue), ro, nil)
+	return c.Post(fmt.Sprintf("/apps/%s/queues/%s", app, queue), ro, nil)
 }
