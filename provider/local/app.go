@@ -2,6 +2,7 @@ package local
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/convox/praxis/types"
@@ -16,7 +17,7 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 		Name: name,
 	}
 
-	if err := p.Store(fmt.Sprintf("apps/%s/app", app.Name), app); err != nil {
+	if err := p.Store(fmt.Sprintf("apps/%s/app.json", app.Name), app); err != nil {
 		return nil, err
 	}
 
@@ -34,7 +35,7 @@ func (p *Provider) AppDelete(name string) error {
 func (p *Provider) AppGet(name string) (*types.App, error) {
 	var app types.App
 
-	if err := p.Load(fmt.Sprintf("apps/%s/app", name), &app); err != nil {
+	if err := p.Load(fmt.Sprintf("apps/%s/app.json", name), &app); err != nil {
 		if strings.HasPrefix(err.Error(), "no such key:") {
 			return nil, fmt.Errorf("no such app: %s", name)
 		}
@@ -60,6 +61,8 @@ func (p *Provider) AppList() (types.Apps, error) {
 
 		apps[i] = *app
 	}
+
+	sort.Slice(apps, func(i, j int) bool { return apps[i].Name < apps[j].Name })
 
 	return apps, nil
 }
