@@ -70,35 +70,6 @@ func (p *Provider) TableGet(app, table string) (*types.Table, error) {
 	}
 
 	return t, nil
-	// releases, err := p.ReleaseList(app)
-	// if err != nil {
-	//   return nil, err
-	// }
-
-	// if len(releases) == 0 {
-	//   return nil, fmt.Errorf("no releases found")
-	// }
-
-	// build, err := p.BuildGet(app, releases[0].Build)
-	// if err != nil {
-	//   return nil, err
-	// }
-
-	// m, err := manifest.Load([]byte(build.Manifest))
-	// if err != nil {
-	//   return nil, err
-	// }
-
-	// for _, t := range m.Tables {
-	//   if t.Name == table {
-	//     return &types.Table{
-	//       Name:    t.Name,
-	//       Indexes: t.Indexes,
-	//     }, nil
-	//   }
-	// }
-
-	// return nil, fmt.Errorf("no such table: %s", table)
 }
 
 func (p *Provider) TableList(app string) (types.Tables, error) {
