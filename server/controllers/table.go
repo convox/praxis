@@ -49,6 +49,17 @@ func TableGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	return c.RenderJSON(t)
 }
 
+func TableList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+
+	t, err := Provider.TableList(app)
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(t)
+}
+
 func TableStore(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	table := c.Var("table")

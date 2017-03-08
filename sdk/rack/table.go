@@ -3,7 +3,6 @@ package rack
 import (
 	"fmt"
 
-	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
 )
 
@@ -23,8 +22,13 @@ func (c *Client) TableFetchBatch(app, table string, keys []string, opts types.Ta
 	return
 }
 
-func (c *Client) TableGet(app, table string) (m *manifest.Table, err error) {
+func (c *Client) TableGet(app, table string) (m *types.Table, err error) {
 	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s", app, table), RequestOptions{}, &m)
+	return
+}
+
+func (c *Client) TableList(app string) (tables types.Tables, err error) {
+	err = c.Get(fmt.Sprintf("/apps/%s/tables", app), RequestOptions{}, &tables)
 	return
 }
 
