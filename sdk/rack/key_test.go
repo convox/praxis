@@ -14,7 +14,6 @@ const (
 )
 
 func TestEncrypt(t *testing.T) {
-
 	rack, err := setup()
 	assert.NoError(t, err)
 	defer cleanup()
@@ -25,7 +24,6 @@ func TestEncrypt(t *testing.T) {
 }
 
 func TestDecrypt(t *testing.T) {
-
 	rack, err := setup()
 	assert.NoError(t, err)
 	defer cleanup()

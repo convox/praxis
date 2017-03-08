@@ -7,13 +7,15 @@ import (
 )
 
 func TestEncryptDecrypt(t *testing.T) {
-	local, err := Provider()
+	local, err := testProvider()
 	assert.NoError(t, err)
 
 	data := "this is data to be encrypted"
 
 	enc, err := local.KeyEncrypt("foo", "bar", []byte(data))
 	assert.NoError(t, err)
+
+	assert.NotEqual(t, []byte(data), enc)
 
 	dec, err := local.KeyDecrypt("foo", "bar", enc)
 	assert.NoError(t, err)
