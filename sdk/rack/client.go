@@ -50,7 +50,7 @@ func (o *RequestOptions) Reader() (io.Reader, error) {
 			u.Set(k, t)
 		case []string:
 			for _, s := range t {
-				u.Set(k, s)
+				u.Add(k, s)
 			}
 		default:
 			return nil, fmt.Errorf("unknown param type: %T", t)
