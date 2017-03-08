@@ -103,3 +103,12 @@ func (p *Provider) TableStore(app, table string, attrs map[string]string) (strin
 
 	return attrs["id"], nil
 }
+
+func (p *Provider) TableTruncate(app, table string) error {
+	key := fmt.Sprintf("apps/%s/tables/%s", app, table)
+	if err := p.DeleteAll(key); err != nil {
+		return err
+	}
+
+	return p.MakeAll(key)
+}

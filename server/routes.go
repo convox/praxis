@@ -40,4 +40,5 @@ func Routes(server *api.Server) {
 	server.Route("table.fetch.batch", "POST", "/apps/{app}/tables/{table}/indexes/{index}/batch", controllers.TableFetchBatch)
 	server.Route("table.get", "GET", "/apps/{app}/tables/{table}", controllers.TableGet)
 	server.Route("table.store", "POST", "/apps/{app}/tables/{table}", controllers.TableStore)
+	server.Route("table.truncate", "POST", "/apps/{app}/tables/{table}/truncate", controllers.TableTruncate)
 }

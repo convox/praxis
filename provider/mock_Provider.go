@@ -558,3 +558,17 @@ func (_m *MockProvider) TableStore(app string, table string, attrs map[string]st
 
 	return r0, r1
 }
+
+// TableTruncate provides a mock function with given fields: app, table
+func (_m *MockProvider) TableTruncate(app string, table string) error {
+	ret := _m.Called(app, table)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(app, table)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

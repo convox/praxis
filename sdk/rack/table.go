@@ -42,3 +42,7 @@ func (c *Client) TableStore(app, table string, attrs map[string]string) (id stri
 	err = c.Post(fmt.Sprintf("/apps/%s/tables/%s", app, table), ro, &id)
 	return
 }
+
+func (c *Client) TableTruncate(app, table string) error {
+	return c.Post(fmt.Sprintf("/apps/%s/tables/%s/truncate", app, table), RequestOptions{}, nil)
+}

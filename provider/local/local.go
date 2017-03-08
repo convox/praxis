@@ -115,6 +115,14 @@ func (p *Provider) Load(key string, v interface{}) error {
 	return json.Unmarshal(data, v)
 }
 
+func (p *Provider) MakeAll(key string) error {
+	if p.Root == "" {
+		return fmt.Errorf("cannot make with empty root")
+	}
+
+	return os.MkdirAll(filepath.Join(p.Root, key), 0700)
+}
+
 func (p *Provider) Store(key string, v interface{}) error {
 	path, err := filepath.Abs(filepath.Join(p.Root, key))
 	if err != nil {
