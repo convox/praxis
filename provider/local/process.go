@@ -26,8 +26,6 @@ func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
 		fmt.Sprintf("id=%s", fpid),
 	}
 
-	fmt.Printf("filters = %+v\n", filters)
-
 	pss, err := processList(filters)
 	if err != nil {
 		return nil, err
@@ -109,7 +107,6 @@ func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
 
 	r, w := io.Pipe()
 
-	fmt.Printf("w = %+v\n", w)
 	cmd := exec.Command("docker", "logs", "-f", pid)
 
 	cmd.Stdout = w
