@@ -7,7 +7,7 @@ import (
 )
 
 func TestAppCreate(t *testing.T) {
-	local, err := Provider()
+	local, err := testProvider()
 	assert.NoError(t, err)
 	defer cleanup(local)
 
@@ -17,7 +17,7 @@ func TestAppCreate(t *testing.T) {
 }
 
 func TestAppCreateAlreadyExists(t *testing.T) {
-	local, err := Provider()
+	local, err := testProvider()
 	assert.NoError(t, err)
 	defer cleanup(local)
 
@@ -29,7 +29,7 @@ func TestAppCreateAlreadyExists(t *testing.T) {
 }
 
 func TestAppDelete(t *testing.T) {
-	local, err := Provider()
+	local, err := testProvider()
 	assert.NoError(t, err)
 	defer cleanup(local)
 
@@ -47,7 +47,7 @@ func TestAppDelete(t *testing.T) {
 }
 
 func TestAppDeleteNonexistant(t *testing.T) {
-	local, err := Provider()
+	local, err := testProvider()
 	assert.NoError(t, err)
 	defer cleanup(local)
 
@@ -56,7 +56,7 @@ func TestAppDeleteNonexistant(t *testing.T) {
 }
 
 func TestAppGet(t *testing.T) {
-	local, err := Provider()
+	local, err := testProvider()
 	assert.NoError(t, err)
 	defer cleanup(local)
 
@@ -72,7 +72,7 @@ func TestAppGet(t *testing.T) {
 }
 
 func TestAppGetNonexistant(t *testing.T) {
-	local, err := Provider()
+	local, err := testProvider()
 	assert.NoError(t, err)
 	defer cleanup(local)
 
@@ -81,7 +81,7 @@ func TestAppGetNonexistant(t *testing.T) {
 }
 
 func TestAppList(t *testing.T) {
-	local, err := Provider()
+	local, err := testProvider()
 	assert.NoError(t, err)
 	defer cleanup(local)
 

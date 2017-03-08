@@ -27,3 +27,7 @@ func (c *Client) ReleaseGet(app, id string) (release *types.Release, err error) 
 func (c *Client) ReleaseList(app string) (types.Releases, error) {
 	return nil, nil
 }
+
+func (c *Client) ReleasePromote(app, id string) error {
+	return c.Post(fmt.Sprintf("/apps/%s/releases/%s/promote", app, id), RequestOptions{}, nil)
+}

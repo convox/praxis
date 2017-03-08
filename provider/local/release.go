@@ -5,6 +5,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
 )
 
@@ -51,4 +52,40 @@ func (p *Provider) ReleaseList(app string) (types.Releases, error) {
 	sort.Sort(releases)
 
 	return releases, nil
+}
+
+func (p *Provider) ReleasePromote(app, id string) error {
+	a, err := p.AppGet(app)
+	if err != nil {
+		return err
+	}
+
+	r, err := p.ReleaseGet(app, id)
+	if err != nil {
+		return err
+	}
+
+	b, err := p.BuildGet(app, r.Build)
+	if err != nil {
+		return err
+	}
+
+	a.Release = r.Id
+
+	if err := p.Store(fmt.Sprintf("apps/%s/app.json", a.Name), a); err != nil {
+		return err
+	}
+
+	m, err := manifest.Load([]byte(b.Manifest))
+	if err != nil {
+		return err
+	}
+
+	for _, t := range m.Tables {
+		if err := p.TableCreate(app, t.Name, types.TableCreateOptions{Indexes: t.Indexes}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -33,6 +33,7 @@ func Routes(server *api.Server) {
 
 	server.Route("release.create", "POST", "/apps/{app}/releases", controllers.ReleaseCreate)
 	server.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
+	server.Route("release.promote", "POST", "/apps/{app}/releases/{id}/promote", controllers.ReleasePromote)
 
 	server.Route("system.get", "GET", "/system", controllers.SystemGet)
 

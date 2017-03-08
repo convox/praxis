@@ -7,7 +7,7 @@ import (
 	"github.com/convox/praxis/provider/local"
 )
 
-func Provider() (*local.Provider, error) {
+func testProvider() (*local.Provider, error) {
 	tmp, err := ioutil.TempDir("", "praxis")
 	if err != nil {
 		return nil, err

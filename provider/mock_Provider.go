@@ -445,6 +445,20 @@ func (_m *MockProvider) ReleaseList(app string) (types.Releases, error) {
 	return r0, r1
 }
 
+// ReleasePromote provides a mock function with given fields: app, id
+func (_m *MockProvider) ReleasePromote(app string, id string) error {
+	ret := _m.Called(app, id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(app, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // SystemGet provides a mock function with given fields:
 func (_m *MockProvider) SystemGet() (*types.System, error) {
 	ret := _m.Called()
