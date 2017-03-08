@@ -122,5 +122,5 @@ func (p *Provider) TableStore(app, table string, attrs map[string]string) (strin
 }
 
 func (p *Provider) TableTruncate(app, table string) error {
-	return p.DeleteAll(fmt.Sprintf("apps/%s/tables/%s", app, table))
+	return p.DeleteAll(fmt.Sprintf("apps/%s/tables/%s/indexes", app, table))
 }
