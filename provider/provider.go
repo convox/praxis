@@ -90,6 +90,7 @@ type Provider interface {
 	TableFetchBatch(app, table string, key []string, opts types.TableFetchOptions) ([]map[string]string, error)
 	TableGet(app, table string) (*manifest.Table, error)
 	TableStore(app, table string, attrs map[string]string) (string, error)
+	TableTruncate(app, table string) error
 }
 
 // FromEnv returns a new Provider from env vars

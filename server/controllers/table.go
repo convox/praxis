@@ -70,3 +70,10 @@ func TableStore(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	return c.RenderJSON(id)
 }
+
+func TableTruncate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+	table := c.Var("table")
+
+	return Provider.TableTruncate(app, table)
+}
