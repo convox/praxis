@@ -20,6 +20,9 @@ func (p *Provider) TimerCreate(app, name string, opts types.TimerCreateOptions) 
 
 	args := []string{"run", "-i"}
 
+	// TODO: use real app env
+	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
+
 	args = append(args, "--link", hostname, "-e", fmt.Sprintf("RACK_URL=https://%s:3000", hostname))
 	args = append(args, "--name", cname)
 	args = append(args, "convox/praxis", "timer")
