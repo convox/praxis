@@ -1,4 +1,4 @@
-.PHONY: all build check cli ci coverage dev image lint mocks test vendor
+.PHONY: all build check cli ci coverage dev image lint mocks stats test vendor
 
 all: build
 
@@ -28,6 +28,9 @@ lint:
 
 mocks:
 	make -C provider mocks
+
+stats:
+	cloc . --exclude-dir=vendor
 
 test: check
 	bin/test
