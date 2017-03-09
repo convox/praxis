@@ -218,11 +218,6 @@ func (v *Workflows) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-func (v *Workflow) SetName(name string) error {
-	v.Type = name
-	return nil
-}
-
 type NameSetter interface {
 	SetName(name string) error
 }
