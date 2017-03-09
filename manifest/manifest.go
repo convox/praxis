@@ -17,6 +17,7 @@ type Manifest struct {
 	Services  Services
 	Tables    Tables
 	Timers    Timers
+	Workflows Workflows
 
 	root string
 }

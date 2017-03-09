@@ -3,6 +3,7 @@ package manifest
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	yaml "gopkg.in/yaml.v2"
@@ -149,6 +150,76 @@ func (v *Timers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 func (v *Timer) SetName(name string) error {
 	v.Name = name
+	return nil
+}
+
+func (v Workflows) MarshalYAML() (interface{}, error) {
+	return nil, fmt.Errorf("unimplemented")
+}
+
+func (v *Workflows) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var w map[string]map[string]interface{}
+
+	if err := unmarshal(&w); err != nil {
+		return err
+	}
+
+	for wt, triggers := range w {
+		for trigger, stepsi := range triggers {
+			steps, ok := stepsi.([]interface{})
+			if !ok {
+				return fmt.Errorf("could not parse workflow step: %s.%s", wt, trigger)
+			}
+
+			wf := Workflow{Type: wt, Trigger: trigger}
+
+			for _, step := range steps {
+				switch t := step.(type) {
+				case map[interface{}]interface{}:
+					if len(t) != 1 {
+						return fmt.Errorf("could not parse workflow step: %s.%s", wt, trigger)
+					}
+
+					for k, v := range t {
+						ks, ok := k.(string)
+						if !ok {
+							return fmt.Errorf("could not parse workflow step: %s.%s.%v", wt, trigger, k)
+						}
+
+						vs, ok := v.(string)
+						if !ok {
+							return fmt.Errorf("could not parse workflow step: %s.%s.%v", wt, trigger, k)
+						}
+
+						wf.Steps = append(wf.Steps, WorkflowStep{Type: ks, Target: vs})
+					}
+				case string:
+					wf.Steps = append(wf.Steps, WorkflowStep{Type: t})
+				default:
+					return fmt.Errorf("could not parse workflow step: %s.%s", wt, trigger)
+				}
+			}
+
+			*v = append(*v, wf)
+		}
+	}
+
+	sort.Slice(*v, func(i, j int) bool {
+		vi := (*v)[i]
+		vj := (*v)[j]
+
+		if vi.Type == vj.Type {
+			return vi.Trigger < vj.Trigger
+		}
+
+		return vi.Type < vj.Type
+	})
+
+	return nil
+}
+
+func (v *Workflow) SetName(name string) error {
+	v.Type = name
 	return nil
 }
 

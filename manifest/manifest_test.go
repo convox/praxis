@@ -78,6 +78,43 @@ func TestManifestLoad(t *testing.T) {
 				},
 			},
 		},
+		Workflows: manifest.Workflows{
+			{
+				Type:    "change",
+				Trigger: "close",
+				Steps: manifest.WorkflowSteps{
+					{Type: "delete", Target: "staging/praxis-$branch"},
+				},
+			},
+			{
+				Type:    "change",
+				Trigger: "create",
+				Steps: manifest.WorkflowSteps{
+					{Type: "create", Target: "staging/praxis-$branch"},
+					{Type: "build", Target: "staging/praxis-$branch"},
+					{Type: "test"},
+					{Type: "promote"},
+				},
+			},
+			{
+				Type:    "merge",
+				Trigger: "demo",
+				Steps: manifest.WorkflowSteps{
+					{Type: "deploy", Target: "demo/praxis-demo"},
+				},
+			},
+			{
+				Type:    "merge",
+				Trigger: "master",
+				Steps: manifest.WorkflowSteps{
+					{Type: "build", Target: "staging/praxis-staging"},
+					{Type: "test"},
+					{Type: "promote"},
+					{Type: "copy", Target: "production/praxis-production"},
+					{Type: "promote"},
+				},
+			},
+		},
 	}
 
 	assert.Equal(t, n, m)
