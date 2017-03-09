@@ -99,6 +99,10 @@ func (p *Provider) TableStore(app, table string, attrs map[string]string) (strin
 			return "", err
 		}
 		attrs["id"] = id
+	} else {
+		if err := p.TableRemove(app, table, attrs["id"], types.TableRemoveOptions{}); err != nil {
+			return "", err
+		}
 	}
 
 	t, err := p.TableGet(app, table)
@@ -139,6 +143,10 @@ func (p *Provider) TableRemoveBatch(app, table string, keys []string, opts types
 
 	for _, item := range items {
 		for _, in := range indexes {
+			if item[in] == "" {
+				continue
+			}
+
 			if err := p.Delete(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, in, item[in], item["id"])); err != nil {
 				return err
 			}
