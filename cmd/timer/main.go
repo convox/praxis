@@ -57,6 +57,9 @@ func run() error {
 	c.AddFunc(fmt.Sprintf("0 %s", flagSchedule), func() {
 		opts := types.ProcessStartOptions{
 			Command: flagCommand,
+			Environment: map[string]string{
+				"APP": flagApp,
+			},
 			Service: flagService,
 		}
 
