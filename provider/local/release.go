@@ -24,7 +24,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		return nil, err
 	}
 
-	return release, nil
+	return p.ReleaseGet(app, release.Id)
 }
 
 func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {

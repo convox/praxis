@@ -61,10 +61,6 @@ func TestReleaseList(t *testing.T) {
 	rels, err := p.ReleaseList("app")
 	assert.Len(t, rels, 3)
 
-	rel1.Env = map[string]string{"APP": "app", "FOO": "bar"}
-	rel2.Env = map[string]string{"APP": "app", "FOO": "bar"}
-	rel3.Env = map[string]string{"APP": "app", "FOO": "baz"}
-
 	assert.Equal(t, *rel3, rels[0])
 	assert.Equal(t, *rel2, rels[1])
 	assert.Equal(t, *rel1, rels[2])
