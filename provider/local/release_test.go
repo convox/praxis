@@ -25,10 +25,12 @@ func TestReleaseCreateGet(t *testing.T) {
 	rel, err := p.ReleaseCreate("app", opts)
 	assert.NoError(t, err)
 
-	fetched, err := p.ReleaseGet("app", rel.Id)
-	assert.NoError(t, err)
+	if assert.NotNil(t, rel) {
+		fetched, err := p.ReleaseGet("app", rel.Id)
+		assert.NoError(t, err)
 
-	assert.Equal(t, rel, fetched)
+		assert.Equal(t, rel, fetched)
+	}
 }
 
 func TestReleaseList(t *testing.T) {
@@ -39,6 +41,12 @@ func TestReleaseList(t *testing.T) {
 	_, err = p.AppCreate("app")
 	assert.NoError(t, err)
 
+	expects := types.Releases{
+		{App: "app", Build: "BTEST3", Env: map[string]string{"APP": "app", "FOO": "baz"}},
+		{App: "app", Build: "BTEST2", Env: map[string]string{"APP": "app", "FOO": "bar"}},
+		{App: "app", Build: "BTEST", Env: map[string]string{"APP": "app", "FOO": "bar"}},
+	}
+
 	opts := types.ReleaseCreateOptions{
 		Build: "BTEST",
 		Env: map[string]string{
@@ -46,22 +54,26 @@ func TestReleaseList(t *testing.T) {
 			"FOO": "bar",
 		},
 	}
-	rel1, err := p.ReleaseCreate("app", opts)
+	_, err = p.ReleaseCreate("app", opts)
 	assert.NoError(t, err)
 
 	opts.Build = "BTEST2"
-	rel2, err := p.ReleaseCreate("app", opts)
+	_, err = p.ReleaseCreate("app", opts)
 	assert.NoError(t, err)
 
 	opts.Build = "BTEST3"
 	opts.Env["FOO"] = "baz"
-	rel3, err := p.ReleaseCreate("app", opts)
+	_, err = p.ReleaseCreate("app", opts)
 	assert.NoError(t, err)
 
 	rels, err := p.ReleaseList("app")
 	assert.Len(t, rels, 3)
 
-	assert.Equal(t, *rel3, rels[0])
-	assert.Equal(t, *rel2, rels[1])
-	assert.Equal(t, *rel1, rels[2])
+	for i := range rels {
+		assert.Equal(t, expects[i].App, rels[i].App)
+		assert.Equal(t, expects[i].Build, rels[i].Build)
+		assert.Equal(t, expects[i].Env, rels[i].Env)
+		assert.Equal(t, false, rels[i].Created.IsZero())
+		assert.NotEqual(t, "", rels[i].Id)
+	}
 }
