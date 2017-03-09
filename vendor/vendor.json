@@ -29,6 +29,102 @@
 			"revisionTime": "2016-09-12T17:25:22Z"
 		},
 		{
+			"checksumSHA1": "BEryKD/eMp82Z4jNCWyL2HWptrU=",
+			"path": "github.com/convox/praxis",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "Ex6XTi5YN922iMMEs7DItvel7YI=",
+			"path": "github.com/convox/praxis/changes",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "cofrw3E7pFSIg9B4duCVlEZo+tw=",
+			"path": "github.com/convox/praxis/changes/cmd/changed",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "jSnnF4LC4a4S9zPQY7icVqMePig=",
+			"path": "github.com/convox/praxis/cmd/build",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "bi5B5KXbfe7uvetrmJiDkVKDpvk=",
+			"path": "github.com/convox/praxis/cmd/cx",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "1b/jtCpLDnODVePp7WiIA5A3Jz0=",
+			"path": "github.com/convox/praxis/cmd/proxy",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "NiORHTOshj2M2tqrUaoFWlnkc2o=",
+			"path": "github.com/convox/praxis/cmd/rack",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "P51LtQe1rq5ax5Ra9Jd5RuOkaN0=",
+			"path": "github.com/convox/praxis/cmd/timer",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "OI3g7ujE809Sp5BeHdnnguLUx+c=",
+			"path": "github.com/convox/praxis/manifest",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "YS5BjMPVQYd3m+THHvmLNObIjsc=",
+			"path": "github.com/convox/praxis/provider",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "TvqtEvJ/V+3dRfKOMHnFhOnrmBY=",
+			"path": "github.com/convox/praxis/provider/local",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "XXhsAAFkEWJshX+QBXDOcHm6fJo=",
+			"path": "github.com/convox/praxis/sdk/rack",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "f3VcCiSoXrnyhxClTQiDNyI8E2M=",
+			"path": "github.com/convox/praxis/server",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "FS28km4zkJ3fF/MWzzJ8by3/fwU=",
+			"path": "github.com/convox/praxis/server/controllers",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "ygWrRBvHY+JrXRX+atWgCiQNgOA=",
+			"path": "github.com/convox/praxis/stdcli",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
+			"checksumSHA1": "N3xsoQzEYPehTmlrZzmfVAYfBSk=",
+			"path": "github.com/convox/praxis/types",
+			"revision": "6e3a611e118885da1089317cf9dd9708cab4093f",
+			"revisionTime": "2017-03-08T23:45:35Z"
+		},
+		{
 			"checksumSHA1": "UQQcNHkQYWnz/yUabZR982jkrX0=",
 			"path": "github.com/convox/rack/changes",
 			"revision": "253ff08eb2f651a141ab47226af9a235a4b08495",
@@ -140,6 +236,12 @@
 			"path": "github.com/pmezard/go-difflib/difflib",
 			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
 			"revisionTime": "2017-01-30T11:31:45Z"
+		},
+		{
+			"checksumSHA1": "PphQA6j/DEDbg3WIsdBDYALOOYs=",
+			"path": "github.com/robfig/cron",
+			"revision": "9585fd555638e77bba25f25db5c44b41f264aeb7",
+			"revisionTime": "2016-09-27T16:42:31Z"
 		},
 		{
 			"checksumSHA1": "EO+jcRet/AJ6IY3lBO8l8BLsZWg=",
