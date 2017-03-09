@@ -92,6 +92,8 @@ type Provider interface {
 	TableGet(app, table string) (*types.Table, error)
 	TableList(app string) (types.Tables, error)
 	TableStore(app, table string, attrs map[string]string) (string, error)
+	TableRemove(app, table string, key string, opts types.TableRemoveOptions) error
+	TableRemoveBatch(app, table string, key []string, opts types.TableRemoveOptions) error
 	TableTruncate(app, table string) error
 }
 

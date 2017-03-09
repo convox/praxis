@@ -22,7 +22,9 @@ func TableFetch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 }
 
 func TableFetchBatch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		return err
+	}
 
 	app := c.Var("app")
 	table := c.Var("table")
@@ -80,6 +82,28 @@ func TableStore(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	}
 
 	return c.RenderJSON(id)
+}
+
+func TableRemove(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+	table := c.Var("table")
+	index := c.Var("index")
+	key := c.Var("key")
+
+	return Provider.TableRemove(app, table, key, types.TableRemoveOptions{Index: index})
+}
+
+func TableRemoveBatch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	if err := r.ParseForm(); err != nil {
+		return err
+	}
+
+	app := c.Var("app")
+	table := c.Var("table")
+	index := c.Var("index")
+	keys := r.Form["key"]
+
+	return Provider.TableRemoveBatch(app, table, keys, types.TableRemoveOptions{Index: index})
 }
 
 func TableTruncate(w http.ResponseWriter, r *http.Request, c *api.Context) error {

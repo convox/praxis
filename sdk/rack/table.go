@@ -47,6 +47,20 @@ func (c *Client) TableStore(app, table string, attrs map[string]string) (id stri
 	return
 }
 
+func (c *Client) TableRemove(app, table, key string, opts types.TableRemoveOptions) error {
+	return c.Delete(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/%s/batch", app, table, coalesce(opts.Index, "id"), key), RequestOptions{}, nil)
+}
+
+func (c *Client) TableRemoveBatch(app, table string, keys []string, opts types.TableRemoveOptions) error {
+	ro := RequestOptions{
+		Params: Params{
+			"key": keys,
+		},
+	}
+
+	return c.Delete(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/batch", app, table, coalesce(opts.Index, "id")), ro, nil)
+}
+
 func (c *Client) TableTruncate(app, table string) error {
 	return c.Post(fmt.Sprintf("/apps/%s/tables/%s/truncate", app, table), RequestOptions{}, nil)
 }

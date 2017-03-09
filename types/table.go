@@ -15,3 +15,7 @@ type TableCreateOptions struct {
 type TableFetchOptions struct {
 	Index string
 }
+
+type TableRemoveOptions struct {
+	Index string
+}

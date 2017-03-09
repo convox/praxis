@@ -121,6 +121,45 @@ func (p *Provider) TableStore(app, table string, attrs map[string]string) (strin
 	return attrs["id"], nil
 }
 
+func (p *Provider) TableRemove(app, table, key string, opts types.TableRemoveOptions) error {
+	return p.TableRemoveBatch(app, table, []string{key}, opts)
+}
+
+func (p *Provider) TableRemoveBatch(app, table string, keys []string, opts types.TableRemoveOptions) error {
+	t, err := p.TableGet(app, table)
+	if err != nil {
+		return err
+	}
+	indexes := append(t.Indexes, "id")
+
+	items, err := p.TableFetchBatch(app, table, keys, types.TableFetchOptions{Index: opts.Index})
+	if err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		for _, in := range indexes {
+			if err := p.Delete(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, in, item[in], item["id"])); err != nil {
+				return err
+			}
+
+			dir := fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, in, item[in])
+			entries, err := p.List(dir)
+			if err != nil {
+				return err
+			}
+
+			if len(entries) == 0 {
+				if err := p.Delete(dir); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func (p *Provider) TableTruncate(app, table string) error {
 	return p.DeleteAll(fmt.Sprintf("apps/%s/tables/%s/indexes", app, table))
 }

@@ -687,6 +687,34 @@ func (_m *MockProvider) TableList(app string) (types.Tables, error) {
 	return r0, r1
 }
 
+// TableRemove provides a mock function with given fields: app, table, key, opts
+func (_m *MockProvider) TableRemove(app string, table string, key string, opts types.TableRemoveOptions) error {
+	ret := _m.Called(app, table, key, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, string, types.TableRemoveOptions) error); ok {
+		r0 = rf(app, table, key, opts)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// TableRemoveBatch provides a mock function with given fields: app, table, key, opts
+func (_m *MockProvider) TableRemoveBatch(app string, table string, key []string, opts types.TableRemoveOptions) error {
+	ret := _m.Called(app, table, key, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, []string, types.TableRemoveOptions) error); ok {
+		r0 = rf(app, table, key, opts)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // TableStore provides a mock function with given fields: app, table, attrs
 func (_m *MockProvider) TableStore(app string, table string, attrs map[string]string) (string, error) {
 	ret := _m.Called(app, table, attrs)
