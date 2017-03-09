@@ -57,17 +57,18 @@ func TestTableStore(t *testing.T) {
 	assert.NoError(t, err)
 	defer cleanup(p)
 
-	expect := map[string]string{
-		"foo":    "bar",
-		"status": "something",
-		"test":   "change",
-	}
-
 	err = p.TableCreate("app", "table", types.TableCreateOptions{Indexes: []string{"status"}})
 	assert.NoError(t, err)
 
 	id1, err := p.TableStore("app", "table", map[string]string{"foo": "bar", "status": "running", "test": "change"})
 	assert.NoError(t, err)
+
+	row1, err := p.TableFetch("app", "table", id1, types.TableFetchOptions{})
+	assert.NoError(t, err)
+
+	assert.Equal(t, "bar", row1["foo"])
+	assert.Equal(t, "running", row1["status"])
+	assert.Equal(t, "change", row1["test"])
 
 	id2, err := p.TableStore("app", "table", map[string]string{"foo": "bar", "status": "something", "id": id1})
 	assert.NoError(t, err)
@@ -76,12 +77,12 @@ func TestTableStore(t *testing.T) {
 		assert.FailNow(t, "row IDs are not equal")
 	}
 
-	row, err := p.TableFetch("app", "table", "something", types.TableFetchOptions{Index: "status"})
+	row2, err := p.TableFetch("app", "table", "something", types.TableFetchOptions{Index: "status"})
 	assert.NoError(t, err)
 
-	assert.Equal(t, expect["foo"], row["foo"])
-	assert.Equal(t, expect["status"], row["status"])
-	assert.Equal(t, expect["test"], row["test"])
+	assert.Equal(t, "bar", row2["foo"])
+	assert.Equal(t, "something", row2["status"])
+	assert.Equal(t, "change", row2["test"])
 }
 
 func TestTableRemoveBatch(t *testing.T) {
