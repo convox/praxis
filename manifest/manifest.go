@@ -16,6 +16,7 @@ type Manifest struct {
 	Queues    Queues
 	Services  Services
 	Tables    Tables
+	Timers    Timers
 
 	root string
 }

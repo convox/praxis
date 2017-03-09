@@ -139,6 +139,19 @@ func (v *Table) SetName(name string) error {
 	return nil
 }
 
+func (v Timers) MarshalYAML() (interface{}, error) {
+	return nil, fmt.Errorf("unimplemented")
+}
+
+func (v *Timers) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return unmarshalMapSlice(unmarshal, v)
+}
+
+func (v *Timer) SetName(name string) error {
+	v.Name = name
+	return nil
+}
+
 type NameSetter interface {
 	SetName(name string) error
 }

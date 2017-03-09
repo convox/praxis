@@ -10,29 +10,22 @@
 			"revisionTime": "2017-02-24T17:58:13Z"
 		},
 		{
-			"checksumSHA1": "SdEcxwaW92m0H3pao3BPj2ZpvaU=",
-			"origin": "github.com/convox/rack/vendor/github.com/Sirupsen/logrus",
+			"checksumSHA1": "0Tugz8gj9KqqVj6JLkXUA7BXas4=",
 			"path": "github.com/Sirupsen/logrus",
-			"revision": "253ff08eb2f651a141ab47226af9a235a4b08495",
-			"revisionTime": "2017-03-01T20:50:36Z"
+			"revision": "0208149b40d863d2c1a2f8fe5753096a9cf2cc8b",
+			"revisionTime": "2017-02-27T12:44:09Z"
 		},
 		{
-			"checksumSHA1": "FJmHS4LQ7ij1Y59T2rba9yEcxo0=",
+			"checksumSHA1": "4CEs46aZ/h8hhMp/BAwfWV4jSms=",
 			"path": "github.com/convox/api",
-			"revision": "893924e07c9436a20673b642ff17a68a5aa80ff0",
-			"revisionTime": "2017-03-06T13:21:23Z"
+			"revision": "0164ce2e180c5496efc1ad7da3f9e827e38c62a4",
+			"revisionTime": "2017-03-07T23:56:24Z"
 		},
 		{
 			"checksumSHA1": "wQevytdwPwsckGzPJbRfdi5xXOw=",
 			"path": "github.com/convox/logger",
 			"revision": "ebae2557e3b133bcd3088869d078a5af39eac834",
 			"revisionTime": "2016-09-12T17:25:22Z"
-		},
-		{
-			"checksumSHA1": "UQQcNHkQYWnz/yUabZR982jkrX0=",
-			"path": "github.com/convox/rack/changes",
-			"revision": "253ff08eb2f651a141ab47226af9a235a4b08495",
-			"revisionTime": "2017-03-01T20:50:36Z"
 		},
 		{
 			"checksumSHA1": "OFu4xJEIjiI8Suu+j/gabfp+y6Q=",
@@ -103,6 +96,12 @@
 			"revisionTime": "2017-02-24T17:58:13Z"
 		},
 		{
+			"checksumSHA1": "g/V4qrXjUGG9B+e3hB+4NAYJ5Gs=",
+			"path": "github.com/gorilla/context",
+			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
+			"revisionTime": "2016-08-17T18:46:32Z"
+		},
+		{
 			"checksumSHA1": "zmCk+lgIeiOf0Ng9aFP9aFy8ksE=",
 			"path": "github.com/gorilla/mux",
 			"revision": "599cba5e7b6137d46ddf58fb1765f5d928e69604",
@@ -140,6 +139,12 @@
 			"path": "github.com/pmezard/go-difflib/difflib",
 			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
 			"revisionTime": "2017-01-30T11:31:45Z"
+		},
+		{
+			"checksumSHA1": "PphQA6j/DEDbg3WIsdBDYALOOYs=",
+			"path": "github.com/robfig/cron",
+			"revision": "9585fd555638e77bba25f25db5c44b41f264aeb7",
+			"revisionTime": "2016-09-27T16:42:31Z"
 		},
 		{
 			"checksumSHA1": "EO+jcRet/AJ6IY3lBO8l8BLsZWg=",
@@ -198,11 +203,10 @@
 			"revisionTime": "2017-02-23T22:05:28Z"
 		},
 		{
-			"checksumSHA1": "w/CdP2ei86e8ts4kgpqDTKOTOn4=",
-			"origin": "github.com/convox/rack/vendor/golang.org/x/sys/unix",
+			"checksumSHA1": "oVd5OHIvNHR5bhUvnBMPLVjaL6E=",
 			"path": "golang.org/x/sys/unix",
-			"revision": "253ff08eb2f651a141ab47226af9a235a4b08495",
-			"revisionTime": "2017-03-01T20:50:36Z"
+			"revision": "e4594059fe4cde2daf423055a596c2cd1e6c9adf",
+			"revisionTime": "2017-02-23T22:36:15Z"
 		},
 		{
 			"checksumSHA1": "fpW2dhGFC6SrVzipJx7fjg2DIH8=",

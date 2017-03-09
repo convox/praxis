@@ -88,7 +88,5 @@ func (rt *Router) wrap(fn HandlerFunc, m ...Middleware) HandlerFunc {
 		return fn
 	}
 
-	fmt.Printf("m = %+v\n", m)
-
 	return m[0](rt.wrap(fn, m[1:len(m)]...))
 }

@@ -34,4 +34,5 @@ test: check
 
 vendor:
 	go get -u github.com/kardianos/govendor
-	govendor add +external
+	govendor update +vendor
+	govendor fetch +missing

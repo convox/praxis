@@ -86,7 +86,6 @@ type Provider interface {
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
 	// SystemSave(system structs.System) error
 
-	// TableCreate(app, name string, opts types.TableCreateOptions) error
 	TableFetch(app, table, key string, opts types.TableFetchOptions) (map[string]string, error)
 	TableFetchBatch(app, table string, key []string, opts types.TableFetchOptions) ([]map[string]string, error)
 	TableGet(app, table string) (*types.Table, error)
@@ -102,8 +101,6 @@ func FromEnv() Provider {
 	switch os.Getenv("PROVIDER") {
 	// case "aws":
 	//   return aws.FromEnv()
-	case "test":
-		return &MockProvider{}
 	default:
 		return local.FromEnv()
 	}

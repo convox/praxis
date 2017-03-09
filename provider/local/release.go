@@ -87,5 +87,17 @@ func (p *Provider) ReleasePromote(app, id string) error {
 		}
 	}
 
+	for _, t := range m.Timers {
+		opts := types.TimerCreateOptions{
+			Command:  t.Command,
+			Schedule: t.Schedule,
+			Service:  t.Service,
+		}
+
+		if err := p.TimerCreate(app, t.Name, opts); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
