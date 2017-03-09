@@ -39,7 +39,7 @@ func (m *Manifest) Build(app string, id string, opts BuildOptions) error {
 
 	for hash, service := range builds {
 		if service.Image != "" {
-			if err := service.pull(tags[hash], opts); err != nil {
+			if err := service.pull(hash, opts); err != nil {
 				return err
 			}
 		} else {
@@ -111,6 +111,10 @@ func (m *Manifest) BuildManifest(service string) ([]byte, error) {
 		return nil, err
 	}
 
+	if s.Image != "" {
+		return nil, nil
+	}
+
 	root, err := m.Path("")
 	if err != nil {
 		return nil, err
@@ -132,6 +136,9 @@ func (m *Manifest) BuildSources(service string) ([]BuildSource, error) {
 	data, err := m.BuildManifest(service)
 	if err != nil {
 		return nil, err
+	}
+	if data == nil {
+		return []BuildSource{}, nil
 	}
 
 	bs := []BuildSource{}
