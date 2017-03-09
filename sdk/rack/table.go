@@ -6,6 +6,16 @@ import (
 	"github.com/convox/praxis/types"
 )
 
+func (c *Client) TableCreate(app, table string, opts types.TableCreateOptions) error {
+	ro := RequestOptions{
+		Params: Params{
+			"index": opts.Indexes,
+		},
+	}
+
+	return c.Post(fmt.Sprintf("/apps/%s/tables/%s", app, table), ro, nil)
+}
+
 func (c *Client) TableFetch(app, table, key string, opts types.TableFetchOptions) (attrs map[string]string, err error) {
 	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/%s", app, table, coalesce(opts.Index, "id"), key), RequestOptions{}, &attrs)
 	return
@@ -43,12 +53,12 @@ func (c *Client) TableStore(app, table string, attrs map[string]string) (id stri
 		Params: params,
 	}
 
-	err = c.Post(fmt.Sprintf("/apps/%s/tables/%s", app, table), ro, &id)
+	err = c.Post(fmt.Sprintf("/apps/%s/tables/%s/rows", app, table), ro, &id)
 	return
 }
 
 func (c *Client) TableRemove(app, table, key string, opts types.TableRemoveOptions) error {
-	return c.Delete(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/%s/batch", app, table, coalesce(opts.Index, "id"), key), RequestOptions{}, nil)
+	return c.Delete(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/%s", app, table, coalesce(opts.Index, "id"), key), RequestOptions{}, nil)
 }
 
 func (c *Client) TableRemoveBatch(app, table string, keys []string, opts types.TableRemoveOptions) error {
@@ -58,7 +68,7 @@ func (c *Client) TableRemoveBatch(app, table string, keys []string, opts types.T
 		},
 	}
 
-	return c.Delete(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/batch", app, table, coalesce(opts.Index, "id")), ro, nil)
+	return c.Post(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/batch/remove", app, table, coalesce(opts.Index, "id")), ro, nil)
 }
 
 func (c *Client) TableTruncate(app, table string) error {
