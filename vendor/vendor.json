@@ -10,10 +10,16 @@
 			"revisionTime": "2017-02-24T17:58:13Z"
 		},
 		{
-			"checksumSHA1": "FJmHS4LQ7ij1Y59T2rba9yEcxo0=",
+			"checksumSHA1": "0Tugz8gj9KqqVj6JLkXUA7BXas4=",
+			"path": "github.com/Sirupsen/logrus",
+			"revision": "0208149b40d863d2c1a2f8fe5753096a9cf2cc8b",
+			"revisionTime": "2017-02-27T12:44:09Z"
+		},
+		{
+			"checksumSHA1": "4CEs46aZ/h8hhMp/BAwfWV4jSms=",
 			"path": "github.com/convox/api",
-			"revision": "893924e07c9436a20673b642ff17a68a5aa80ff0",
-			"revisionTime": "2017-03-06T13:21:23Z"
+			"revision": "0164ce2e180c5496efc1ad7da3f9e827e38c62a4",
+			"revisionTime": "2017-03-07T23:56:24Z"
 		},
 		{
 			"checksumSHA1": "wQevytdwPwsckGzPJbRfdi5xXOw=",
@@ -88,6 +94,12 @@
 			"path": "github.com/docker/go-units",
 			"revision": "55fcd6f4db6088be90eef1e521e5e2e89d0b71a1",
 			"revisionTime": "2017-02-24T17:58:13Z"
+		},
+		{
+			"checksumSHA1": "g/V4qrXjUGG9B+e3hB+4NAYJ5Gs=",
+			"path": "github.com/gorilla/context",
+			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
+			"revisionTime": "2016-08-17T18:46:32Z"
 		},
 		{
 			"checksumSHA1": "zmCk+lgIeiOf0Ng9aFP9aFy8ksE=",
@@ -189,6 +201,12 @@
 			"path": "golang.org/x/net/lex/httplex",
 			"revision": "10c134ea0df15f7e34d789338c7a2d76cc7a3ab9",
 			"revisionTime": "2017-02-23T22:05:28Z"
+		},
+		{
+			"checksumSHA1": "oVd5OHIvNHR5bhUvnBMPLVjaL6E=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "e4594059fe4cde2daf423055a596c2cd1e6c9adf",
+			"revisionTime": "2017-02-23T22:36:15Z"
 		},
 		{
 			"checksumSHA1": "fpW2dhGFC6SrVzipJx7fjg2DIH8=",
