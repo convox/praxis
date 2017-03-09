@@ -7,6 +7,18 @@ import (
 	"github.com/convox/praxis/types"
 )
 
+func TableCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	if err := r.ParseForm(); err != nil {
+		return err
+	}
+
+	app := c.Var("app")
+	table := c.Var("table")
+	indexes := r.Form["index"]
+
+	return Provider.TableCreate(app, table, types.TableCreateOptions{Indexes: indexes})
+}
+
 func TableFetch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	table := c.Var("table")

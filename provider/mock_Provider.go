@@ -595,6 +595,20 @@ func (_m *MockProvider) SystemGet() (*types.System, error) {
 	return r0, r1
 }
 
+// TableCreate provides a mock function with given fields: app, name, opts
+func (_m *MockProvider) TableCreate(app string, name string, opts types.TableCreateOptions) error {
+	ret := _m.Called(app, name, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, types.TableCreateOptions) error); ok {
+		r0 = rf(app, name, opts)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // TableFetch provides a mock function with given fields: app, table, key, opts
 func (_m *MockProvider) TableFetch(app string, table string, key string, opts types.TableFetchOptions) (map[string]string, error) {
 	ret := _m.Called(app, table, key, opts)

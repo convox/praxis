@@ -8,6 +8,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestTableCreate(t *testing.T) {
+	p, err := testProvider()
+	assert.NoError(t, err)
+	defer cleanup(p)
+
+	err = p.TableCreate("app", "table", types.TableCreateOptions{})
+	assert.NoError(t, err)
+
+	tt, err := p.TableGet("app", "table")
+	assert.NoError(t, err)
+
+	assert.Equal(t, "table", tt.Name)
+	assert.Len(t, tt.Indexes, 0)
+}
+
 func TestTableFetchBatch(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
