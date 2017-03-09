@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/convox/rack/changes"
+	"github.com/convox/praxis/changes"
 )
 
 func main() {
 	ch := make(chan changes.Change)
 
 	for _, watch := range os.Args[1:] {
-		go changes.Watch(watch, ch)
+		go changes.Watch(watch, ch, changes.WatchOptions{})
 	}
 
 	for c := range ch {
