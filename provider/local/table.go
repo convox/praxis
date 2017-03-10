@@ -100,6 +100,17 @@ func (p *Provider) TableStore(app, table string, attrs map[string]string) (strin
 		}
 		attrs["id"] = id
 	} else {
+		row, err := p.TableFetch(app, table, attrs["id"], types.TableFetchOptions{})
+		if err != nil {
+			return "", err
+		}
+
+		for k := range attrs {
+			row[k] = attrs[k]
+		}
+
+		attrs = row
+
 		if err := p.TableRemove(app, table, attrs["id"], types.TableRemoveOptions{}); err != nil {
 			return "", err
 		}
