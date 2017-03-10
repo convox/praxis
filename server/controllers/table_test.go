@@ -42,6 +42,29 @@ func TestTableCreate(t *testing.T) {
 	assert.Equal(t, []byte("failed to create table\n"), data)
 }
 
+func TestTableFetch(t *testing.T) {
+	ts, mp := mockServer()
+	defer ts.Close()
+
+	attrs := map[string]string{
+		"foo":  "bar",
+		"test": "test",
+		"id":   "idfoo",
+	}
+
+	mp.On("TableFetch", "app", "table", "idfoo", types.TableFetchOptions{Index: "id"}).Return(attrs, nil)
+
+	res, err := testRequest(ts, "GET", "/apps/app/tables/table/indexes/id/idfoo", nil)
+	assert.NoError(t, err)
+	defer res.Body.Close()
+
+	data, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 200, res.StatusCode)
+	assert.Equal(t, []byte(`{"foo":"bar","id":"idfoo","test":"test"}`), data)
+}
+
 func TestTableFetchBatch(t *testing.T) {
 	ts, mp := mockServer()
 	defer ts.Close()
@@ -110,4 +133,88 @@ func TestTableList(t *testing.T) {
 
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Equal(t, []byte(`[{"Name":"table","Indexes":["foo","baz"]},{"Name":"table2","Indexes":["baz"]},{"Name":"table1","Indexes":["floor"]}]`), data)
+}
+
+func TestTableStore(t *testing.T) {
+	ts, mp := mockServer()
+	defer ts.Close()
+
+	attrs := map[string]string{
+		"foo":  "bar",
+		"test": "this",
+	}
+
+	mp.On("TableStore", "app", "table", attrs).Return("123456789", nil)
+
+	v := url.Values{}
+	v.Add("foo", "bar")
+	v.Add("test", "this")
+
+	res, err := testRequest(ts, "POST", "/apps/app/tables/table/rows", bytes.NewReader([]byte(v.Encode())))
+	assert.NoError(t, err)
+	defer res.Body.Close()
+
+	data, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 200, res.StatusCode)
+	assert.Equal(t, []byte(`"123456789"`), data)
+}
+
+func TestTableRemove(t *testing.T) {
+	ts, mp := mockServer()
+	defer ts.Close()
+
+	mp.On("TableRemove", "app", "table", "this", types.TableRemoveOptions{Index: "id"}).Return(nil)
+
+	v := url.Values{}
+	v.Add("app", "app")
+	v.Add("table", "table")
+	v.Add("index", "id")
+	v.Add("key", "this")
+
+	res, err := testRequest(ts, "DELETE", "/apps/app/tables/table/indexes/id/this", bytes.NewReader([]byte(v.Encode())))
+	assert.NoError(t, err)
+	defer res.Body.Close()
+
+	data, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, 200, res.StatusCode)
+	assert.Equal(t, []byte(""), data)
+}
+
+func TestTableRemoveBatch(t *testing.T) {
+	ts, mp := mockServer()
+	defer ts.Close()
+
+	mp.On("TableRemoveBatch", "app", "table", []string{"app", "table"}, types.TableRemoveOptions{Index: "id"}).Return(nil)
+
+	v := url.Values{}
+	v.Add("key", "app")
+	v.Add("key", "table")
+
+	res, err := testRequest(ts, "POST", "/apps/app/tables/table/indexes/id/batch/remove", bytes.NewReader([]byte(v.Encode())))
+	assert.NoError(t, err)
+	defer res.Body.Close()
+
+	data, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, 200, res.StatusCode)
+	assert.Equal(t, []byte(""), data)
+}
+
+func TestTableTruncate(t *testing.T) {
+	ts, mp := mockServer()
+	defer ts.Close()
+
+	mp.On("TableTruncate", "app", "table").Return(nil)
+
+	res, err := testRequest(ts, "POST", "/apps/app/tables/table/truncate", nil)
+	assert.NoError(t, err)
+	defer res.Body.Close()
+
+	data, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, 200, res.StatusCode)
+	assert.Equal(t, []byte(""), data)
 }
