@@ -1,6 +1,7 @@
 package local
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -40,19 +41,26 @@ func (p *Provider) TableFetchBatch(app, table string, keys []string, opts types.
 			continue
 		}
 
-		entries, err := p.List(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, coalesce(opts.Index, "id"), key))
+		ek := encodeValue(key)
+
+		entries, err := p.List(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, coalesce(opts.Index, "id"), ek))
 		if err != nil {
 			return nil, err
 		}
 
 		for _, e := range entries {
-			var item map[string]string
+			var attrs map[string]string
 
-			if err := p.Load(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s", app, table, coalesce(opts.Index, "id"), key, e), &item); err != nil {
+			if err := p.Load(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s", app, table, coalesce(opts.Index, "id"), ek, e), &attrs); err != nil {
 				return nil, err
 			}
 
-			items = append(items, item)
+			da, err := decodeAttrs(attrs)
+			if err != nil {
+				return nil, err
+			}
+
+			items = append(items, da)
 		}
 	}
 
@@ -128,7 +136,9 @@ func (p *Provider) TableStore(app, table string, attrs map[string]string) (strin
 			continue
 		}
 
-		if err := p.Store(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, index, attrs[index], attrs["id"]), attrs); err != nil {
+		ea := encodeAttrs(attrs)
+
+		if err := p.Store(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, index, ea[index], ea["id"]), ea); err != nil {
 			return "", err
 		}
 	}
@@ -158,11 +168,13 @@ func (p *Provider) TableRemoveBatch(app, table string, keys []string, opts types
 				continue
 			}
 
-			if err := p.Delete(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, in, item[in], item["id"])); err != nil {
+			ei := encodeAttrs(item)
+
+			if err := p.Delete(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, in, ei[in], ei["id"])); err != nil {
 				return err
 			}
 
-			dir := fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, in, item[in])
+			dir := fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, in, ei[in])
 			entries, err := p.List(dir)
 			if err != nil {
 				return err
@@ -181,4 +193,33 @@ func (p *Provider) TableRemoveBatch(app, table string, keys []string, opts types
 
 func (p *Provider) TableTruncate(app, table string) error {
 	return p.DeleteAll(fmt.Sprintf("apps/%s/tables/%s/indexes", app, table))
+}
+
+func decodeAttrs(attrs map[string]string) (map[string]string, error) {
+	dec := map[string]string{}
+
+	for k, v := range attrs {
+		d, err := base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			return nil, err
+		}
+
+		dec[k] = string(d)
+	}
+
+	return dec, nil
+}
+
+func encodeAttrs(attrs map[string]string) map[string]string {
+	enc := map[string]string{}
+
+	for k, v := range attrs {
+		enc[k] = encodeValue(v)
+	}
+
+	return enc
+}
+
+func encodeValue(s string) string {
+	return base64.StdEncoding.EncodeToString([]byte(s))
 }
