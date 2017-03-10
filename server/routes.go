@@ -1,11 +1,18 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/convox/api"
 	"github.com/convox/praxis/server/controllers"
 )
 
 func Routes(server *api.Server) {
+	server.Route("root", "GET", "/", func(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+		w.Write([]byte("ok"))
+		return nil
+	})
+
 	server.Route("app.create", "POST", "/apps", controllers.AppCreate)
 	server.Route("app.delete", "DELETE", "/apps/{name}", controllers.AppDelete)
 	server.Route("app.get", "GET", "/apps/{name}", controllers.AppGet)

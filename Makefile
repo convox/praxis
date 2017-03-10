@@ -1,4 +1,6 @@
-.PHONY: all build check cli ci coverage dev image lint mocks stats test vendor
+.PHONY: all build check cli ci coverage dev image lint mocks release stats test vendor
+
+VERSION ?= $(shell date +%Y%m%d%H%M%S)
 
 all: build
 
@@ -28,6 +30,12 @@ lint:
 
 mocks:
 	make -C provider mocks
+
+release:
+	make -C provider release VERSION=$(VERSION)
+	docker build -t convox/praxis:$(VERSION) .
+	docker push convox/praxis:$(VERSION)
+	@echo "release: $(VERSION)"
 
 stats:
 	cloc . --exclude-dir=vendor
