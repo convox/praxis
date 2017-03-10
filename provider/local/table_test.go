@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTableCreate(t *testing.T) {
+func TestTableCreateGet(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
 	defer cleanup(p)
@@ -21,6 +21,34 @@ func TestTableCreate(t *testing.T) {
 
 	assert.Equal(t, "table", tt.Name)
 	assert.Len(t, tt.Indexes, 0)
+}
+
+func TestTableFetch(t *testing.T) {
+	p, err := testProvider()
+	assert.NoError(t, err)
+	defer cleanup(p)
+
+	err = p.TableCreate("app", "table", types.TableCreateOptions{Indexes: []string{"foo"}})
+	assert.NoError(t, err)
+
+	_, err = p.TableFetch("app", "table", "foo", types.TableFetchOptions{})
+	assert.EqualError(t, err, "not found")
+
+	_, err = p.TableStore("app", "table", map[string]string{"foo": "bar"})
+	assert.NoError(t, err)
+
+	row, err := p.TableFetch("app", "table", "bar", types.TableFetchOptions{Index: "foo"})
+	assert.NoError(t, err)
+	assert.Equal(t, "bar", row["foo"])
+
+	_, err = p.TableStore("app", "table", map[string]string{"foo": "bar"})
+	assert.NoError(t, err)
+
+	_, err = p.TableStore("app", "table", map[string]string{"foo": "bar"})
+	assert.NoError(t, err)
+
+	_, err = p.TableFetch("app", "table", "bar", types.TableFetchOptions{Index: "foo"})
+	assert.EqualError(t, err, "multiple items found")
 }
 
 func TestTableFetchBatch(t *testing.T) {
@@ -49,6 +77,39 @@ func TestTableFetchBatch(t *testing.T) {
 		assert.Equal(t, "bar1", items[0]["foo"])
 		assert.Equal(t, "bar2", items[1]["foo"])
 		assert.Equal(t, "bar3", items[2]["foo"])
+	}
+}
+
+func TestTableList(t *testing.T) {
+	p, err := testProvider()
+	assert.NoError(t, err)
+	defer cleanup(p)
+
+	zero, err := p.TableList("app")
+	assert.NoError(t, err)
+	assert.Empty(t, zero)
+
+	expects := []struct {
+		Name    string
+		Indexes []string
+	}{
+		// orderd list by table name
+		{"apples", []string{"bar"}},
+		{"cherries", []string{"foo", "name"}},
+		{"ninjas", []string{"foo", "bar"}},
+	}
+
+	for _, tab := range expects {
+		err = p.TableCreate("app", tab.Name, types.TableCreateOptions{Indexes: tab.Indexes})
+		assert.NoError(t, err)
+	}
+
+	tables, err := p.TableList("app")
+	assert.NoError(t, err)
+
+	for i := range tables {
+		assert.Equal(t, expects[i].Name, tables[i].Name)
+		assert.Equal(t, expects[i].Indexes, tables[i].Indexes)
 	}
 }
 
@@ -154,4 +215,34 @@ func TestTableRemoveBatch(t *testing.T) {
 	none, err := p.TableFetchBatch("app", "table", []string{id1, id2, id3}, types.TableFetchOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, none, 0)
+}
+
+func TestTableTruncate(t *testing.T) {
+	p, err := testProvider()
+	assert.NoError(t, err)
+	defer cleanup(p)
+
+	if err := p.TableCreate("app", "table", types.TableCreateOptions{Indexes: []string{"data"}}); !assert.NoError(t, err) {
+		assert.FailNow(t, "table create failed")
+	}
+
+	_, err = p.TableStore("app", "table", map[string]string{"data": "foo"})
+	assert.NoError(t, err)
+
+	_, err = p.TableStore("app", "table", map[string]string{"data": "foo"})
+	assert.NoError(t, err)
+
+	_, err = p.TableStore("app", "table", map[string]string{"data": "foo"})
+	assert.NoError(t, err)
+
+	items, err := p.TableFetchBatch("app", "table", []string{"foo"}, types.TableFetchOptions{Index: "data"})
+	assert.NoError(t, err)
+	assert.Len(t, items, 3)
+
+	err = p.TableTruncate("app", "table")
+	assert.NoError(t, err)
+
+	zero, err := p.TableFetchBatch("app", "table", []string{"foo"}, types.TableFetchOptions{Index: "data"})
+	assert.NoError(t, err)
+	assert.Empty(t, zero)
 }
