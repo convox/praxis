@@ -44,12 +44,12 @@ func Routes(server *api.Server) {
 	server.Route("system.get", "GET", "/system", controllers.SystemGet)
 
 	server.Route("table.create", "POST", "/apps/{app}/tables/{table}", controllers.TableCreate)
-	server.Route("table.fetch", "GET", "/apps/{app}/tables/{table}/indexes/{index}/{key}", controllers.TableFetch)
-	server.Route("table.fetch.batch", "POST", "/apps/{app}/tables/{table}/indexes/{index}/batch", controllers.TableFetchBatch)
 	server.Route("table.get", "GET", "/apps/{app}/tables/{table}", controllers.TableGet)
 	server.Route("table.list", "GET", "/apps/{app}/tables", controllers.TableList)
-	server.Route("table.store", "POST", "/apps/{app}/tables/{table}/rows", controllers.TableStore)
-	server.Route("table.remove", "DELETE", "/apps/{app}/tables/{table}/indexes/{index}/{key}", controllers.TableRemove)
-	server.Route("table.remove.batch", "POST", "/apps/{app}/tables/{table}/indexes/{index}/batch/remove", controllers.TableRemoveBatch)
 	server.Route("table.truncate", "POST", "/apps/{app}/tables/{table}/truncate", controllers.TableTruncate)
+	server.Route("table.row.delete", "DELETE", "/apps/{app}/tables/{table}/indexes/{index}/{key}", controllers.TableRowDelete)
+	server.Route("table.row.get", "GET", "/apps/{app}/tables/{table}/indexes/{index}/{key}", controllers.TableRowGet)
+	server.Route("table.row.store", "POST", "/apps/{app}/tables/{table}/rows", controllers.TableRowStore)
+	server.Route("table.rows.delete", "POST", "/apps/{app}/tables/{table}/indexes/{index}/batch/remove", controllers.TableRowsDelete)
+	server.Route("table.rows.get", "POST", "/apps/{app}/tables/{table}/indexes/{index}/batch", controllers.TableRowsGet)
 }

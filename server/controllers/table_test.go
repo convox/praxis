@@ -42,17 +42,17 @@ func TestTableCreate(t *testing.T) {
 	assert.Equal(t, []byte("failed to create table\n"), data)
 }
 
-func TestTableFetch(t *testing.T) {
+func TestTableRowGet(t *testing.T) {
 	ts, mp := mockServer()
 	defer ts.Close()
 
-	attrs := map[string]string{
+	row := types.TableRow{
 		"foo":  "bar",
 		"test": "test",
 		"id":   "idfoo",
 	}
 
-	mp.On("TableFetch", "app", "table", "idfoo", types.TableFetchOptions{Index: "id"}).Return(attrs, nil)
+	mp.On("TableRowGet", "app", "table", "idfoo", types.TableRowGetOptions{Index: "id"}).Return(&row, nil)
 
 	res, err := testRequest(ts, "GET", "/apps/app/tables/table/indexes/id/idfoo", nil)
 	assert.NoError(t, err)
@@ -65,16 +65,16 @@ func TestTableFetch(t *testing.T) {
 	assert.Equal(t, []byte(`{"foo":"bar","id":"idfoo","test":"test"}`), data)
 }
 
-func TestTableFetchBatch(t *testing.T) {
+func TestTableRowsGet(t *testing.T) {
 	ts, mp := mockServer()
 	defer ts.Close()
 
-	items := []map[string]string{
-		map[string]string{"id": "one", "foo": "bar1"},
-		map[string]string{"id": "two", "foo": "bar2"},
+	items := types.TableRows{
+		types.TableRow{"id": "one", "foo": "bar1"},
+		types.TableRow{"id": "two", "foo": "bar2"},
 	}
 
-	mp.On("TableFetchBatch", "app", "table", []string{"one", "two"}, types.TableFetchOptions{Index: "id"}).Return(items, nil)
+	mp.On("TableRowsGet", "app", "table", []string{"one", "two"}, types.TableRowGetOptions{Index: "id"}).Return(items, nil)
 
 	v := url.Values{}
 	v.Add("key", "one")
@@ -135,16 +135,16 @@ func TestTableList(t *testing.T) {
 	assert.Equal(t, []byte(`[{"Name":"table","Indexes":["foo","baz"]},{"Name":"table2","Indexes":["baz"]},{"Name":"table1","Indexes":["floor"]}]`), data)
 }
 
-func TestTableStore(t *testing.T) {
+func TestTableRowStore(t *testing.T) {
 	ts, mp := mockServer()
 	defer ts.Close()
 
-	attrs := map[string]string{
+	attrs := types.TableRow{
 		"foo":  "bar",
 		"test": "this",
 	}
 
-	mp.On("TableStore", "app", "table", attrs).Return("123456789", nil)
+	mp.On("TableRowStore", "app", "table", attrs).Return("123456789", nil)
 
 	v := url.Values{}
 	v.Add("foo", "bar")
@@ -161,11 +161,11 @@ func TestTableStore(t *testing.T) {
 	assert.Equal(t, []byte(`"123456789"`), data)
 }
 
-func TestTableRemove(t *testing.T) {
+func TestTableRowDelete(t *testing.T) {
 	ts, mp := mockServer()
 	defer ts.Close()
 
-	mp.On("TableRemove", "app", "table", "this", types.TableRemoveOptions{Index: "id"}).Return(nil)
+	mp.On("TableRowDelete", "app", "table", "this", types.TableRowDeleteOptions{Index: "id"}).Return(nil)
 
 	v := url.Values{}
 	v.Add("app", "app")
@@ -183,11 +183,11 @@ func TestTableRemove(t *testing.T) {
 	assert.Equal(t, []byte(""), data)
 }
 
-func TestTableRemoveBatch(t *testing.T) {
+func TestTableRowsDelete(t *testing.T) {
 	ts, mp := mockServer()
 	defer ts.Close()
 
-	mp.On("TableRemoveBatch", "app", "table", []string{"app", "table"}, types.TableRemoveOptions{Index: "id"}).Return(nil)
+	mp.On("TableRowsDelete", "app", "table", []string{"app", "table"}, types.TableRowDeleteOptions{Index: "id"}).Return(nil)
 
 	v := url.Values{}
 	v.Add("key", "app")

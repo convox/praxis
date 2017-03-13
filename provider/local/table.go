@@ -17,56 +17,6 @@ func (p *Provider) TableCreate(app, name string, opts types.TableCreateOptions) 
 	return p.Store(fmt.Sprintf("apps/%s/tables/%s/table.json", app, name), t)
 }
 
-func (p *Provider) TableFetch(app, table, key string, opts types.TableFetchOptions) (map[string]string, error) {
-	items, err := p.TableFetchBatch(app, table, []string{key}, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	switch len(items) {
-	case 0:
-		return nil, fmt.Errorf("not found")
-	case 1:
-		return items[0], nil
-	default:
-		return nil, fmt.Errorf("multiple items found")
-	}
-}
-
-func (p *Provider) TableFetchBatch(app, table string, keys []string, opts types.TableFetchOptions) ([]map[string]string, error) {
-	items := []map[string]string{}
-
-	for _, key := range keys {
-		if key == "" {
-			continue
-		}
-
-		ek := encodeValue(key)
-
-		entries, err := p.List(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, coalesce(opts.Index, "id"), ek))
-		if err != nil {
-			return nil, err
-		}
-
-		for _, e := range entries {
-			var attrs map[string]string
-
-			if err := p.Load(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s", app, table, coalesce(opts.Index, "id"), ek, e), &attrs); err != nil {
-				return nil, err
-			}
-
-			da, err := decodeAttrs(attrs)
-			if err != nil {
-				return nil, err
-			}
-
-			items = append(items, da)
-		}
-	}
-
-	return items, nil
-}
-
 func (p *Provider) TableGet(app, table string) (*types.Table, error) {
 	var t *types.Table
 
@@ -100,7 +50,31 @@ func (p *Provider) TableList(app string) (types.Tables, error) {
 	return tables, nil
 }
 
-func (p *Provider) TableStore(app, table string, attrs map[string]string) (string, error) {
+func (p *Provider) TableTruncate(app, table string) error {
+	return p.DeleteAll(fmt.Sprintf("apps/%s/tables/%s/indexes", app, table))
+}
+
+func (p *Provider) TableRowDelete(app, table, key string, opts types.TableRowDeleteOptions) error {
+	return p.TableRowsDelete(app, table, []string{key}, opts)
+}
+
+func (p *Provider) TableRowGet(app, table, key string, opts types.TableRowGetOptions) (*types.TableRow, error) {
+	items, err := p.TableRowsGet(app, table, []string{key}, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	switch len(items) {
+	case 0:
+		return nil, fmt.Errorf("not found")
+	case 1:
+		return &items[0], nil
+	default:
+		return nil, fmt.Errorf("multiple items found")
+	}
+}
+
+func (p *Provider) TableRowStore(app, table string, attrs types.TableRow) (string, error) {
 	if attrs["id"] == "" {
 		id, err := types.Key(64)
 		if err != nil {
@@ -108,18 +82,18 @@ func (p *Provider) TableStore(app, table string, attrs map[string]string) (strin
 		}
 		attrs["id"] = id
 	} else {
-		row, err := p.TableFetch(app, table, attrs["id"], types.TableFetchOptions{})
+		row, err := p.TableRowGet(app, table, attrs["id"], types.TableRowGetOptions{})
 		if err != nil {
 			return "", err
 		}
 
 		for k := range attrs {
-			row[k] = attrs[k]
+			(*row)[k] = attrs[k]
 		}
 
-		attrs = row
+		attrs = *row
 
-		if err := p.TableRemove(app, table, attrs["id"], types.TableRemoveOptions{}); err != nil {
+		if err := p.TableRowDelete(app, table, attrs["id"], types.TableRowDeleteOptions{}); err != nil {
 			return "", err
 		}
 	}
@@ -146,18 +120,14 @@ func (p *Provider) TableStore(app, table string, attrs map[string]string) (strin
 	return attrs["id"], nil
 }
 
-func (p *Provider) TableRemove(app, table, key string, opts types.TableRemoveOptions) error {
-	return p.TableRemoveBatch(app, table, []string{key}, opts)
-}
-
-func (p *Provider) TableRemoveBatch(app, table string, keys []string, opts types.TableRemoveOptions) error {
+func (p *Provider) TableRowsDelete(app, table string, keys []string, opts types.TableRowDeleteOptions) error {
 	t, err := p.TableGet(app, table)
 	if err != nil {
 		return err
 	}
 	indexes := append(t.Indexes, "id")
 
-	items, err := p.TableFetchBatch(app, table, keys, types.TableFetchOptions{Index: opts.Index})
+	items, err := p.TableRowsGet(app, table, keys, types.TableRowGetOptions{Index: opts.Index})
 	if err != nil {
 		return err
 	}
@@ -191,8 +161,38 @@ func (p *Provider) TableRemoveBatch(app, table string, keys []string, opts types
 	return nil
 }
 
-func (p *Provider) TableTruncate(app, table string) error {
-	return p.DeleteAll(fmt.Sprintf("apps/%s/tables/%s/indexes", app, table))
+func (p *Provider) TableRowsGet(app, table string, keys []string, opts types.TableRowGetOptions) (types.TableRows, error) {
+	items := types.TableRows{}
+
+	for _, key := range keys {
+		if key == "" {
+			continue
+		}
+
+		ek := encodeValue(key)
+
+		entries, err := p.List(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, coalesce(opts.Index, "id"), ek))
+		if err != nil {
+			return nil, err
+		}
+
+		for _, e := range entries {
+			var attrs map[string]string
+
+			if err := p.Load(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s", app, table, coalesce(opts.Index, "id"), ek, e), &attrs); err != nil {
+				return nil, err
+			}
+
+			da, err := decodeAttrs(attrs)
+			if err != nil {
+				return nil, err
+			}
+
+			items = append(items, da)
+		}
+	}
+
+	return items, nil
 }
 
 func decodeAttrs(attrs map[string]string) (map[string]string, error) {

@@ -19,38 +19,6 @@ func TableCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	return Provider.TableCreate(app, table, types.TableCreateOptions{Indexes: indexes})
 }
 
-func TableFetch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	app := c.Var("app")
-	table := c.Var("table")
-	index := c.Var("index")
-	key := c.Var("key")
-
-	attrs, err := Provider.TableFetch(app, table, key, types.TableFetchOptions{Index: index})
-	if err != nil {
-		return err
-	}
-
-	return c.RenderJSON(attrs)
-}
-
-func TableFetchBatch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	if err := r.ParseForm(); err != nil {
-		return err
-	}
-
-	app := c.Var("app")
-	table := c.Var("table")
-	index := c.Var("index")
-	keys := r.Form["key"]
-
-	items, err := Provider.TableFetchBatch(app, table, keys, types.TableFetchOptions{Index: index})
-	if err != nil {
-		return err
-	}
-
-	return c.RenderJSON(items)
-}
-
 func TableGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	table := c.Var("table")
@@ -74,7 +42,30 @@ func TableList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	return c.RenderJSON(t)
 }
 
-func TableStore(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+func TableRowDelete(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+	table := c.Var("table")
+	index := c.Var("index")
+	key := c.Var("key")
+
+	return Provider.TableRowDelete(app, table, key, types.TableRowDeleteOptions{Index: index})
+}
+
+func TableRowGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+	table := c.Var("table")
+	index := c.Var("index")
+	key := c.Var("key")
+
+	attrs, err := Provider.TableRowGet(app, table, key, types.TableRowGetOptions{Index: index})
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(attrs)
+}
+
+func TableRowStore(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	table := c.Var("table")
 
@@ -88,7 +79,7 @@ func TableStore(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		attrs[k] = r.Form.Get(k)
 	}
 
-	id, err := Provider.TableStore(app, table, attrs)
+	id, err := Provider.TableRowStore(app, table, attrs)
 	if err != nil {
 		return err
 	}
@@ -96,16 +87,7 @@ func TableStore(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	return c.RenderJSON(id)
 }
 
-func TableRemove(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	app := c.Var("app")
-	table := c.Var("table")
-	index := c.Var("index")
-	key := c.Var("key")
-
-	return Provider.TableRemove(app, table, key, types.TableRemoveOptions{Index: index})
-}
-
-func TableRemoveBatch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+func TableRowsDelete(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	if err := r.ParseForm(); err != nil {
 		return err
 	}
@@ -115,7 +97,25 @@ func TableRemoveBatch(w http.ResponseWriter, r *http.Request, c *api.Context) er
 	index := c.Var("index")
 	keys := r.Form["key"]
 
-	return Provider.TableRemoveBatch(app, table, keys, types.TableRemoveOptions{Index: index})
+	return Provider.TableRowsDelete(app, table, keys, types.TableRowDeleteOptions{Index: index})
+}
+
+func TableRowsGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	if err := r.ParseForm(); err != nil {
+		return err
+	}
+
+	app := c.Var("app")
+	table := c.Var("table")
+	index := c.Var("index")
+	keys := r.Form["key"]
+
+	items, err := Provider.TableRowsGet(app, table, keys, types.TableRowGetOptions{Index: index})
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(items)
 }
 
 func TableTruncate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
