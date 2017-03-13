@@ -24,7 +24,7 @@ Example:
     }
 
 */
-package inotify
+package inotify // import "github.com/convox/inotify"
 
 import (
 	"errors"

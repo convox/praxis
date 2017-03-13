@@ -87,14 +87,14 @@ type Provider interface {
 	// SystemSave(system structs.System) error
 
 	TableCreate(app, name string, opts types.TableCreateOptions) error
-	TableFetch(app, table, key string, opts types.TableFetchOptions) (map[string]string, error)
-	TableFetchBatch(app, table string, key []string, opts types.TableFetchOptions) ([]map[string]string, error)
 	TableGet(app, table string) (*types.Table, error)
 	TableList(app string) (types.Tables, error)
-	TableStore(app, table string, attrs map[string]string) (string, error)
-	TableRemove(app, table string, key string, opts types.TableRemoveOptions) error
-	TableRemoveBatch(app, table string, key []string, opts types.TableRemoveOptions) error
 	TableTruncate(app, table string) error
+	TableRowDelete(app, table string, key string, opts types.TableRowDeleteOptions) error
+	TableRowGet(app, table, key string, opts types.TableRowGetOptions) (*types.TableRow, error)
+	TableRowStore(app, table string, attrs types.TableRow) (string, error)
+	TableRowsDelete(app, table string, key []string, opts types.TableRowDeleteOptions) error
+	TableRowsGet(app, table string, key []string, opts types.TableRowGetOptions) (types.TableRows, error)
 }
 
 // FromEnv returns a new Provider from env vars

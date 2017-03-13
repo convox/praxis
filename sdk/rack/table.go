@@ -16,22 +16,6 @@ func (c *Client) TableCreate(app, table string, opts types.TableCreateOptions) e
 	return c.Post(fmt.Sprintf("/apps/%s/tables/%s", app, table), ro, nil)
 }
 
-func (c *Client) TableFetch(app, table, key string, opts types.TableFetchOptions) (attrs map[string]string, err error) {
-	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/%s", app, table, coalesce(opts.Index, "id"), key), RequestOptions{}, &attrs)
-	return
-}
-
-func (c *Client) TableFetchBatch(app, table string, keys []string, opts types.TableFetchOptions) (items []map[string]string, err error) {
-	ro := RequestOptions{
-		Params: Params{
-			"key": keys,
-		},
-	}
-
-	err = c.Post(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/batch", app, table, coalesce(opts.Index, "id")), ro, &items)
-	return
-}
-
 func (c *Client) TableGet(app, table string) (m *types.Table, err error) {
 	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s", app, table), RequestOptions{}, &m)
 	return
@@ -42,7 +26,20 @@ func (c *Client) TableList(app string) (tables types.Tables, err error) {
 	return
 }
 
-func (c *Client) TableStore(app, table string, attrs map[string]string) (id string, err error) {
+func (c *Client) TableTruncate(app, table string) error {
+	return c.Post(fmt.Sprintf("/apps/%s/tables/%s/truncate", app, table), RequestOptions{}, nil)
+}
+
+func (c *Client) TableRowDelete(app, table, key string, opts types.TableRowDeleteOptions) error {
+	return c.Delete(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/%s", app, table, coalesce(opts.Index, "id"), key), RequestOptions{}, nil)
+}
+
+func (c *Client) TableRowGet(app, table, key string, opts types.TableRowGetOptions) (row *types.TableRow, err error) {
+	err = c.Get(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/%s", app, table, coalesce(opts.Index, "id"), key), RequestOptions{}, &row)
+	return
+}
+
+func (c *Client) TableRowStore(app, table string, attrs types.TableRow) (id string, err error) {
 	params := map[string]interface{}{}
 
 	for k, v := range attrs {
@@ -57,11 +54,7 @@ func (c *Client) TableStore(app, table string, attrs map[string]string) (id stri
 	return
 }
 
-func (c *Client) TableRemove(app, table, key string, opts types.TableRemoveOptions) error {
-	return c.Delete(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/%s", app, table, coalesce(opts.Index, "id"), key), RequestOptions{}, nil)
-}
-
-func (c *Client) TableRemoveBatch(app, table string, keys []string, opts types.TableRemoveOptions) error {
+func (c *Client) TableRowsDelete(app, table string, keys []string, opts types.TableRowDeleteOptions) error {
 	ro := RequestOptions{
 		Params: Params{
 			"key": keys,
@@ -71,6 +64,13 @@ func (c *Client) TableRemoveBatch(app, table string, keys []string, opts types.T
 	return c.Post(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/batch/remove", app, table, coalesce(opts.Index, "id")), ro, nil)
 }
 
-func (c *Client) TableTruncate(app, table string) error {
-	return c.Post(fmt.Sprintf("/apps/%s/tables/%s/truncate", app, table), RequestOptions{}, nil)
+func (c *Client) TableRowsGet(app, table string, keys []string, opts types.TableRowGetOptions) (rows types.TableRows, err error) {
+	ro := RequestOptions{
+		Params: Params{
+			"key": keys,
+		},
+	}
+
+	err = c.Post(fmt.Sprintf("/apps/%s/tables/%s/indexes/%s/batch", app, table, coalesce(opts.Index, "id")), ro, &rows)
+	return
 }

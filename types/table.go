@@ -12,10 +12,14 @@ type TableCreateOptions struct {
 	Indexes []string
 }
 
-type TableFetchOptions struct {
+type TableRow map[string]string
+
+type TableRows []TableRow
+
+type TableRowDeleteOptions struct {
 	Index string
 }
 
-type TableRemoveOptions struct {
+type TableRowGetOptions struct {
 	Index string
 }
