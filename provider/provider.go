@@ -4,27 +4,25 @@ import (
 	"io"
 	"os"
 
+	"github.com/convox/praxis/provider/aws"
 	"github.com/convox/praxis/provider/local"
 	"github.com/convox/praxis/types"
 )
 
 type Provider interface {
-	// Initialize(opts structs.ProviderOptions) error
-
 	// AppCancel(name string) error
 	AppCreate(name string) (*types.App, error)
 	AppDelete(name string) error
 	AppGet(name string) (*types.App, error)
 	AppList() (types.Apps, error)
+	// AppLogs(app string, opts types.AppLogsOptions) (io.ReadCloser, error)
 
 	BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error)
-	// BuildDelete(app, id string) (*structs.Build, error)
 	// BuildExport(app, id string, w io.Writer) error
 	BuildGet(app, id string) (*types.Build, error)
 	// BuildImport(app string, r io.Reader) (*structs.Build, error)
 	BuildLogs(app, id string) (io.ReadCloser, error)
-	// BuildList(app string, limit int64) (structs.Builds, error)
-	// BuildRelease(*structs.Build) (*structs.Release, error)
+	BuildList(app string) (types.Builds, error)
 	BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*types.Build, error)
 
 	// CapacityGet() (*structs.Capacity, error)
@@ -51,8 +49,6 @@ type Provider interface {
 	KeyDecrypt(app, key string, data []byte) ([]byte, error)
 	KeyEncrypt(app, key string, data []byte) ([]byte, error)
 
-	// LogStream(app string, w io.Writer, opts structs.LogStreamOptions) error
-
 	// ObjectDelete(key string) error
 	// ObjectExists(key string) bool
 	ObjectFetch(app, key string) (io.ReadCloser, error)
@@ -69,12 +65,12 @@ type Provider interface {
 
 	Proxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error)
 
+	QueueFetch(app, queue string, opts types.QueueFetchOptions) (map[string]string, error)
+	QueueStore(app, queue string, attrs map[string]string) error
+
 	// RegistryAdd(server, username, password string) (*structs.Registry, error)
 	// RegistryDelete(server string) error
 	// RegistryList() (structs.Registries, error)
-
-	QueueFetch(app, queue string, opts types.QueueFetchOptions) (map[string]string, error)
-	QueueStore(app, queue string, attrs map[string]string) error
 
 	ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error)
 	ReleaseGet(app, id string) (*types.Release, error)
@@ -98,10 +94,10 @@ type Provider interface {
 }
 
 // FromEnv returns a new Provider from env vars
-func FromEnv() Provider {
+func FromEnv() (Provider, error) {
 	switch os.Getenv("PROVIDER") {
-	// case "aws":
-	//   return aws.FromEnv()
+	case "aws":
+		return aws.FromEnv()
 	default:
 		return local.FromEnv()
 	}

@@ -10,12 +10,21 @@ import (
 	"github.com/convox/praxis/provider"
 )
 
+const (
+	sortableTime = "20060102.150405.000000000"
+)
+
 var (
 	Provider provider.Provider
 )
 
 func init() {
-	Provider = provider.FromEnv()
+	p, err := provider.FromEnv()
+	if err != nil {
+		panic(fmt.Errorf("unable to load provider: %s", err))
+	}
+
+	Provider = p
 }
 
 func randomString() (string, error) {

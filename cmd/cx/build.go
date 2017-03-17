@@ -5,9 +5,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
+	"github.com/convox/rack/cmd/convox/helpers"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/archive"
 	cli "gopkg.in/urfave/cli.v1"
@@ -15,19 +17,65 @@ import (
 
 func init() {
 	stdcli.RegisterCommand(cli.Command{
+		Name:        "builds",
+		Description: "list builds",
+		Action:      runBuilds,
+	})
+	stdcli.RegisterCommand(cli.Command{
 		Name:        "build",
 		Description: "build the application",
 		Action:      runBuild,
 	})
 }
 
-func runBuild(c *cli.Context) error {
-	app := "test"
+func runBuilds(c *cli.Context) error {
+	app, err := appName(c, ".")
+	if err != nil {
+		return err
+	}
 
-	// a, err := Rack.AppGet(app)
-	// if err != nil {
-	//   return err
-	// }
+	builds, err := Rack.BuildList(app)
+	if err != nil {
+		return err
+	}
+
+	t := stdcli.NewTable("ID", "STATUS", "STARTED", "ELAPSED")
+
+	for _, b := range builds {
+		started := helpers.HumanizeTime(b.Started)
+		elapsed := stdcli.Duration(b.Started, b.Ended)
+
+		if b.Ended.IsZero() {
+			switch b.Status {
+			case "running":
+				elapsed = stdcli.Duration(b.Started, time.Now())
+			default:
+				elapsed = ""
+			}
+		}
+
+		t.AddRow(b.Id, b.Status, started, elapsed)
+	}
+
+	t.Print()
+
+	return nil
+}
+
+func runBuild(c *cli.Context) error {
+	app, err := appName(c, ".")
+	if err != nil {
+		return err
+	}
+
+	a, err := Rack.AppGet(app)
+	if err != nil {
+		return err
+	}
+
+	if a.Status != "running" {
+		return fmt.Errorf("cannot build while app is %s", a.Status)
+	}
 
 	build, err := buildDirectory(app, ".")
 	if err != nil {
@@ -63,21 +111,52 @@ func buildDirectory(app, dir string) (*types.Build, error) {
 		return nil, err
 	}
 
-	return Rack.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key), types.BuildCreateOptions{})
+	build, err := Rack.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key), types.BuildCreateOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tickWithTimeout(2*time.Second, 5*time.Minute, notBuildStatus(app, build.Id, "created")); err != nil {
+		return nil, err
+	}
+
+	return build, nil
+}
+
+func notBuildStatus(app, id, status string) func() (bool, error) {
+	return func() (bool, error) {
+		build, err := Rack.BuildGet(app, id)
+		if err != nil {
+			return true, err
+		}
+		if build.Status != status {
+			return true, nil
+		}
+		return false, nil
+	}
+}
+
+func tickWithTimeout(tick time.Duration, timeout time.Duration, fn func() (stop bool, err error)) error {
+	tickch := time.Tick(tick)
+	timeoutch := time.After(timeout)
+
+	for {
+		select {
+		case <-tickch:
+			stop, err := fn()
+			if err != nil {
+				return err
+			}
+			if stop {
+				return nil
+			}
+		case <-timeoutch:
+			return fmt.Errorf("timeout")
+		}
+	}
 }
 
 func buildLogs(build *types.Build, w io.Writer) error {
-	// for {
-	//   build, err := Rack.BuildGet(app, build.Id)
-	//   if err != nil {
-	//     return nil, err
-	//   }
-
-	//   fmt.Printf("build = %+v\n", build)
-
-	//   break
-	// }
-
 	logs, err := Rack.BuildLogs(build.App, build.Id)
 	if err != nil {
 		return err

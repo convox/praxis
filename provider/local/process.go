@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"syscall"
@@ -191,42 +192,57 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 }
 
 func (p *Provider) ProcessStart(app string, opts types.ProcessStartOptions) (string, error) {
-	release, err := p.ReleaseGet(app, opts.Release)
-	if err != nil {
-		return "", err
-	}
-
-	build, err := p.BuildGet(app, release.Build)
-	if err != nil {
-		return "", err
-	}
-
-	m, err := manifest.Load([]byte(build.Manifest))
-	if err != nil {
-		return "", err
-	}
-
-	service, err := m.Services.Find(opts.Service)
-	if err != nil {
-		return "", err
-	}
-
-	image := fmt.Sprintf("%s/%s:%s", app, opts.Service, release.Build)
-
 	args := []string{"run", "-i", "--detach"}
 
-	for _, v := range service.Volumes {
-		args = append(args, "-v", v)
+	image := opts.Image
+
+	if image == "" {
+		release, err := p.ReleaseGet(app, opts.Release)
+		if err != nil {
+			return "", err
+		}
+
+		build, err := p.BuildGet(app, release.Build)
+		if err != nil {
+			return "", err
+		}
+
+		m, err := manifest.Load([]byte(build.Manifest))
+		if err != nil {
+			return "", err
+		}
+
+		service, err := m.Services.Find(opts.Service)
+		if err != nil {
+			return "", err
+		}
+
+		for _, v := range service.Volumes {
+			args = append(args, "-v", v)
+		}
+
+		image = fmt.Sprintf("%s/%s:%s", app, opts.Service, release.Build)
 	}
 
 	for k, v := range opts.Environment {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 	}
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+
+	args = append(args, "--link", hostname, "-e", fmt.Sprintf("RACK_URL=https://%s:3000/", hostname))
+
 	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
-	args = append(args, "--label", fmt.Sprintf("convox.release=%s", release.Id))
+	args = append(args, "--label", fmt.Sprintf("convox.release=%s", opts.Release))
 	args = append(args, "--label", fmt.Sprintf("convox.service=%s", opts.Service))
-	args = append(args, "--link", "rack", "-e", "RACK_URL=https://rack:3000")
+
+	for from, to := range opts.Volumes {
+		args = append(args, "-v", fmt.Sprintf("%s:%s", from, to))
+	}
+
 	args = append(args, image)
 
 	if opts.Command != "" {

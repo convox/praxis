@@ -30,29 +30,13 @@ func init() {
 }
 
 func runStart(c *cli.Context) error {
-	if err := startLocalRack(); err != nil {
-		return err
-	}
-
-	wd, err := os.Getwd()
+	app, err := appName(c, ".")
 	if err != nil {
 		return err
 	}
 
-	abs, err := filepath.Abs(wd)
-	if err != nil {
+	if _, err := Rack.AppGet(app); err != nil {
 		return err
-	}
-
-	name := filepath.Base(abs)
-
-	app, err := Rack.AppGet(name)
-	if err != nil {
-		if strings.HasPrefix(err.Error(), "no such app:") {
-			app, err = Rack.AppCreate(name)
-		} else {
-			return err
-		}
 	}
 
 	m, err := manifest.LoadFile("convox.yml")
@@ -73,9 +57,9 @@ func runStart(c *cli.Context) error {
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	go handleSignals(sig, ch, m, app.Name)
+	go handleSignals(sig, ch, m, app)
 
-	build, err := buildDirectory(app.Name, ".")
+	build, err := buildDirectory(app, ".")
 	if err != nil {
 		return err
 	}
@@ -84,17 +68,17 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	build, err = Rack.BuildGet(app.Name, build.Id)
+	build, err = Rack.BuildGet(app, build.Id)
 	if err != nil {
 		return err
 	}
 
-	if err := Rack.ReleasePromote(app.Name, build.Release); err != nil {
+	if err := Rack.ReleasePromote(app, build.Release); err != nil {
 		return err
 	}
 
 	switch build.Status {
-	case "created":
+	case "created", "running", "complete":
 	case "failed":
 		return fmt.Errorf("build failed")
 	default:
@@ -104,12 +88,12 @@ func runStart(c *cli.Context) error {
 	for _, s := range m.Services {
 		m.Writef("convox", "starting: %s\n", s.Name)
 
-		go startService(m, app.Name, s.Name, build.Release, env, ch)
-		go watchChanges(m, app.Name, s.Name, ch)
+		go startService(m, app, s.Name, build.Release, env, ch)
+		go watchChanges(m, app, s.Name, ch)
 	}
 
 	for _, b := range m.Balancers {
-		go startBalancer(app.Name, b, ch)
+		go startBalancer(app, b, ch)
 	}
 
 	return <-ch

@@ -17,6 +17,7 @@ import (
 )
 
 type BuildOptions struct {
+	Push   string
 	Root   string
 	Stdout io.Writer
 	Stderr io.Writer
@@ -27,14 +28,14 @@ type BuildSource struct {
 	Remote string
 }
 
-func (m *Manifest) Build(app string, id string, opts BuildOptions) error {
+func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
 	builds := map[string]Service{}
 	tags := map[string]string{}
 
 	for _, s := range m.Services {
 		hash := s.BuildHash()
 		builds[hash] = s
-		tags[hash] = fmt.Sprintf("%s/%s:%s", app, s.Name, id)
+		tags[hash] = fmt.Sprintf("%s/%s:%s", prefix, s.Name, tag)
 	}
 
 	for hash, service := range builds {
@@ -53,6 +54,10 @@ func (m *Manifest) Build(app string, id string, opts BuildOptions) error {
 		if err := opts.docker("tag", from, to); err != nil {
 			return err
 		}
+	}
+
+	if opts.Push != "" {
+		fmt.Printf("opts.Push = %+v\n", opts.Push)
 	}
 
 	return nil
@@ -261,10 +266,8 @@ func (o BuildOptions) docker(args ...string) error {
 
 	cmd := exec.Command("docker", args...)
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	// cmd.Stdout = text.NewIndentWriter(o.Stdout, []byte("  "))
-	// cmd.Stderr = text.NewIndentWriter(o.Stderr, []byte("  "))
+	cmd.Stdout = o.Stdout
+	cmd.Stderr = o.Stderr
 
 	return cmd.Run()
 }

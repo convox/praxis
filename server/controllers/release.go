@@ -37,6 +37,17 @@ func ReleaseGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	return c.RenderJSON(release)
 }
 
+func ReleaseList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+
+	releases, err := Provider.ReleaseList(app)
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(releases)
+}
+
 func ReleasePromote(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	id := c.Var("id")

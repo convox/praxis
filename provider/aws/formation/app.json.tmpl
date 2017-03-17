@@ -1,0 +1,62 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Outputs": {
+  },
+  "Parameters": {
+    "Release": {
+      "Description": "Current release",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    {{ range .Balancers }}
+      {{ template "balancer" . }}
+    {{ end }}
+
+    {{ range .Services }}
+      {{ template "service" . }}
+    {{ end }}
+
+    "Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain"
+    },
+    "Builds": {
+      "Type": "AWS::SDB::Domain",
+      "Properties": {
+        "Description": { "Fn::Sub": "${AWS::StackName} builds" }
+      }
+    },
+    "LogGroup": {
+      "Type": "AWS::Logs::LogGroup"
+    },
+    "Releases": {
+      "Type": "AWS::SDB::Domain",
+      "Properties": {
+        "Description": { "Fn::Sub": "${AWS::StackName} releases" }
+      }
+    },
+    "Repository": {
+      "Type": "AWS::ECR::Repository",
+      "DeletionPolicy": "Retain"
+    }
+  }
+}
+
+{{ define "balancer" }}
+  "Balancer{{ resource .Name }}": {
+    "Type": "AWS::CloudFormation::Stack",
+    "Properties": {
+      "TemplateURL": { "Fn::Sub": "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/app/balancer.json" }
+    }
+  },
+{{ end }}
+
+{{ define "service" }}
+  "Service{{ resource .Name }}": {
+    "Type": "AWS::CloudFormation::Stack",
+    "Properties": {
+      "TemplateURL": { "Fn::Sub": "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/app/service.json" }
+    }
+  },
+{{ end }}

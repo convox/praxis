@@ -7,6 +7,10 @@ import (
 	"github.com/convox/praxis/provider"
 )
 
+const (
+	sortableTime = "20060102.150405.000000000"
+)
+
 type Mock struct {
 	provider.MockProvider
 }
@@ -20,7 +24,7 @@ func New(host string) Rack {
 }
 
 func NewFromEnv() (Rack, error) {
-	u, err := url.Parse(os.Getenv("RACK_URL"))
+	u, err := url.Parse(coalesce(os.Getenv("RACK_URL"), "https://localhost:5443"))
 	if err != nil {
 		return nil, err
 	}

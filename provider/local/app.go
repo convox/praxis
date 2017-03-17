@@ -14,7 +14,8 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 	}
 
 	app := &types.App{
-		Name: name,
+		Name:   name,
+		Status: "running",
 	}
 
 	if err := p.Store(fmt.Sprintf("apps/%s/app.json", app.Name), app); err != nil {

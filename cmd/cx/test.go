@@ -20,10 +20,6 @@ func init() {
 }
 
 func runTest(c *cli.Context) error {
-	if err := startLocalRack(); err != nil {
-		return err
-	}
-
 	name := fmt.Sprintf("test-%d", time.Now().Unix())
 
 	app, err := Rack.AppCreate(name)

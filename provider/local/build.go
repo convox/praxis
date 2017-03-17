@@ -3,9 +3,7 @@ package local
 import (
 	"fmt"
 	"io"
-	"os"
-	"os/exec"
-	"strings"
+	"time"
 
 	"github.com/convox/praxis/types"
 )
@@ -16,38 +14,39 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, err
 	}
 
-	bid := types.Id("B", 10)
+	id := types.Id("B", 10)
 
 	build := &types.Build{
-		Id:     bid,
-		App:    app,
-		Status: "created",
+		Id:      id,
+		App:     app,
+		Status:  "created",
+		Created: time.Now(),
 	}
 
-	if err := p.Store(fmt.Sprintf("apps/%s/builds/%s", app, bid), build); err != nil {
+	if err := p.Store(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
 		return nil, err
 	}
 
-	hostname, err := os.Hostname()
+	pid, err := p.ProcessStart(app, types.ProcessStartOptions{
+		Command: fmt.Sprintf("build -id %s -url %s", id, url),
+		Environment: map[string]string{
+			"BUILD_APP":  app,
+			"BUILD_PUSH": "foo",
+		},
+		Name:    fmt.Sprintf("%s-build-%s", app, id),
+		Image:   "convox/praxis:test7",
+		Service: "build",
+		Volumes: map[string]string{
+			"/var/run/docker.sock": "/var/run/docker.sock",
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	args := []string{"run"}
-	args = append(args, "--detach", "-i")
-	args = append(args, "--link", hostname, "-e", fmt.Sprintf("RACK_URL=https://%s:3000", hostname))
-	args = append(args, "-v", "/var/run/docker.sock:/var/run/docker.sock")
-	args = append(args, "-e", fmt.Sprintf("BUILD_APP=%s", app))
-	args = append(args, "convox/praxis", "build", "-id", bid, "-url", url)
+	build.Process = pid
 
-	cmd := exec.Command("docker", args...)
-
-	data, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := p.BuildUpdate(app, bid, types.BuildUpdateOptions{Process: strings.TrimSpace(string(data))}); err != nil {
+	if err := p.Store(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
 		return nil, err
 	}
 
@@ -59,13 +58,22 @@ func (p *Provider) BuildGet(app, id string) (build *types.Build, err error) {
 	return
 }
 
+func (p *Provider) BuildList(app string) (types.Builds, error) {
+	return nil, nil
+}
+
 func (p *Provider) BuildLogs(app, id string) (io.ReadCloser, error) {
 	build, err := p.BuildGet(app, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return p.Logs(build.Process)
+	switch build.Status {
+	case "running":
+		return p.ProcessLogs(app, build.Process)
+	default:
+		return p.ObjectFetch(app, fmt.Sprintf("convox/builds/%s/log", id))
+	}
 }
 
 func (p *Provider) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*types.Build, error) {
@@ -74,16 +82,20 @@ func (p *Provider) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*
 		return nil, err
 	}
 
+	if !opts.Ended.IsZero() {
+		build.Ended = opts.Ended
+	}
+
 	if opts.Manifest != "" {
 		build.Manifest = opts.Manifest
 	}
 
-	if opts.Process != "" {
-		build.Process = opts.Process
-	}
-
 	if opts.Release != "" {
 		build.Release = opts.Release
+	}
+
+	if !opts.Started.IsZero() {
+		build.Started = opts.Started
 	}
 
 	if opts.Status != "" {

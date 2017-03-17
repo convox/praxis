@@ -138,6 +138,29 @@ func (_m *MockProvider) BuildGet(app string, id string) (*types.Build, error) {
 	return r0, r1
 }
 
+// BuildList provides a mock function with given fields: app
+func (_m *MockProvider) BuildList(app string) (types.Builds, error) {
+	ret := _m.Called(app)
+
+	var r0 types.Builds
+	if rf, ok := ret.Get(0).(func(string) types.Builds); ok {
+		r0 = rf(app)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Builds)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(app)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // BuildLogs provides a mock function with given fields: app, id
 func (_m *MockProvider) BuildLogs(app string, id string) (io.ReadCloser, error) {
 	ret := _m.Called(app, id)

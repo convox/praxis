@@ -20,6 +20,7 @@ func Routes(server *api.Server) {
 
 	server.Route("build.create", "POST", "/apps/{app}/builds", controllers.BuildCreate)
 	server.Route("build.get", "GET", "/apps/{app}/builds/{id}", controllers.BuildGet)
+	server.Route("build.list", "GET", "/apps/{app}/builds", controllers.BuildList)
 	server.Route("build.logs", "GET", "/apps/{app}/builds/{id}/logs", controllers.BuildLogs)
 	server.Route("build.update", "PUT", "/apps/{app}/builds/{id}", controllers.BuildUpdate)
 
@@ -46,6 +47,7 @@ func Routes(server *api.Server) {
 
 	server.Route("release.create", "POST", "/apps/{app}/releases", controllers.ReleaseCreate)
 	server.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
+	server.Route("release.list", "GET", "/apps/{app}/releases", controllers.ReleaseList)
 	server.Route("release.promote", "POST", "/apps/{app}/releases/{id}/promote", controllers.ReleasePromote)
 
 	server.Route("system.get", "GET", "/system", controllers.SystemGet)

@@ -52,6 +52,8 @@ func (o *RequestOptions) Reader() (io.Reader, error) {
 			for _, s := range t {
 				u.Add(k, s)
 			}
+		case time.Time:
+			u.Set(k, t.Format(sortableTime))
 		default:
 			return nil, fmt.Errorf("unknown param type: %T", t)
 		}

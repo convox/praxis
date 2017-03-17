@@ -28,8 +28,8 @@ type Provider struct {
 }
 
 // FromEnv returns a new local.Provider from env vars
-func FromEnv() *Provider {
-	return &Provider{Root: coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox")}
+func FromEnv() (*Provider, error) {
+	return &Provider{Root: coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox")}, nil
 }
 
 func init() {

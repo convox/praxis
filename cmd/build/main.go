@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/sdk/rack"
@@ -20,7 +23,11 @@ var (
 	flagApp      string
 	flagId       string
 	flagManifest string
+	flagPush     string
 	flagUrl      string
+
+	output bytes.Buffer
+	w      io.Writer
 )
 
 func init() {
@@ -28,6 +35,8 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	w = io.MultiWriter(os.Stdout, &output)
 
 	Rack = r
 }
@@ -37,6 +46,7 @@ func main() {
 	fs.StringVar(&flagApp, "app", "", "app name")
 	fs.StringVar(&flagId, "id", "", "build id")
 	fs.StringVar(&flagManifest, "manifest", "convox.yml", "path to manifest")
+	fs.StringVar(&flagPush, "push", "", "push after build")
 	fs.StringVar(&flagUrl, "url", "", "source url")
 
 	if err := fs.Parse(os.Args[1:]); err != nil {
@@ -51,12 +61,16 @@ func main() {
 		flagId = v
 	}
 
-	if v := os.Getenv("BUILD_URL"); v != "" {
-		flagUrl = v
-	}
-
 	if v := os.Getenv("BUILD_MANIFEST"); v != "" {
 		flagManifest = v
+	}
+
+	if v := os.Getenv("BUILD_PUSH"); v != "" {
+		flagPush = v
+	}
+
+	if v := os.Getenv("BUILD_URL"); v != "" {
+		flagUrl = v
 	}
 
 	if err := build(); err != nil {
@@ -69,6 +83,10 @@ func main() {
 }
 
 func build() error {
+	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Started: time.Now(), Status: "running"}); err != nil {
+		return err
+	}
+
 	tmp, err := ioutil.TempDir("", "")
 	if err != nil {
 		return err
@@ -79,7 +97,7 @@ func build() error {
 		return err
 	}
 
-	fmt.Println("preparing source")
+	fmt.Fprintf(w, "preparing source\n")
 
 	r, err := Rack.ObjectFetch(flagApp, u.Path)
 	if err != nil {
@@ -97,9 +115,9 @@ func build() error {
 		return err
 	}
 
-	if err := m.Validate([]string{}); err != nil {
-		return err
-	}
+	// if err := m.Validate([]string{}); err != nil {
+	//   return err
+	// }
 
 	data, err := ioutil.ReadFile(mf)
 	if err != nil {
@@ -111,9 +129,10 @@ func build() error {
 	}
 
 	opts := manifest.BuildOptions{
+		Push:   flagPush,
 		Root:   tmp,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Stdout: w,
+		Stderr: w,
 	}
 
 	if err := m.Build(flagApp, flagId, opts); err != nil {
@@ -129,24 +148,22 @@ func release() error {
 		return err
 	}
 
-	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Release: release.Id}); err != nil {
+	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Ended: time.Now(), Release: release.Id, Status: "complete"}); err != nil {
 		return err
 	}
 
-	fmt.Printf("release: %s\n", release.Id)
+	if _, err := Rack.ObjectStore(flagApp, fmt.Sprintf("convox/builds/%s/log", flagId), &output, types.ObjectStoreOptions{}); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func fail(err error) {
-	fmt.Fprintf(os.Stderr, "build error: %s\n", err)
+	fmt.Fprintf(w, "build error: %s\n", err)
 
-	opts := types.BuildUpdateOptions{
-		Status: "failed",
-	}
-
-	if _, err := Rack.BuildUpdate(flagApp, flagId, opts); err != nil {
-		fmt.Fprintf(os.Stderr, "error: could not update build: %s\n", err)
+	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Ended: time.Now(), Status: "failed"}); err != nil {
+		fmt.Fprintf(w, "error: could not update build: %s\n", err)
 		return
 	}
 

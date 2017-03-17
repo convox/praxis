@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
@@ -22,21 +23,15 @@ var (
 )
 
 func init() {
-	host := "localhost:5443"
-
-	if rh := os.Getenv("RACK_HOST"); rh != "" {
-		host = rh
+	r, err := rack.NewFromEnv()
+	if err != nil {
+		panic(err)
 	}
 
-	Rack = rack.New(host)
+	Rack = r
 }
 
 func main() {
-	// os.Remove("/tmp/test.sock")
-	// go server.New().Listen("unix", "/tmp/test.sock")
-	// time.Sleep(100 * time.Millisecond)
-	// Rack.Socket = "/tmp/test.sock"
-
 	app := stdcli.New()
 
 	app.Name = "cx"
@@ -46,4 +41,13 @@ func main() {
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 	}
+}
+
+func appName(c *cli.Context, dir string) (string, error) {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Base(abs), nil
 }
