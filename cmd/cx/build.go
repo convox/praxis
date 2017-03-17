@@ -77,7 +77,7 @@ func runBuild(c *cli.Context) error {
 		return fmt.Errorf("cannot build while app is %s", a.Status)
 	}
 
-	build, err := buildDirectory(app, ".")
+	build, err := buildDirectory(app, ".", os.Stdout)
 	if err != nil {
 		return err
 	}
@@ -94,10 +94,12 @@ func runBuild(c *cli.Context) error {
 	return nil
 }
 
-func buildDirectory(app, dir string) (*types.Build, error) {
+func buildDirectory(app, dir string, w io.Writer) (*types.Build, error) {
 	if _, err := Rack.AppGet(app); err != nil {
 		return nil, err
 	}
+
+	fmt.Fprintf(w, "uploading: %s\n", dir)
 
 	r, err := createTarball(dir)
 	if err != nil {
@@ -111,6 +113,8 @@ func buildDirectory(app, dir string) (*types.Build, error) {
 		return nil, err
 	}
 
+	fmt.Fprintf(w, "starting build\n")
+
 	build, err := Rack.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key), types.BuildCreateOptions{})
 	if err != nil {
 		return nil, err
@@ -121,39 +125,6 @@ func buildDirectory(app, dir string) (*types.Build, error) {
 	}
 
 	return build, nil
-}
-
-func notBuildStatus(app, id, status string) func() (bool, error) {
-	return func() (bool, error) {
-		build, err := Rack.BuildGet(app, id)
-		if err != nil {
-			return true, err
-		}
-		if build.Status != status {
-			return true, nil
-		}
-		return false, nil
-	}
-}
-
-func tickWithTimeout(tick time.Duration, timeout time.Duration, fn func() (stop bool, err error)) error {
-	tickch := time.Tick(tick)
-	timeoutch := time.After(timeout)
-
-	for {
-		select {
-		case <-tickch:
-			stop, err := fn()
-			if err != nil {
-				return err
-			}
-			if stop {
-				return nil
-			}
-		case <-timeoutch:
-			return fmt.Errorf("timeout")
-		}
-	}
 }
 
 func buildLogs(build *types.Build, w io.Writer) error {
@@ -199,4 +170,40 @@ func createTarball(base string) (io.ReadCloser, error) {
 	}
 
 	return archive.TarWithOptions(sym, options)
+}
+
+func notBuildStatus(app, id, status string) func() (bool, error) {
+	return func() (bool, error) {
+		build, err := Rack.BuildGet(app, id)
+		if err != nil {
+			return true, err
+		}
+		if build.Status != status {
+			return true, nil
+		}
+
+		return false, nil
+	}
+}
+
+func tickWithTimeout(tick time.Duration, timeout time.Duration, fn func() (stop bool, err error)) error {
+	tickch := time.Tick(tick)
+	timeoutch := time.After(timeout)
+
+	for {
+		stop, err := fn()
+		if err != nil {
+			return err
+		}
+		if stop {
+			return nil
+		}
+
+		select {
+		case <-tickch:
+			continue
+		case <-timeoutch:
+			return fmt.Errorf("timeout")
+		}
+	}
 }

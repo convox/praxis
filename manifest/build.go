@@ -30,12 +30,19 @@ type BuildSource struct {
 
 func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
 	builds := map[string]Service{}
+	pushes := map[string]string{}
 	tags := map[string]string{}
 
 	for _, s := range m.Services {
 		hash := s.BuildHash()
+		to := fmt.Sprintf("%s/%s:%s", prefix, s.Name, tag)
+
 		builds[hash] = s
-		tags[hash] = fmt.Sprintf("%s/%s:%s", prefix, s.Name, tag)
+		tags[hash] = to
+
+		if opts.Push != "" {
+			pushes[to] = fmt.Sprintf("%s/%s:%s", opts.Push, s.Name, tag)
+		}
 	}
 
 	for hash, service := range builds {
@@ -56,8 +63,9 @@ func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
 		}
 	}
 
-	if opts.Push != "" {
-		fmt.Printf("opts.Push = %+v\n", opts.Push)
+	for from, to := range pushes {
+		fmt.Printf("from = %+v\n", from)
+		fmt.Printf("to = %+v\n", to)
 	}
 
 	return nil

@@ -60,7 +60,7 @@ type Provider interface {
 	ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error)
 	ProcessLogs(app, pid string) (io.ReadCloser, error)
 	ProcessRun(app string, opts types.ProcessRunOptions) (int, error)
-	ProcessStart(app string, opts types.ProcessStartOptions) (string, error)
+	ProcessStart(app string, opts types.ProcessRunOptions) (string, error)
 	ProcessStop(app, pid string) error
 
 	Proxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error)

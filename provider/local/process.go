@@ -130,47 +130,18 @@ func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
 }
 
 func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
-	release, err := p.ReleaseGet(app, opts.Release)
+	if opts.Name != "" {
+		exec.Command("docker", "rm", "-f", opts.Name).Run()
+	}
+
+	args := []string{"run"}
+
+	oargs, err := p.argsFromOpts(app, opts)
 	if err != nil {
 		return 0, err
 	}
 
-	build, err := p.BuildGet(app, release.Build)
-	if err != nil {
-		return 0, err
-	}
-
-	m, err := manifest.Load([]byte(build.Manifest))
-	if err != nil {
-		return 0, err
-	}
-
-	service, err := m.Services.Find(opts.Service)
-	if err != nil {
-		return 0, err
-	}
-
-	image := fmt.Sprintf("%s/%s:%s", app, opts.Service, release.Build)
-
-	args := []string{"run", "-i"}
-
-	for _, v := range service.Volumes {
-		args = append(args, "-v", v)
-	}
-
-	for k, v := range opts.Environment {
-		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
-	}
-
-	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
-	args = append(args, "--label", fmt.Sprintf("convox.release=%s", release.Id))
-	args = append(args, "--label", fmt.Sprintf("convox.service=%s", opts.Service))
-	args = append(args, "--link", "rack", "-e", "RACK_URL=https://rack:3000")
-	args = append(args, image)
-
-	if opts.Command != "" {
-		args = append(args, "sh", "-c", opts.Command)
-	}
+	args = append(args, oargs...)
 
 	cmd := exec.Command("docker", args...)
 
@@ -191,30 +162,56 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 	return 0, err
 }
 
-func (p *Provider) ProcessStart(app string, opts types.ProcessStartOptions) (string, error) {
-	args := []string{"run", "-i", "--detach"}
+func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
+	if opts.Name != "" {
+		exec.Command("docker", "rm", "-f", opts.Name).Run()
+	}
+
+	args := []string{"run", "--detach"}
+
+	oargs, err := p.argsFromOpts(app, opts)
+	if err != nil {
+		return "", err
+	}
+
+	args = append(args, oargs...)
+
+	data, err := exec.Command("docker", args...).CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(data)), nil
+}
+
+func (p *Provider) ProcessStop(app, pid string) error {
+	return exec.Command("docker", "stop", "-t", "2", pid).Run()
+}
+
+func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]string, error) {
+	args := []string{"-i"}
 
 	image := opts.Image
 
 	if image == "" {
 		release, err := p.ReleaseGet(app, opts.Release)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		build, err := p.BuildGet(app, release.Build)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		m, err := manifest.Load([]byte(build.Manifest))
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		service, err := m.Services.Find(opts.Service)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		for _, v := range service.Volumes {
@@ -228,12 +225,26 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessStartOptions) (str
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 	}
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return "", err
+	for _, l := range opts.Links {
+		args = append(args, "--link", l)
 	}
 
-	args = append(args, "--link", hostname, "-e", fmt.Sprintf("RACK_URL=https://%s:3000/", hostname))
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
+	if opts.Name != "" {
+		args = append(args, "--name", opts.Name)
+	}
+
+	for from, to := range opts.Ports {
+		args = append(args, "-p", fmt.Sprintf("%d:%d", from, to))
+	}
+
+	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
+	args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s:3000/", hostname))
+	args = append(args, "--link", hostname)
 
 	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
 	args = append(args, "--label", fmt.Sprintf("convox.release=%s", opts.Release))
@@ -249,14 +260,5 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessStartOptions) (str
 		args = append(args, "sh", "-c", opts.Command)
 	}
 
-	data, err := exec.Command("docker", args...).CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(string(data)), nil
-}
-
-func (p *Provider) ProcessStop(app, pid string) error {
-	return exec.Command("docker", "stop", "-t", "2", pid).Run()
+	return args, nil
 }

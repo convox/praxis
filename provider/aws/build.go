@@ -28,7 +28,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, err
 	}
 
-	pid, err := p.ProcessStart(app, types.ProcessStartOptions{
+	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{
 			"BUILD_APP":  app,

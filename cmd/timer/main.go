@@ -55,11 +55,8 @@ func run() error {
 	c := cron.New()
 
 	c.AddFunc(fmt.Sprintf("0 %s", flagSchedule), func() {
-		opts := types.ProcessStartOptions{
+		opts := types.ProcessRunOptions{
 			Command: flagCommand,
-			Environment: map[string]string{
-				"APP": flagApp,
-			},
 			Service: flagService,
 		}
 

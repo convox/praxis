@@ -418,18 +418,18 @@ func (_m *MockProvider) ProcessRun(app string, opts types.ProcessRunOptions) (in
 }
 
 // ProcessStart provides a mock function with given fields: app, opts
-func (_m *MockProvider) ProcessStart(app string, opts types.ProcessStartOptions) (string, error) {
+func (_m *MockProvider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
 	ret := _m.Called(app, opts)
 
 	var r0 string
-	if rf, ok := ret.Get(0).(func(string, types.ProcessStartOptions) string); ok {
+	if rf, ok := ret.Get(0).(func(string, types.ProcessRunOptions) string); ok {
 		r0 = rf(app, opts)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, types.ProcessStartOptions) error); ok {
+	if rf, ok := ret.Get(1).(func(string, types.ProcessRunOptions) error); ok {
 		r1 = rf(app, opts)
 	} else {
 		r1 = ret.Error(1)

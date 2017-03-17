@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -59,12 +59,14 @@ func runStart(c *cli.Context) error {
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	go handleSignals(sig, ch, m, app)
 
-	build, err := buildDirectory(app, ".")
+	bw := types.Stream{Writer: m.Writer("build", os.Stdout)}
+
+	build, err := buildDirectory(app, ".", bw)
 	if err != nil {
 		return err
 	}
 
-	if err := buildLogs(build, types.Stream{Writer: m.Writer("build", os.Stdout)}); err != nil {
+	if err := buildLogs(build, bw); err != nil {
 		return err
 	}
 
@@ -177,38 +179,34 @@ func startBalancer(app string, balancer manifest.Balancer, ch chan error) {
 	for _, e := range balancer.Endpoints {
 		name := fmt.Sprintf("balancer-%s-%s-%s", app, balancer.Name, e.Port)
 
-		exec.Command("docker", "rm", "-f", name).Run()
-
-		args := []string{"run"}
-
-		args = append(args, "--rm", "--name", name)
-		args = append(args, "-p", fmt.Sprintf("%s:3000", e.Port))
-		args = append(args, "--link", "rack")
-		args = append(args, "-e", "RACK_URL=https://rack:3000")
-		args = append(args, "-e", fmt.Sprintf("APP=%s", app))
-		args = append(args, "convox/praxis", "proxy")
-		args = append(args, e.Protocol)
+		command := ""
 
 		switch {
 		case e.Redirect != "":
-			args = append(args, "redirect", e.Redirect)
+			command = fmt.Sprintf("proxy %s redirect %s", e.Protocol, e.Redirect)
 		case e.Target != "":
-			args = append(args, "target", e.Target)
+			command = fmt.Sprintf("proxy %s target %s", e.Protocol, e.Target)
 		default:
 			ch <- fmt.Errorf("invalid balancer endpoint: %s:%s", balancer.Name, e.Port)
 			return
 		}
 
-		// if p.Secure {
-		//   args = append(args, "secure")
-		// }
+		port, err := strconv.Atoi(e.Port)
+		if err != nil {
+			ch <- err
+			return
+		}
 
-		cmd := exec.Command("docker", args...)
+		opts := types.ProcessRunOptions{
+			Command: command,
+			Image:   "convox/praxis:test7",
+			Name:    name,
+			Ports:   map[int]int{port: 3000},
+			Stream:  types.Stream{Writer: os.Stdout},
+		}
 
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Start(); err != nil {
+		_, err := Rack.ProcessStart(app, opts)
+		if err != nil {
 			ch <- err
 			return
 		}

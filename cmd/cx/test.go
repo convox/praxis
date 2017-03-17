@@ -29,11 +29,6 @@ func runTest(c *cli.Context) error {
 
 	defer Rack.AppDelete(name)
 
-	build, err := buildDirectory(app.Name, ".")
-	if err != nil {
-		return err
-	}
-
 	m, err := manifest.LoadFile("convox.yml")
 	if err != nil {
 		return err
@@ -44,13 +39,18 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	env = append(env, fmt.Sprintf("APP=%s", name))
-
 	if err := m.Validate(env); err != nil {
 		return err
 	}
 
-	if err := buildLogs(build, types.Stream{Writer: m.Writer("build", os.Stdout)}); err != nil {
+	bw := types.Stream{Writer: m.Writer("build", os.Stdout)}
+
+	build, err := buildDirectory(app.Name, ".", bw)
+	if err != nil {
+		return err
+	}
+
+	if err := buildLogs(build, bw); err != nil {
 		return err
 	}
 

@@ -75,13 +75,13 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 	return 0, nil
 }
 
-func (p *Provider) ProcessStart(app string, opts types.ProcessStartOptions) (string, error) {
+func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
 	cluster, err := p.rackResource("RackCluster")
 	if err != nil {
 		return "", err
 	}
 
-	td, err := p.taskDefinition(app, opts.Command, opts.Environment, opts.Image, opts.Service, opts.Volumes)
+	td, err := p.taskDefinition(app, opts)
 	if err != nil {
 		return "", err
 	}
@@ -134,7 +134,7 @@ func (p *Provider) ProcessStop(app, pid string) error {
 //   return rci, nil
 // }
 
-func (p *Provider) taskDefinition(app string, command string, env map[string]string, image string, service string, volumes map[string]string) (string, error) {
+func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (string, error) {
 	logs, err := p.appResource(app, "LogGroup")
 	if err != nil {
 		return "", err
@@ -154,35 +154,49 @@ func (p *Provider) taskDefinition(app string, command string, env map[string]str
 					},
 				},
 				MemoryReservation: aws.Int64(128),
-				Name:              aws.String(service),
+				Name:              aws.String(opts.Service),
 			},
 		},
 		Family: aws.String(fmt.Sprintf("%s-%s", p.Rack, app)),
 	}
 
-	if command != "" {
-		req.ContainerDefinitions[0].Command = []*string{aws.String("sh"), aws.String("-c"), aws.String(command)}
+	if opts.Command != "" {
+		req.ContainerDefinitions[0].Command = []*string{aws.String("sh"), aws.String("-c"), aws.String(opts.Command)}
 	}
 
-	for k, v := range env {
+	for k, v := range opts.Environment {
 		req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
 			Name:  aws.String(k),
 			Value: aws.String(v),
 		})
 	}
 
-	req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
-		Name:  aws.String("RACK_URL"),
-		Value: aws.String("https://david-praxis.ngrok.io"),
-	})
+	aenv := map[string]string{
+		"APP":      app,
+		"RACK_URL": "https://david-praxis.ngrok.io",
+	}
 
-	if image != "" {
-		req.ContainerDefinitions[0].Image = aws.String(image)
+	for k, v := range aenv {
+		req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
+			Name:  aws.String(k),
+			Value: aws.String(v),
+		})
+	}
+
+	if opts.Image != "" {
+		req.ContainerDefinitions[0].Image = aws.String(opts.Image)
+	}
+
+	for from, to := range opts.Ports {
+		req.ContainerDefinitions[0].PortMappings = append(req.ContainerDefinitions[0].PortMappings, &ecs.PortMapping{
+			HostPort:      aws.Int64(int64(from)),
+			ContainerPort: aws.Int64(int64(to)),
+		})
 	}
 
 	i := 0
 
-	for from, to := range volumes {
+	for from, to := range opts.Volumes {
 		name := fmt.Sprintf("volume-%d", i)
 
 		req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{

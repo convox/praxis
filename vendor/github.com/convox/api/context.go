@@ -63,6 +63,10 @@ func (c *Context) Logf(format string, args ...interface{}) {
 	c.logger.Logf(format, args...)
 }
 
+func (c *Context) Query(name string) string {
+	return c.request.URL.Query().Get(name)
+}
+
 func (c *Context) RenderJSON(v interface{}) error {
 	data, err := json.Marshal(v)
 	if err != nil {

@@ -26,11 +26,23 @@ type Client struct {
 
 type Headers map[string]string
 type Params map[string]interface{}
+type Query map[string]string
 
 type RequestOptions struct {
 	Body    io.Reader
 	Headers Headers
 	Params  Params
+	Query   Query
+}
+
+func (o *RequestOptions) Querystring() string {
+	uv := url.Values{}
+
+	for k, v := range o.Query {
+		uv.Add(k, v)
+	}
+
+	return uv.Encode()
 }
 
 func (o *RequestOptions) Reader() (io.Reader, error) {
@@ -150,12 +162,18 @@ func (c *Client) Delete(path string, opts RequestOptions, out interface{}) error
 }
 
 func (c *Client) Client() *http.Client {
+	dialer := &net.Dialer{
+		Timeout:   10 * time.Second,
+		KeepAlive: 2 * time.Second,
+	}
+
 	t := &http.Transport{
 		DialContext: func(ctx context.Context, proto, addr string) (net.Conn, error) {
 			if c.Socket != "" {
-				return (&net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}).DialContext(ctx, "unix", c.Socket)
+				proto = "unix"
+				addr = c.Socket
 			}
-			return (&net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}).DialContext(ctx, proto, addr)
+			return dialer.DialContext(ctx, proto, addr)
 		},
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
@@ -172,12 +190,14 @@ func (c *Client) Client() *http.Client {
 }
 
 func (c *Client) Request(method, path string, opts RequestOptions) (*http.Request, error) {
+	qs := opts.Querystring()
+
 	r, err := opts.Reader()
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest(method, fmt.Sprintf("https://%s%s", c.Host, path), r)
+	req, err := http.NewRequest(method, fmt.Sprintf("https://%s%s?%s", c.Host, path, qs), r)
 	if err != nil {
 		return nil, err
 	}
