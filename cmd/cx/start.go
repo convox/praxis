@@ -205,8 +205,7 @@ func startBalancer(app string, balancer manifest.Balancer, ch chan error) {
 			Stream:  types.Stream{Writer: os.Stdout},
 		}
 
-		_, err := Rack.ProcessStart(app, opts)
-		if err != nil {
+		if _, err := Rack.ProcessStart(app, opts); err != nil {
 			ch <- err
 			return
 		}
