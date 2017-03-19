@@ -64,8 +64,13 @@ func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
 	}
 
 	for from, to := range pushes {
-		fmt.Printf("from = %+v\n", from)
-		fmt.Printf("to = %+v\n", to)
+		if err := opts.docker("tag", from, to); err != nil {
+			return err
+		}
+
+		if err := opts.docker("push", to); err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -3,9 +3,11 @@ package aws
 import (
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/simpledb"
 	"github.com/convox/praxis/types"
 )
@@ -28,14 +30,21 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, err
 	}
 
+	repo, err := p.appRepository(app)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("repo = %+v\n", repo)
+
 	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{
 			"BUILD_APP":  app,
-			"BUILD_PUSH": "foo",
+			"BUILD_PUSH": repo,
 		},
 		Name:    fmt.Sprintf("%s-%s-build-%s", p.Rack, app, id),
-		Image:   "convox/praxis:test7",
+		Image:   "convox/praxis:test8",
 		Service: "build",
 		Volumes: map[string]string{
 			"/var/run/docker.sock": "/var/run/docker.sock",
@@ -52,6 +61,28 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 	}
 
 	return build, nil
+}
+
+func (p *Provider) appRepository(app string) (string, error) {
+	res, err := p.IAM().GetUser(&iam.GetUserInput{})
+	if err != nil {
+		return "", err
+	}
+
+	parts := strings.Split(*res.User.Arn, ":")
+
+	if len(parts) != 6 {
+		return "", fmt.Errorf("invalid user arn")
+	}
+
+	aid := parts[4]
+
+	repo, err := p.appResource(app, "Repository")
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s", aid, p.Region, repo), nil
 }
 
 func (p *Provider) BuildGet(app, id string) (*types.Build, error) {

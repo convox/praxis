@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/convox/praxis/types"
+	docker "github.com/fsouza/go-dockerclient"
 )
 
 func init() {
@@ -26,49 +29,78 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 }
 
 func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
-	task, err := p.taskForPid(app, pid)
-	if err != nil {
-		return nil, err
-	}
+	r, w := io.Pipe()
 
-	host, err := p.dockerHostForTask(*task.ContainerInstanceArn)
-	if err != nil {
-		return nil, err
-	}
+	go p.cloudwatchLogStream(app, pid, w)
 
-	fmt.Printf("host = %+v\n", host)
-
-	return nil, nil
+	return r, nil
 }
 
-func (p *Provider) dockerHostForTask(instance string) (string, error) {
-	cluster, err := p.rackResource("RackCluster")
+func (p *Provider) cloudwatchLogStream(app, pid string, w io.WriteCloser) {
+	defer w.Close()
+
+	task, err := p.taskForPid(app, pid)
 	if err != nil {
-		return "", err
+		w.Write([]byte(fmt.Sprintf("error: %s\n", err)))
+		return
 	}
 
-	req := &ecs.DescribeContainerInstancesInput{
-		Cluster:            aws.String(cluster),
-		ContainerInstances: []*string{aws.String(instance)},
+	arn := *task.TaskArn
+
+	if len(task.Containers) < 1 {
+		w.Write([]byte(fmt.Sprintf("no container for task: %s", arn)))
+		return
 	}
 
-	res, err := p.ECS().DescribeContainerInstances(req)
+	ap := strings.Split(arn, "/")
+	uuid := ap[len(ap)-1]
+	name := *task.Containers[0].Name
+	stream := fmt.Sprintf("convox/%s/%s", name, uuid)
+
+	group, err := p.appResource(app, "LogGroup")
 	if err != nil {
-		return "", err
+		w.Write([]byte(fmt.Sprintf("error: %s\n", err)))
+		return
 	}
 
-	if len(res.ContainerInstances) < 1 {
-		return "", fmt.Errorf("no such container instance: %s", instance)
+	req := &cloudwatchlogs.GetLogEventsInput{
+		LogGroupName:  aws.String(group),
+		LogStreamName: aws.String(stream),
+		StartFromHead: aws.Bool(true),
 	}
 
-	ereq := &ec2.DescribeInstancesInput{
-		InstanceIds: []*string{aws.String(*res.ContainerInstances[0].Ec2InstanceId)},
+	empty := 0
+
+	for {
+		res, err := p.CloudWatchLogs().GetLogEvents(req)
+		if err != nil {
+			w.Write([]byte(fmt.Sprintf("error: %s\n", err)))
+			return
+		}
+
+		if len(res.Events) == 0 {
+			if _, err := p.taskForPid(app, pid); err != nil {
+				empty++
+				if empty >= 4 {
+					return
+				}
+			}
+		} else {
+			empty = 0
+		}
+
+		events := res.Events
+
+		sort.Slice(events, func(i, j int) bool { return *events[i].Timestamp < *events[j].Timestamp })
+
+		for _, e := range events {
+			w.Write([]byte(fmt.Sprintf("%s\n", *e.Message)))
+		}
+
+		req.NextToken = res.NextForwardToken
+
+		time.Sleep(250 * time.Millisecond)
 	}
-
-	fmt.Printf("ereq = %+v\n", ereq)
-	// fmt.Printf("res = %+v\n", res)
-
-	return "", nil
 }
 
 func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
@@ -110,29 +142,81 @@ func (p *Provider) ProcessStop(app, pid string) error {
 	return nil
 }
 
-// func (p *Provider) containerInstances(cluster string) ([]*string, error) {
-//   req := &ecs.ListContainerInstancesInput{
-//     Cluster: aws.String(cluster),
-//   }
+func (p *Provider) containerForPid(app, pid string) (*docker.Client, *docker.APIContainers, error) {
+	task, err := p.taskForPid(app, pid)
+	if err != nil {
+		return nil, nil, err
+	}
 
-//   ci := []*string{}
+	host, err := p.dockerHostForInstance(*task.ContainerInstanceArn)
+	if err != nil {
+		return nil, nil, err
+	}
 
-//   err := p.ECS().ListContainerInstancesPages(req, func(res *ecs.ListContainerInstancesOutput, last bool) bool {
-//     ci = append(ci, res.ContainerInstanceArns...)
-//     return true
-//   })
-//   if err != nil {
-//     return nil, err
-//   }
+	dc, err := p.Docker(host)
+	if err != nil {
+		return nil, nil, err
+	}
 
-//   rci := make([]*string, len(ci))
+	cs, err := dc.ListContainers(docker.ListContainersOptions{
+		All: true,
+		Filters: map[string][]string{
+			"label": {fmt.Sprintf("com.amazonaws.ecs.task-arn=%s", *task.TaskArn)},
+		},
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(cs) < 1 {
+		return nil, nil, fmt.Errorf("no container for task: %s", *task.TaskArn)
+	}
 
-//   for i, v := range rand.Perm(len(ci)) {
-//     rci[v] = ci[i]
-//   }
+	return dc, &cs[0], nil
+}
 
-//   return rci, nil
-// }
+func (p *Provider) dockerHostForInstance(instance string) (string, error) {
+	cluster, err := p.rackResource("RackCluster")
+	if err != nil {
+		return "", err
+	}
+
+	req := &ecs.DescribeContainerInstancesInput{
+		Cluster:            aws.String(cluster),
+		ContainerInstances: []*string{aws.String(instance)},
+	}
+
+	res, err := p.ECS().DescribeContainerInstances(req)
+	if err != nil {
+		return "", err
+	}
+
+	if len(res.ContainerInstances) < 1 {
+		return "", fmt.Errorf("no such container instance: %s", instance)
+	}
+
+	ereq := &ec2.DescribeInstancesInput{
+		InstanceIds: []*string{aws.String(*res.ContainerInstances[0].Ec2InstanceId)},
+	}
+
+	eres, err := p.EC2().DescribeInstances(ereq)
+	if err != nil {
+		return "", err
+	}
+
+	if len(eres.Reservations) != 1 || len(eres.Reservations[0].Instances) != 1 {
+		return "", fmt.Errorf("could not find instance: %s", *ereq.InstanceIds[0])
+	}
+
+	i := eres.Reservations[0].Instances[0]
+
+	host := fmt.Sprintf("http://%s:2376", *i.PrivateIpAddress)
+
+	if p.Development {
+		host = fmt.Sprintf("http://%s:2376", *i.PublicIpAddress)
+	}
+
+	return host, nil
+}
 
 func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (string, error) {
 	logs, err := p.appResource(app, "LogGroup")
@@ -143,6 +227,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	req := &ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			{
+				Cpu:       aws.Int64(512),
 				Essential: aws.Bool(true),
 				Image:     aws.String(""),
 				LogConfiguration: &ecs.LogConfiguration{
@@ -153,7 +238,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 						"awslogs-stream-prefix": aws.String("convox"),
 					},
 				},
-				MemoryReservation: aws.Int64(128),
+				MemoryReservation: aws.Int64(512),
 				Name:              aws.String(opts.Service),
 			},
 		},

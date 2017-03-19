@@ -13,9 +13,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/cloudwatch"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/simpledb"
+	"github.com/fsouza/go-dockerclient"
 )
 
 const (
@@ -23,10 +28,11 @@ const (
 )
 
 type Provider struct {
-	Config  *aws.Config
-	Rack    string
-	Region  string
-	Session *session.Session
+	Config      *aws.Config
+	Development bool
+	Rack        string
+	Region      string
+	Session     *session.Session
 }
 
 func init() {
@@ -42,10 +48,11 @@ func FromEnv() (*Provider, error) {
 	region := os.Getenv("AWS_REGION")
 
 	return &Provider{
-		Config:  &aws.Config{Region: aws.String(region)},
-		Rack:    os.Getenv("RACK"),
-		Region:  region,
-		Session: session,
+		Config:      &aws.Config{Region: aws.String(region)},
+		Development: os.Getenv("DEVELOPMENT") == "true",
+		Rack:        os.Getenv("RACK"),
+		Region:      region,
+		Session:     session,
 	}, nil
 }
 
@@ -53,8 +60,28 @@ func (p *Provider) CloudFormation() *cloudformation.CloudFormation {
 	return cloudformation.New(p.Session, p.Config)
 }
 
+func (p *Provider) CloudWatch() *cloudwatch.CloudWatch {
+	return cloudwatch.New(p.Session, p.Config)
+}
+
+func (p *Provider) CloudWatchLogs() *cloudwatchlogs.CloudWatchLogs {
+	return cloudwatchlogs.New(p.Session, p.Config)
+}
+
+func (p *Provider) Docker(host string) (*docker.Client, error) {
+	return docker.NewClient(host)
+}
+
 func (p *Provider) ECS() *ecs.ECS {
 	return ecs.New(p.Session, p.Config)
+}
+
+func (p *Provider) EC2() *ec2.EC2 {
+	return ec2.New(p.Session, p.Config)
+}
+
+func (p *Provider) IAM() *iam.IAM {
+	return iam.New(p.Session, p.Config)
 }
 
 func (p *Provider) S3() *s3.S3 {

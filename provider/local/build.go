@@ -34,7 +34,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 			"BUILD_APP": app,
 		},
 		Name:    fmt.Sprintf("%s-build-%s", app, id),
-		Image:   "convox/praxis:test7",
+		Image:   "convox/praxis:test8",
 		Service: "build",
 		Volumes: map[string]string{
 			"/var/run/docker.sock": "/var/run/docker.sock",

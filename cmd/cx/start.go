@@ -199,7 +199,7 @@ func startBalancer(app string, balancer manifest.Balancer, ch chan error) {
 
 		opts := types.ProcessRunOptions{
 			Command: command,
-			Image:   "convox/praxis:test7",
+			Image:   "convox/praxis:test8",
 			Name:    name,
 			Ports:   map[int]int{port: 3000},
 			Stream:  types.Stream{Writer: os.Stdout},
