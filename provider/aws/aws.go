@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/alecthomas/template"
@@ -132,6 +133,36 @@ func formationHelpers() template.FuncMap {
 	}
 }
 
+func (p *Provider) appRepository(app string) (string, error) {
+	res, err := p.IAM().GetUser(&iam.GetUserInput{})
+	if err != nil {
+		return "", err
+	}
+
+	parts := strings.Split(*res.User.Arn, ":")
+
+	if len(parts) != 6 {
+		return "", fmt.Errorf("invalid user arn")
+	}
+
+	aid := parts[4]
+
+	repo, err := p.appResource(app, "Repository")
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s", aid, p.Region, repo), nil
+}
+
+func (p *Provider) appResource(app string, resource string) (string, error) {
+	return p.stackResource(fmt.Sprintf("%s-%s", p.Rack, app), resource)
+}
+
+func (p *Provider) rackResource(resource string) (string, error) {
+	return p.stackResource(p.Rack, resource)
+}
+
 func (p *Provider) stackResource(name string, resource string) (string, error) {
 	res, err := p.CloudFormation().DescribeStackResource(&cloudformation.DescribeStackResourceInput{
 		LogicalResourceId: aws.String(resource),
@@ -142,12 +173,4 @@ func (p *Provider) stackResource(name string, resource string) (string, error) {
 	}
 
 	return *res.StackResourceDetail.PhysicalResourceId, nil
-}
-
-func (p *Provider) appResource(app string, resource string) (string, error) {
-	return p.stackResource(fmt.Sprintf("%s-%s", p.Rack, app), resource)
-}
-
-func (p *Provider) rackResource(resource string) (string, error) {
-	return p.stackResource(p.Rack, resource)
 }

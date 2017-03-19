@@ -36,6 +36,45 @@ func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
 	return r, nil
 }
 
+func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
+	return 0, nil
+}
+
+func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
+	cluster, err := p.rackResource("RackCluster")
+	if err != nil {
+		return "", err
+	}
+
+	td, err := p.taskDefinition(app, opts)
+	if err != nil {
+		return "", err
+	}
+
+	req := &ecs.RunTaskInput{
+		Cluster:        aws.String(cluster),
+		StartedBy:      aws.String(opts.Name),
+		TaskDefinition: aws.String(td),
+	}
+
+	res, err := p.ECS().RunTask(req)
+	if err != nil {
+		return "", err
+	}
+
+	if len(res.Tasks) != 1 {
+		return "", fmt.Errorf("unable to start process")
+	}
+
+	parts := strings.Split(*res.Tasks[0].TaskArn, "-")
+
+	return parts[len(parts)-1], nil
+}
+
+func (p *Provider) ProcessStop(app, pid string) error {
+	return nil
+}
+
 func (p *Provider) cloudwatchLogStream(app, pid string, w io.WriteCloser) {
 	defer w.Close()
 
@@ -101,45 +140,6 @@ func (p *Provider) cloudwatchLogStream(app, pid string, w io.WriteCloser) {
 
 		time.Sleep(250 * time.Millisecond)
 	}
-}
-
-func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
-	return 0, nil
-}
-
-func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
-	cluster, err := p.rackResource("RackCluster")
-	if err != nil {
-		return "", err
-	}
-
-	td, err := p.taskDefinition(app, opts)
-	if err != nil {
-		return "", err
-	}
-
-	req := &ecs.RunTaskInput{
-		Cluster:        aws.String(cluster),
-		StartedBy:      aws.String(opts.Name),
-		TaskDefinition: aws.String(td),
-	}
-
-	res, err := p.ECS().RunTask(req)
-	if err != nil {
-		return "", err
-	}
-
-	if len(res.Tasks) != 1 {
-		return "", fmt.Errorf("unable to start process")
-	}
-
-	parts := strings.Split(*res.Tasks[0].TaskArn, "-")
-
-	return parts[len(parts)-1], nil
-}
-
-func (p *Provider) ProcessStop(app, pid string) error {
-	return nil
 }
 
 func (p *Provider) containerForPid(app, pid string) (*docker.Client, *docker.APIContainers, error) {
