@@ -2,6 +2,7 @@ package aws
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -74,6 +76,10 @@ func (p *Provider) CloudWatchLogs() *cloudwatchlogs.CloudWatchLogs {
 
 func (p *Provider) Docker(host string) (*docker.Client, error) {
 	return docker.NewClient(host)
+}
+
+func (p *Provider) ECR() *ecr.ECR {
+	return ecr.New(p.Session, p.Config)
 }
 
 func (p *Provider) ECS() *ecs.ECS {
@@ -136,7 +142,7 @@ func formationHelpers() template.FuncMap {
 	}
 }
 
-func (p *Provider) appRepository(app string) (string, error) {
+func (p *Provider) accountID() (string, error) {
 	res, err := p.IAM().GetUser(&iam.GetUserInput{})
 	if err != nil {
 		return "", err
@@ -148,14 +154,43 @@ func (p *Provider) appRepository(app string) (string, error) {
 		return "", fmt.Errorf("invalid user arn")
 	}
 
-	aid := parts[4]
+	return parts[4], nil
+}
 
-	repo, err := p.appResource(app, "Repository")
+func (p *Provider) appRegistry(app string) (*types.Registry, error) {
+	account, err := p.accountID()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s", aid, p.Region, repo), nil
+	res, err := p.ECR().GetAuthorizationToken(&ecr.GetAuthorizationTokenInput{
+		RegistryIds: []*string{aws.String(account)},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	if len(res.AuthorizationData) != 1 {
+		return nil, fmt.Errorf("no authorization data")
+	}
+
+	token, err := base64.StdEncoding.DecodeString(*res.AuthorizationData[0].AuthorizationToken)
+	if err != nil {
+		return nil, err
+	}
+
+	parts := strings.SplitN(string(token), ":", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid auth data")
+	}
+
+	registry := &types.Registry{
+		Server:   fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", account, p.Region),
+		Username: parts[0],
+		Password: parts[1],
+	}
+
+	return registry, nil
 }
 
 func (p *Provider) appResource(app string, resource string) (string, error) {

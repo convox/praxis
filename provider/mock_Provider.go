@@ -512,6 +512,66 @@ func (_m *MockProvider) QueueStore(app string, queue string, attrs map[string]st
 	return r0
 }
 
+// RegistryAdd provides a mock function with given fields: server, username, password
+func (_m *MockProvider) RegistryAdd(server string, username string, password string) (*types.Registry, error) {
+	ret := _m.Called(server, username, password)
+
+	var r0 *types.Registry
+	if rf, ok := ret.Get(0).(func(string, string, string) *types.Registry); ok {
+		r0 = rf(server, username, password)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Registry)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = rf(server, username, password)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// RegistryDelete provides a mock function with given fields: server
+func (_m *MockProvider) RegistryDelete(server string) error {
+	ret := _m.Called(server)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(server)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// RegistryList provides a mock function with given fields:
+func (_m *MockProvider) RegistryList() (types.Registries, error) {
+	ret := _m.Called()
+
+	var r0 types.Registries
+	if rf, ok := ret.Get(0).(func() types.Registries); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Registries)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ReleaseCreate provides a mock function with given fields: app, opts
 func (_m *MockProvider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error) {
 	ret := _m.Called(app, opts)

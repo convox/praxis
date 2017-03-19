@@ -66,9 +66,9 @@ type Provider interface {
 	QueueFetch(app, queue string, opts types.QueueFetchOptions) (map[string]string, error)
 	QueueStore(app, queue string, attrs map[string]string) error
 
-	// RegistryAdd(server, username, password string) (*structs.Registry, error)
-	// RegistryDelete(server string) error
-	// RegistryList() (structs.Registries, error)
+	RegistryAdd(server, username, password string) (*types.Registry, error)
+	RegistryDelete(server string) error
+	RegistryList() (types.Registries, error)
 
 	ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error)
 	ReleaseGet(app, id string) (*types.Release, error)

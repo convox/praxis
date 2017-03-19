@@ -232,6 +232,12 @@
 			"revisionTime": "2017-03-17T20:29:26Z"
 		},
 		{
+			"checksumSHA1": "B6qHy1+Rrp9lQCBR/JDRT72kuCI=",
+			"path": "github.com/aws/aws-sdk-go/service/ecr",
+			"revision": "5b99715ae2945a2434a2371f4e6c5542e839a32d",
+			"revisionTime": "2017-03-17T20:29:26Z"
+		},
+		{
 			"checksumSHA1": "UFpKfwRxhzQk3pCbBrBa2RsPL24=",
 			"path": "github.com/aws/aws-sdk-go/service/ecs",
 			"revision": "5b99715ae2945a2434a2371f4e6c5542e839a32d",

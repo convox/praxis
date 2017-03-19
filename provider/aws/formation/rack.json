@@ -32,13 +32,19 @@
     }
   },
   "Resources": {
-    "LogGroup": {
-      "Type": "AWS::Logs::LogGroup"
-    },
     "Network": {
       "Type": "AWS::CloudFormation::Stack",
       "Properties": {
         "TemplateURL": { "Fn::Sub": "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/network.json" }
+      }
+    },
+    "LogGroup": {
+      "Type": "AWS::Logs::LogGroup"
+    },
+    "Registries": {
+      "Type": "AWS::SDB::Domain",
+      "Properties": {
+        "Description": { "Fn::Sub": "${AWS::StackName} registries" }
       }
     },
     "InstancesSecurityGroup": {

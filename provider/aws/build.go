@@ -1,6 +1,8 @@
 package aws
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -28,18 +30,32 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, err
 	}
 
-	repo, err := p.appRepository(app)
+	registries, err := p.RegistryList()
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("repo = %+v\n", repo)
+	ar, err := p.appRegistry(app)
+	if err != nil {
+		return nil, err
+	}
+
+	repo, err := p.appResource(app, "Repository")
+	if err != nil {
+		return nil, err
+	}
+
+	auth, err := json.Marshal(append(registries, *ar))
+	if err != nil {
+		return nil, err
+	}
 
 	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{
 			"BUILD_APP":  app,
-			"BUILD_PUSH": repo,
+			"BUILD_AUTH": base64.StdEncoding.EncodeToString(auth),
+			"BUILD_PUSH": fmt.Sprintf("%s/%s", ar.Server, repo),
 		},
 		Name:    fmt.Sprintf("%s-%s-build-%s", p.Rack, app, id),
 		Image:   "convox/praxis:test8",

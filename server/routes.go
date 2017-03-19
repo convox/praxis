@@ -45,6 +45,10 @@ func Routes(server *api.Server) {
 	server.Route("queue.fetch", "GET", "/apps/{app}/queues/{queue}", controllers.QueueFetch)
 	server.Route("queue.store", "POST", "/apps/{app}/queues/{queue}", controllers.QueueStore)
 
+	server.Route("registry.add", "POST", "/registries", controllers.RegistryAdd)
+	server.Route("registry.delete", "DELETE", "/registries", controllers.RegistryDelete)
+	server.Route("registry.list", "GET", "/registries", controllers.RegistryList)
+
 	server.Route("release.create", "POST", "/apps/{app}/releases", controllers.ReleaseCreate)
 	server.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
 	server.Route("release.list", "GET", "/apps/{app}/releases", controllers.ReleaseList)
