@@ -262,12 +262,6 @@
 			"revisionTime": "2017-03-17T20:29:26Z"
 		},
 		{
-			"checksumSHA1": "GzCah0kCSV5leSZeKL6Sw/jGxFs=",
-			"path": "github.com/codegangsta/negroni",
-			"revision": "1dd3ab0ff59e13f5b73dcbf70703710aebe50d2f",
-			"revisionTime": "2014-12-14T23:15:41Z"
-		},
-		{
 			"checksumSHA1": "MLZhCsbLCBbSGF1mFDZ3Z1uKCCU=",
 			"path": "github.com/convox/api",
 			"revision": "98c9393b558212486c36b9c7b6b638f02cdf19f4",
@@ -474,12 +468,6 @@
 			"revisionTime": "2014-12-28T07:11:17Z"
 		},
 		{
-			"checksumSHA1": "VyuPUqnRsnsDqx69bMOJqZwGFo8=",
-			"path": "github.com/ejholmes/cloudwatch",
-			"revision": "39382b2f7b5f1aab560fab4b400775f41bee7613",
-			"revisionTime": "2016-03-31T23:53:17Z"
-		},
-		{
 			"checksumSHA1": "DG6hthmfdziVR23DRCqZkaYTDKc=",
 			"path": "github.com/fsouza/go-dockerclient",
 			"revision": "87c7e50e0bcf800ed863c3c3b0fbcc67e3029140",
@@ -572,12 +560,6 @@
 			"path": "github.com/stretchr/testify/mock",
 			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
 			"revisionTime": "2017-01-30T11:31:45Z"
-		},
-		{
-			"checksumSHA1": "+rdwH+3TU2vskBw/d6m8UYsRH8o=",
-			"path": "github.com/stvp/rollbar",
-			"revision": "8b39372e6211ddf06fd182579c397b33c8b8d593",
-			"revisionTime": "2015-06-01T18:40:08Z"
 		},
 		{
 			"checksumSHA1": "+Bpj4WCjvjD0IBgkeW4nfuVrmdQ=",
