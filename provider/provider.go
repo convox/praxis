@@ -25,16 +25,14 @@ type Provider interface {
 	BuildList(app string) (types.Builds, error)
 	BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*types.Build, error)
 
-	// CapacityGet() (*structs.Capacity, error)
-
 	// CertificateCreate(pub, key, chain string) (*structs.Certificate, error)
 	// CertificateDelete(id string) error
 	// CertificateGenerate(domains []string) (*structs.Certificate, error)
 	// CertificateList() (structs.Certificates, error)
 
-	// EventSend(*structs.Event, error) error
-
+	// EnvironmentDelete(app string, key string) error
 	// EnvironmentGet(app string) (structs.Environment, error)
+	// EnvironmentSet(app string, env types.Environment) error
 
 	FilesDelete(app, pid string, files []string) error
 	FilesUpload(app, pid string, r io.Reader) error
@@ -78,9 +76,10 @@ type Provider interface {
 	ReleasePromote(app, id string) error
 
 	SystemGet() (*types.System, error)
-	// SystemLogs(w io.Writer, opts structs.LogStreamOptions) error
+	// SystemLogs() (io.ReadCloser, error)
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
-	// SystemSave(system structs.System) error
+	// SystemScale(class string)
+	// SystemUpdate(version string) error
 
 	TableCreate(app, name string, opts types.TableCreateOptions) error
 	TableGet(app, table string) (*types.Table, error)
