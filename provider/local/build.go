@@ -1,6 +1,7 @@
 package local
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -43,7 +44,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{
 			"BUILD_APP":  app,
-			"BUILD_AUTH": string(auth),
+			"BUILD_AUTH": base64.StdEncoding.EncodeToString(auth),
 		},
 		Name:    fmt.Sprintf("%s-build-%s", app, id),
 		Image:   "convox/praxis:test8",
