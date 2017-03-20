@@ -55,7 +55,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		Environment: map[string]string{
 			"BUILD_APP":  app,
 			"BUILD_AUTH": base64.StdEncoding.EncodeToString(auth),
-			"BUILD_PUSH": fmt.Sprintf("%s/%s", ar.Server, repo),
+			"BUILD_PUSH": fmt.Sprintf("%s/%s", ar.Hostname, repo),
 		},
 		Name:    fmt.Sprintf("%s-%s-build-%s", p.Rack, app, id),
 		Image:   "convox/praxis:test8",

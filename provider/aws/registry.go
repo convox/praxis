@@ -8,9 +8,9 @@ import (
 	"github.com/convox/praxis/types"
 )
 
-func (p *Provider) RegistryAdd(server, username, password string) (*types.Registry, error) {
+func (p *Provider) RegistryAdd(hostname, username, password string) (*types.Registry, error) {
 	registry := &types.Registry{
-		Server:   server,
+		Hostname: hostname,
 		Username: username,
 		Password: password,
 	}
@@ -22,16 +22,16 @@ func (p *Provider) RegistryAdd(server, username, password string) (*types.Regist
 	return registry, nil
 }
 
-func (p *Provider) RegistryDelete(server string) error {
-	return fmt.Errorf("unimplemented")
-}
-
 func (p *Provider) RegistryList() (types.Registries, error) {
 	return types.Registries{}, nil
 }
 
-func registryFromAttributes(server string, attrs []*simpledb.Attribute) (*types.Registry, error) {
-	registry := &types.Registry{Server: server}
+func (p *Provider) RegistryRemove(hostname string) error {
+	return fmt.Errorf("unimplemented")
+}
+
+func registryFromAttributes(hostname string, attrs []*simpledb.Attribute) (*types.Registry, error) {
+	registry := &types.Registry{Hostname: hostname}
 
 	for _, attr := range attrs {
 		switch *attr.Name {
@@ -57,7 +57,7 @@ func (p *Provider) registryStore(registry *types.Registry) error {
 			{Name: aws.String("password"), Value: aws.String(registry.Password)},
 		},
 		DomainName: aws.String(domain),
-		ItemName:   aws.String(registry.Server),
+		ItemName:   aws.String(registry.Hostname),
 	})
 
 	return err

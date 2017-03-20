@@ -185,7 +185,7 @@ func (p *Provider) appRegistry(app string) (*types.Registry, error) {
 	}
 
 	registry := &types.Registry{
-		Server:   fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", account, p.Region),
+		Hostname: fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", account, p.Region),
 		Username: parts[0],
 		Password: parts[1],
 	}

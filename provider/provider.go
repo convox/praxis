@@ -67,8 +67,8 @@ type Provider interface {
 	QueueStore(app, queue string, attrs map[string]string) error
 
 	RegistryAdd(server, username, password string) (*types.Registry, error)
-	RegistryDelete(server string) error
 	RegistryList() (types.Registries, error)
+	RegistryRemove(server string) error
 
 	ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error)
 	ReleaseGet(app, id string) (*types.Release, error)

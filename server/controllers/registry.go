@@ -7,22 +7,16 @@ import (
 )
 
 func RegistryAdd(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	server := c.Form("server")
+	hostname := c.Form("hostname")
 	username := c.Form("username")
 	password := c.Form("password")
 
-	registry, err := Provider.RegistryAdd(server, username, password)
+	registry, err := Provider.RegistryAdd(hostname, username, password)
 	if err != nil {
 		return err
 	}
 
 	return c.RenderJSON(registry)
-}
-
-func RegistryDelete(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	server := c.Form("server")
-
-	return Provider.RegistryDelete(server)
 }
 
 func RegistryList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
@@ -32,4 +26,10 @@ func RegistryList(w http.ResponseWriter, r *http.Request, c *api.Context) error 
 	}
 
 	return c.RenderJSON(registries)
+}
+
+func RegistryRemove(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	hostname := c.Var("hostname")
+
+	return Provider.RegistryRemove(hostname)
 }

@@ -1,7 +1,7 @@
 package types
 
 type Registry struct {
-	Server   string
+	Hostname string
 	Username string
 	Password string
 }
