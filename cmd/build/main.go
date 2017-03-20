@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -101,7 +102,12 @@ func auth() error {
 
 	var registries types.Registries
 
-	if err := json.Unmarshal([]byte(flagAuth), &registries); err != nil {
+	dec, err := base64.StdEncoding.DecodeString(flagAuth)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(dec, &registries); err != nil {
 		return err
 	}
 
