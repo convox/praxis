@@ -122,6 +122,8 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 
 	args = append(args, oargs...)
 
+	fmt.Printf("args = %+v\n", args)
+
 	data, err := exec.Command("docker", args...).CombinedOutput()
 	if err != nil {
 		return "", err
