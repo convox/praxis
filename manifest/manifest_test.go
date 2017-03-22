@@ -57,8 +57,9 @@ func TestManifestLoad(t *testing.T) {
 				},
 			},
 			manifest.Service{
-				Name:  "proxy",
-				Image: "ubuntu:16.04",
+				Name:    "proxy",
+				Command: "bash",
+				Image:   "ubuntu:16.04",
 				Environment: []string{
 					"SECRET",
 				},

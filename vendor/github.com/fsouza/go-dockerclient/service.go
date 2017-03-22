@@ -31,7 +31,6 @@ func (err *NoSuchService) Error() string {
 //
 // See https://goo.gl/KrVjHz for more details.
 type CreateServiceOptions struct {
-	Auth AuthConfiguration `qs:"-"`
 	swarm.ServiceSpec
 	Context context.Context
 }
@@ -41,13 +40,8 @@ type CreateServiceOptions struct {
 //
 // See https://goo.gl/KrVjHz for more details.
 func (c *Client) CreateService(opts CreateServiceOptions) (*swarm.Service, error) {
-	headers, err := headersWithAuth(opts.Auth)
-	if err != nil {
-		return nil, err
-	}
 	path := "/services/create?" + queryString(opts)
 	resp, err := c.do("POST", path, doOptions{
-		headers:   headers,
 		data:      opts.ServiceSpec,
 		forceJSON: true,
 		context:   opts.Context,

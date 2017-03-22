@@ -2,6 +2,7 @@ package controllers_test
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/url"
 	"testing"
@@ -35,8 +36,8 @@ func TestBuildCreate(t *testing.T) {
 
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Equal(t,
-		[]byte(`{"id":"BTEST","app":"app","manifest":"","process":"","release":"","status":"created","started":"0001-01-01T00:00:00Z","ended":"0001-01-01T00:00:00Z"}`),
-		data,
+		`{"id":"BTEST","app":"app","manifest":"","process":"","release":"","status":"created","created":"0001-01-01T00:00:00Z","started":"0001-01-01T00:00:00Z","ended":"0001-01-01T00:00:00Z"}`,
+		string(data),
 	)
 }
 
@@ -44,11 +45,18 @@ func TestBuildGet(t *testing.T) {
 	ts, mp := mockServer()
 	defer ts.Close()
 
+	app := &types.App{
+		Name: "app",
+	}
+
+	mp.On("AppGet", "app").Return(app, nil)
+
 	build := &types.Build{
 		Id:     "BTEST",
 		App:    "app",
 		Status: "created",
 	}
+
 	mp.On("BuildGet", "app", "BTEST").Return(build, nil)
 
 	res, err := testRequest(ts, "GET", "/apps/app/builds/BTEST", nil)
@@ -56,18 +64,26 @@ func TestBuildGet(t *testing.T) {
 	defer res.Body.Close()
 
 	data, err := ioutil.ReadAll(res.Body)
-	assert.NoError(t, err)
 
-	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t,
-		[]byte(`{"id":"BTEST","app":"app","manifest":"","process":"","release":"","status":"created","started":"0001-01-01T00:00:00Z","ended":"0001-01-01T00:00:00Z"}`),
-		data,
-	)
+	if assert.NoError(t, err) {
+		fmt.Printf("string(data) = %+v\n", string(data))
+		assert.Equal(t, 200, res.StatusCode)
+		assert.Equal(t,
+			`{"id":"BTEST","app":"app","manifest":"","process":"","release":"","status":"created","created":"0001-01-01T00:00:00Z","started":"0001-01-01T00:00:00Z","ended":"0001-01-01T00:00:00Z"}`,
+			string(data),
+		)
+	}
 }
 
 func TestBuildUpdate(t *testing.T) {
 	ts, mp := mockServer()
 	defer ts.Close()
+
+	app := &types.App{
+		Name: "app",
+	}
+
+	mp.On("AppGet", "app").Return(app, nil)
 
 	build := &types.Build{
 		Id:      "BTEST",
@@ -81,6 +97,7 @@ func TestBuildUpdate(t *testing.T) {
 		Release:  "RTEST",
 		Status:   "pending",
 	}
+
 	mp.On("BuildUpdate", "app", "BTEST", opts).Return(build, nil)
 
 	v := url.Values{}
@@ -95,9 +112,11 @@ func TestBuildUpdate(t *testing.T) {
 	data, err := ioutil.ReadAll(res.Body)
 	assert.NoError(t, err)
 
+	fmt.Printf("string(data) = %+v\n", string(data))
+
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Equal(t,
-		[]byte(`{"id":"BTEST","app":"app","manifest":"","process":"","release":"RTEST","status":"pending","started":"0001-01-01T00:00:00Z","ended":"0001-01-01T00:00:00Z"}`),
-		data,
+		`{"id":"BTEST","app":"app","manifest":"","process":"","release":"RTEST","status":"pending","created":"0001-01-01T00:00:00Z","started":"0001-01-01T00:00:00Z","ended":"0001-01-01T00:00:00Z"}`,
+		string(data),
 	)
 }

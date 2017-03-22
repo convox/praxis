@@ -89,16 +89,21 @@ func (e *Encoder) WriteField(f HeaderField) error {
 // becomes false.
 func (e *Encoder) searchTable(f HeaderField) (i uint64, nameValueMatch bool) {
 	for idx, hf := range staticTable {
-		if hf.Name != f.Name {
+		if !constantTimeStringCompare(hf.Name, f.Name) {
 			continue
 		}
 		if i == 0 {
 			i = uint64(idx + 1)
 		}
-		if f.Sensitive || hf.Value != f.Value {
+		if f.Sensitive {
 			continue
 		}
-		return uint64(idx + 1), true
+		if !constantTimeStringCompare(hf.Value, f.Value) {
+			continue
+		}
+		i = uint64(idx + 1)
+		nameValueMatch = true
+		return
 	}
 
 	j, nameValueMatch := e.dynTab.search(f)

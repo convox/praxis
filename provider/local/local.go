@@ -24,6 +24,7 @@ var (
 var Logger = logger.New("ns=provider.aws")
 
 type Provider struct {
+	Test bool
 	Root string
 }
 

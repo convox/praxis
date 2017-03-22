@@ -17,7 +17,12 @@ const tmpDir = "/tmp/convox"
 
 func setup() (rack.Rack, error) {
 	os.Setenv("PROVIDER_ROOT", tmpDir)
-	controllers.Provider = provider.FromEnv()
+	p, err := provider.FromEnv()
+	if err != nil {
+		return nil, err
+	}
+
+	controllers.Provider = p
 
 	ts = httptest.NewUnstartedServer(server.New())
 	ts.TLS = &tls.Config{

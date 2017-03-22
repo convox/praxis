@@ -600,8 +600,7 @@ func (c *Client) stream(method, path string, streamOptions streamOptions) error 
 	}
 	var canceled uint32
 	if streamOptions.inactivityTimeout > 0 {
-		var ch chan<- struct{}
-		resp.Body, ch = handleInactivityTimeout(resp.Body, streamOptions.inactivityTimeout, cancelRequest, &canceled)
+		ch := handleInactivityTimeout(&streamOptions, cancelRequest, &canceled)
 		defer close(ch)
 	}
 	err = handleStreamResponse(resp, &streamOptions)
@@ -642,32 +641,35 @@ func handleStreamResponse(resp *http.Response, streamOptions *streamOptions) err
 	return err
 }
 
-type proxyReader struct {
-	io.ReadCloser
+type proxyWriter struct {
+	io.Writer
 	calls uint64
 }
 
-func (p *proxyReader) callCount() uint64 {
+func (p *proxyWriter) callCount() uint64 {
 	return atomic.LoadUint64(&p.calls)
 }
 
-func (p *proxyReader) Read(data []byte) (int, error) {
+func (p *proxyWriter) Write(data []byte) (int, error) {
 	atomic.AddUint64(&p.calls, 1)
-	return p.ReadCloser.Read(data)
+	return p.Writer.Write(data)
 }
 
-func handleInactivityTimeout(reader io.ReadCloser, timeout time.Duration, cancelRequest func(), canceled *uint32) (io.ReadCloser, chan<- struct{}) {
+func handleInactivityTimeout(options *streamOptions, cancelRequest func(), canceled *uint32) chan<- struct{} {
 	done := make(chan struct{})
-	proxyReader := &proxyReader{ReadCloser: reader}
+	proxyStdout := &proxyWriter{Writer: options.stdout}
+	proxyStderr := &proxyWriter{Writer: options.stderr}
+	options.stdout = proxyStdout
+	options.stderr = proxyStderr
 	go func() {
 		var lastCallCount uint64
 		for {
 			select {
-			case <-time.After(timeout):
+			case <-time.After(options.inactivityTimeout):
 			case <-done:
 				return
 			}
-			curCallCount := proxyReader.callCount()
+			curCallCount := proxyStdout.callCount() + proxyStderr.callCount()
 			if curCallCount == lastCallCount {
 				atomic.AddUint32(canceled, 1)
 				cancelRequest()
@@ -676,7 +678,7 @@ func handleInactivityTimeout(reader io.ReadCloser, timeout time.Duration, cancel
 			lastCallCount = curCallCount
 		}
 	}()
-	return proxyReader, done
+	return done
 }
 
 type hijackOptions struct {

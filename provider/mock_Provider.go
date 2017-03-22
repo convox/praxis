@@ -230,20 +230,6 @@ func (_m *MockProvider) BuildUpdate(app string, id string, opts types.BuildUpdat
 	return r0, r1
 }
 
-// EnvironmentDelete provides a mock function with given fields: app, key
-func (_m *MockProvider) EnvironmentDelete(app string, key string) error {
-	ret := _m.Called(app, key)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(app, key)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // EnvironmentGet provides a mock function with given fields: app
 func (_m *MockProvider) EnvironmentGet(app string) (types.Environment, error) {
 	ret := _m.Called(app)
@@ -274,6 +260,20 @@ func (_m *MockProvider) EnvironmentSet(app string, env types.Environment) error 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string, types.Environment) error); ok {
 		r0 = rf(app, env)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// EnvironmentUnset provides a mock function with given fields: app, key
+func (_m *MockProvider) EnvironmentUnset(app string, key string) error {
+	ret := _m.Called(app, key)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(app, key)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -30,16 +30,18 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		return nil, err
 	}
 
-	go func() {
-		if err := p.releasePromote(app, r.Id); err != nil {
-			r.Error = err.Error()
-			r.Status = "failed"
-		} else {
-			r.Status = "complete"
-		}
+	if !p.Test {
+		go func() {
+			if err := p.releasePromote(app, r.Id); err != nil {
+				r.Error = err.Error()
+				r.Status = "failed"
+			} else {
+				r.Status = "complete"
+			}
 
-		p.Store(fmt.Sprintf("apps/%s/releases/%s/release.json", app, r.Id), r)
-	}()
+			p.Store(fmt.Sprintf("apps/%s/releases/%s/release.json", app, r.Id), r)
+		}()
+	}
 
 	return r, nil
 }
