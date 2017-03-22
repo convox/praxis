@@ -34,7 +34,7 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	env, err := manifest.LoadEnvironment(".env")
+	env, err := Rack.EnvironmentGet(name)
 	if err != nil {
 		return err
 	}
@@ -51,15 +51,6 @@ func runTest(c *cli.Context) error {
 	}
 
 	if err := buildLogs(build, bw); err != nil {
-		return err
-	}
-
-	build, err = Rack.BuildGet(app.Name, build.Id)
-	if err != nil {
-		return err
-	}
-
-	if err := Rack.ReleasePromote(app.Name, build.Release); err != nil {
 		return err
 	}
 

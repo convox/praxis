@@ -42,19 +42,19 @@ func stream(w io.Writer, r io.Reader) error {
 
 	for {
 		n, err := r.Read(buf)
-		if err != nil && err == io.EOF {
+		if n > 0 {
+			if _, err := w.Write(buf[0:n]); err != nil {
+				return err
+			}
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
+			}
+		}
+		if err == io.EOF {
 			return nil
 		}
 		if err != nil {
 			return err
-		}
-
-		if _, err := w.Write(buf[0:n]); err != nil {
-			return err
-		}
-
-		if f, ok := w.(http.Flusher); ok {
-			f.Flush()
 		}
 	}
 }

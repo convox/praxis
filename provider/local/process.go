@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
@@ -47,61 +48,6 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 	}
 
 	return processList(filters, false)
-}
-
-func processList(filters []string, all bool) (types.Processes, error) {
-	args := []string{"ps"}
-
-	if all {
-		args = append(args, "-a")
-	}
-
-	for _, f := range filters {
-		args = append(args, "--filter", f)
-	}
-
-	args = append(args, "--format", "{{json .}}")
-
-	data, err := exec.Command("docker", args...).CombinedOutput()
-	if err != nil {
-		return nil, err
-	}
-
-	ps := types.Processes{}
-
-	jd := json.NewDecoder(bytes.NewReader(data))
-
-	for jd.More() {
-		var dps struct {
-			Command string
-			ID      string
-			Labels  string
-		}
-
-		if err := jd.Decode(&dps); err != nil {
-			return nil, err
-		}
-
-		labels := map[string]string{}
-
-		for _, kv := range strings.Split(dps.Labels, ",") {
-			parts := strings.SplitN(kv, "=", 2)
-
-			if len(parts) == 2 {
-				labels[parts[0]] = parts[1]
-			}
-		}
-
-		ps = append(ps, types.Process{
-			Id:      dps.ID,
-			App:     labels["convox.app"],
-			Command: strings.Trim(dps.Command, `"`),
-			Release: labels["convox.release"],
-			Service: labels["convox.service"],
-		})
-	}
-
-	return ps, nil
 }
 
 func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
@@ -261,4 +207,70 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	}
 
 	return args, nil
+}
+
+func processList(filters []string, all bool) (types.Processes, error) {
+	args := []string{"ps"}
+
+	if all {
+		args = append(args, "-a")
+	}
+
+	for _, f := range filters {
+		args = append(args, "--filter", f)
+	}
+
+	args = append(args, "--format", "{{json .}}")
+
+	data, err := exec.Command("docker", args...).CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	ps := types.Processes{}
+
+	jd := json.NewDecoder(bytes.NewReader(data))
+
+	for jd.More() {
+		var dps struct {
+			CreatedAt string
+			Command   string
+			ID        string
+			Labels    string
+		}
+
+		if err := jd.Decode(&dps); err != nil {
+			return nil, err
+		}
+
+		labels := map[string]string{}
+
+		for _, kv := range strings.Split(dps.Labels, ",") {
+			parts := strings.SplitN(kv, "=", 2)
+
+			if len(parts) == 2 {
+				labels[parts[0]] = parts[1]
+			}
+		}
+
+		if labels["convox.service"] == "" {
+			continue
+		}
+
+		started, err := time.Parse("2006-01-02 15:04:05 -0700 MST", dps.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, types.Process{
+			Id:      dps.ID,
+			App:     labels["convox.app"],
+			Command: strings.Trim(dps.Command, `"`),
+			Release: labels["convox.release"],
+			Service: labels["convox.service"],
+			Started: started,
+		})
+	}
+
+	return ps, nil
 }

@@ -9,8 +9,8 @@ import (
 )
 
 type PrefixWriter struct {
-	Buffer bytes.Buffer
 	Writer func(string) error
+	buffer bytes.Buffer
 }
 
 var writeLock sync.Mutex
@@ -27,10 +27,10 @@ func (m *Manifest) Writef(label string, format string, args ...interface{}) {
 
 var lock sync.Mutex
 
-func (m *Manifest) Writer(label string, w io.Writer) PrefixWriter {
+func (m *Manifest) Writer(label string, w io.Writer) *PrefixWriter {
 	prefix := []byte(fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), label))
 
-	return PrefixWriter{
+	return &PrefixWriter{
 		Writer: func(s string) error {
 			lock.Lock()
 			defer lock.Unlock()
@@ -48,20 +48,20 @@ func (m *Manifest) Writer(label string, w io.Writer) PrefixWriter {
 	}
 }
 
-func (w PrefixWriter) Write(p []byte) (int, error) {
+func (w *PrefixWriter) Write(p []byte) (int, error) {
 	q := bytes.Replace(p, []byte{10, 13}, []byte{10}, -1)
 
-	if _, err := w.Buffer.Write(q); err != nil {
+	if _, err := w.buffer.Write(q); err != nil {
 		return 0, err
 	}
 
 	for {
-		idx := bytes.Index(w.Buffer.Bytes(), []byte{10})
+		idx := bytes.Index(w.buffer.Bytes(), []byte{10})
 		if idx == -1 {
 			break
 		}
 
-		if err := w.Writer(string(w.Buffer.Next(idx + 1))); err != nil {
+		if err := w.Writer(string(w.buffer.Next(idx + 1))); err != nil {
 			return 0, err
 		}
 	}
@@ -75,7 +75,7 @@ func (w PrefixWriter) Writef(format string, args ...interface{}) error {
 }
 
 func (m *Manifest) prefixLength() int {
-	max := 6 // convox
+	max := 7 // "release"
 
 	for _, s := range m.Services {
 		if len(s.Name) > max {

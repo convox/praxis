@@ -50,6 +50,13 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, err
 	}
 
+	sys, err := p.SystemGet()
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("sys = %+v\n", sys)
+
 	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{
@@ -58,7 +65,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 			"BUILD_PUSH": fmt.Sprintf("%s/%s", ar.Hostname, repo),
 		},
 		Name:    fmt.Sprintf("%s-%s-build-%s", p.Rack, app, id),
-		Image:   "convox/praxis:test8",
+		Image:   sys.Image,
 		Service: "build",
 		Volumes: map[string]string{
 			"/var/run/docker.sock": "/var/run/docker.sock",
@@ -129,6 +136,8 @@ func (p *Provider) BuildLogs(app, id string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("build = %+v\n", build)
 
 	switch build.Status {
 	case "running":

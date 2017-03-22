@@ -1,7 +1,9 @@
 package local
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 
@@ -25,12 +27,23 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 	return app, nil
 }
 
-func (p *Provider) AppDelete(name string) error {
-	if _, err := p.AppGet(name); err != nil {
+func (p *Provider) AppDelete(app string) error {
+	pss, err := p.ProcessList(app, types.ProcessListOptions{})
+	if err != nil {
 		return err
 	}
 
-	return p.DeleteAll(fmt.Sprintf("apps/%s", name))
+	for _, ps := range pss {
+		if err := p.ProcessStop(app, ps.Id); err != nil {
+			return err
+		}
+	}
+
+	if _, err := p.AppGet(app); err != nil {
+		return err
+	}
+
+	return p.DeleteAll(fmt.Sprintf("apps/%s", app))
 }
 
 func (p *Provider) AppGet(name string) (*types.App, error) {
@@ -66,4 +79,33 @@ func (p *Provider) AppList() (types.Apps, error) {
 	sort.Slice(apps, func(i, j int) bool { return apps[i].Name < apps[j].Name })
 
 	return apps, nil
+}
+
+func (p *Provider) AppLogs(app string) (io.ReadCloser, error) {
+	pss, err := p.ProcessList(app, types.ProcessListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	r, w := io.Pipe()
+
+	for _, ps := range pss {
+		go p.processLogs(app, ps, w)
+	}
+
+	return r, nil
+}
+
+func (p *Provider) processLogs(app string, ps types.Process, w io.Writer) {
+	r, err := p.ProcessLogs(app, ps.Id)
+	if err != nil {
+		w.Write([]byte(fmt.Sprintf("error: %s\n", err)))
+		return
+	}
+
+	s := bufio.NewScanner(r)
+
+	for s.Scan() {
+		w.Write([]byte(fmt.Sprintf("[%s.%s] %s\n", ps.Service, ps.Id, s.Text())))
+	}
 }

@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -84,6 +85,10 @@ func (p *Provider) AppList() (types.Apps, error) {
 	}
 
 	return apps, nil
+}
+
+func (p *Provider) AppLogs(name string) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("unimplemented")
 }
 
 func (p *Provider) appFromStack(stack *cloudformation.Stack) *types.App {

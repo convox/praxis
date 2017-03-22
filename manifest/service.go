@@ -4,6 +4,8 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"strings"
+
+	"github.com/convox/praxis/types"
 )
 
 type Service struct {
@@ -27,23 +29,21 @@ func (s Service) BuildHash() string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(fmt.Sprintf("build[path=%q, args=%v] image=%q", s.Build.Path, s.Build.Args, s.Image))))
 }
 
-func (s Service) Env(env []string) (map[string]string, error) {
+func (s Service) Env(env types.Environment) (map[string]string, error) {
 	full := map[string]string{}
-
-	penv := parseEnv(env)
 
 	for _, e := range s.Environment {
 		parts := strings.SplitN(e, "=", 2)
 
 		switch len(parts) {
 		case 1:
-			v, ok := penv[parts[0]]
+			v, ok := env[parts[0]]
 			if !ok {
 				return nil, fmt.Errorf("required env: %s", parts[0])
 			}
 			full[parts[0]] = v
 		case 2:
-			v, ok := penv[parts[0]]
+			v, ok := env[parts[0]]
 			if ok {
 				full[parts[0]] = v
 			} else {
@@ -57,7 +57,7 @@ func (s Service) Env(env []string) (map[string]string, error) {
 	return full, nil
 }
 
-func (s *Service) Validate(env []string) error {
+func (s *Service) Validate(env map[string]string) error {
 	if _, err := s.Env(env); err != nil {
 		return err
 	}

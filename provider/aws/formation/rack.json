@@ -316,6 +316,9 @@
         "ContainerDefinitions": [
           {
             "Command": [ "bin/rack" ],
+            "Environment": [
+              { "Name": "VERSION", "Value": { "Ref": "Version" } }
+            ],
             "Essential": "true",
             "Image": { "Fn::Sub": "convox/praxis:${Version}" },
             "LogConfiguration": {

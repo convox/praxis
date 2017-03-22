@@ -44,6 +44,10 @@ func main() {
 }
 
 func appName(c *cli.Context, dir string) (string, error) {
+	if app := c.String("app"); app != "" {
+		return app, nil
+	}
+
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		return "", err

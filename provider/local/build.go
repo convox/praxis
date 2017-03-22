@@ -40,6 +40,11 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, err
 	}
 
+	sys, err := p.SystemGet()
+	if err != nil {
+		return nil, err
+	}
+
 	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{
@@ -47,7 +52,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 			"BUILD_AUTH": base64.StdEncoding.EncodeToString(auth),
 		},
 		Name:    fmt.Sprintf("%s-build-%s", app, id),
-		Image:   "convox/praxis:test8",
+		Image:   sys.Image,
 		Service: "build",
 		Volumes: map[string]string{
 			"/var/run/docker.sock": "/var/run/docker.sock",

@@ -20,11 +20,19 @@ func init() {
 		Name:        "builds",
 		Description: "list builds",
 		Action:      runBuilds,
-	})
-	stdcli.RegisterCommand(cli.Command{
-		Name:        "build",
-		Description: "build the application",
-		Action:      runBuild,
+		Flags: []cli.Flag{
+			appFlag,
+		},
+		Subcommands: []cli.Command{
+			cli.Command{
+				Name:        "logs",
+				Description: "show build logs",
+				Action:      runBuildsLogs,
+				Flags: []cli.Flag{
+					appFlag,
+				},
+			},
+		},
 	})
 }
 
@@ -62,32 +70,24 @@ func runBuilds(c *cli.Context) error {
 	return nil
 }
 
-func runBuild(c *cli.Context) error {
+func runBuildsLogs(c *cli.Context) error {
+	if len(c.Args()) != 1 {
+		return stdcli.Usage(c)
+	}
+
+	id := c.Args()[0]
+
 	app, err := appName(c, ".")
 	if err != nil {
 		return err
 	}
 
-	a, err := Rack.AppGet(app)
+	logs, err := Rack.BuildLogs(app, id)
 	if err != nil {
 		return err
 	}
 
-	if a.Status != "running" {
-		return fmt.Errorf("cannot build while app is %s", a.Status)
-	}
-
-	build, err := buildDirectory(app, ".", os.Stdout)
-	if err != nil {
-		return err
-	}
-
-	if err := buildLogs(build, os.Stdout); err != nil {
-		return err
-	}
-
-	build, err = Rack.BuildGet(app, build.Id)
-	if err != nil {
+	if _, err := io.Copy(os.Stdout, logs); err != nil {
 		return err
 	}
 
@@ -113,7 +113,7 @@ func buildDirectory(app, dir string, w io.Writer) (*types.Build, error) {
 		return nil, err
 	}
 
-	fmt.Fprintf(w, "starting build\n")
+	fmt.Fprintf(w, "starting build: ")
 
 	build, err := Rack.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key), types.BuildCreateOptions{})
 	if err != nil {
@@ -123,6 +123,13 @@ func buildDirectory(app, dir string, w io.Writer) (*types.Build, error) {
 	if err := tickWithTimeout(2*time.Second, 5*time.Minute, notBuildStatus(app, build.Id, "created")); err != nil {
 		return nil, err
 	}
+
+	build, err = Rack.BuildGet(app, build.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Fprintf(w, "%s\n", build.Process)
 
 	return build, nil
 }

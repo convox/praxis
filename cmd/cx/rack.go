@@ -106,6 +106,7 @@ func rackCommand(version string) (*exec.Cmd, error) {
 	exec.Command("docker", "rm", "-f", "rack").Run()
 
 	args := []string{"run"}
+	args = append(args, "-e", fmt.Sprintf("VERSION=%s", version))
 	args = append(args, "-i", "--rm", "--name=rack")
 	args = append(args, "-p", "5443:3000")
 	args = append(args, "-v", fmt.Sprintf("%s:/var/convox", filepath.Join(home, ".convox", "local")))

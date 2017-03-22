@@ -112,8 +112,8 @@ func auth() error {
 	}
 
 	for _, r := range registries {
-		if err := exec.Command("docker", "login", "-u", r.Username, "-p", r.Password, r.Hostname); err != nil {
-			return fmt.Errorf("unable to authenticate with registry: %s", r.Hostname)
+		if err := exec.Command("docker", "login", "-u", r.Username, "-p", r.Password, r.Hostname).Run(); err != nil {
+			return fmt.Errorf("unable to authenticate with registry: %s: %s", r.Hostname, err)
 		}
 	}
 

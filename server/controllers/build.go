@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/convox/api"
@@ -27,6 +28,10 @@ func BuildGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	id := c.Var("id")
 
+	if _, err := Provider.AppGet(app); err != nil {
+		return err
+	}
+
 	build, err := Provider.BuildGet(app, id)
 	if err != nil {
 		return err
@@ -38,10 +43,16 @@ func BuildGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 func BuildList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 
+	if _, err := Provider.AppGet(app); err != nil {
+		return err
+	}
+
 	builds, err := Provider.BuildList(app)
 	if err != nil {
 		return err
 	}
+
+	sort.Slice(builds, func(i, j int) bool { return builds[j].Created.Before(builds[i].Created) })
 
 	return c.RenderJSON(builds)
 }
@@ -49,6 +60,10 @@ func BuildList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 func BuildLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	id := c.Var("id")
+
+	if _, err := Provider.AppGet(app); err != nil {
+		return err
+	}
 
 	logs, err := Provider.BuildLogs(app, id)
 	if err != nil {
@@ -69,6 +84,10 @@ func BuildUpdate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	app := c.Var("app")
 	id := c.Var("id")
+
+	if _, err := Provider.AppGet(app); err != nil {
+		return err
+	}
 
 	manifest := c.Form("manifest")
 	release := c.Form("release")

@@ -3,6 +3,7 @@ package aws
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -29,7 +30,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 }
 
 func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
-	return nil, nil
+	return nil, fmt.Errorf("unimplemented")
 }
 
 func (p *Provider) ReleaseList(app string) (types.Releases, error) {
@@ -60,8 +61,8 @@ func (p *Provider) ReleaseList(app string) (types.Releases, error) {
 	return releases, nil
 }
 
-func (p *Provider) ReleasePromote(app, id string) error {
-	return nil
+func (p *Provider) ReleaseLogs(app, id string) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("unimplemented")
 }
 
 func releaseFromItem(item *simpledb.Item) (*types.Release, error) {

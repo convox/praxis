@@ -15,7 +15,7 @@ type Provider interface {
 	AppDelete(name string) error
 	AppGet(name string) (*types.App, error)
 	AppList() (types.Apps, error)
-	// AppLogs(app string, opts types.AppLogsOptions) (io.ReadCloser, error)
+	AppLogs(app string) (io.ReadCloser, error)
 
 	BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error)
 	// BuildExport(app, id string, w io.Writer) error
@@ -30,9 +30,9 @@ type Provider interface {
 	// CertificateGenerate(domains []string) (*structs.Certificate, error)
 	// CertificateList() (structs.Certificates, error)
 
-	// EnvironmentDelete(app string, key string) error
-	// EnvironmentGet(app string) (structs.Environment, error)
-	// EnvironmentSet(app string, env types.Environment) error
+	EnvironmentDelete(app string, key string) error
+	EnvironmentGet(app string) (types.Environment, error)
+	EnvironmentSet(app string, env types.Environment) error
 
 	FilesDelete(app, pid string, files []string) error
 	FilesUpload(app, pid string, r io.Reader) error
@@ -73,13 +73,12 @@ type Provider interface {
 	ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error)
 	ReleaseGet(app, id string) (*types.Release, error)
 	ReleaseList(app string) (types.Releases, error)
-	ReleasePromote(app, id string) error
+	ReleaseLogs(app, id string) (io.ReadCloser, error)
 
 	SystemGet() (*types.System, error)
 	// SystemLogs() (io.ReadCloser, error)
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
-	// SystemScale(class string)
-	// SystemUpdate(version string) error
+	// SystemUpdate(opts types.SystemUpdateOptions) error
 
 	TableCreate(app, name string, opts types.TableCreateOptions) error
 	TableGet(app, table string) (*types.Table, error)

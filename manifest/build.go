@@ -41,7 +41,7 @@ func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
 		tags[hash] = to
 
 		if opts.Push != "" {
-			pushes[to] = fmt.Sprintf("%s/%s:%s", opts.Push, s.Name, tag)
+			pushes[to] = fmt.Sprintf("%s:%s.%s", opts.Push, s.Name, tag)
 		}
 	}
 

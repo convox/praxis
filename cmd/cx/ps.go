@@ -1,10 +1,9 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
+	"github.com/convox/rack/cmd/convox/helpers"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -20,10 +19,23 @@ func init() {
 }
 
 func runPs(c *cli.Context) error {
-	ps, err := Rack.ProcessList(c.String("app"), types.ProcessListOptions{})
+	app, err := appName(c, ".")
+	if err != nil {
+		return err
+	}
 
-	fmt.Printf("ps = %+v\n", ps)
-	fmt.Printf("err = %+v\n", err)
+	ps, err := Rack.ProcessList(app, types.ProcessListOptions{})
+	if err != nil {
+		return err
+	}
+
+	t := stdcli.NewTable("ID", "SERVICE", "RELEASE", "STARTED", "COMMAND")
+
+	for _, p := range ps {
+		t.AddRow(p.Id, p.Service, p.Release, helpers.HumanizeTime(p.Started), p.Command)
+	}
+
+	t.Print()
 
 	return nil
 }

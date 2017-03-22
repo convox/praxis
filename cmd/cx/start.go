@@ -2,13 +2,14 @@ package main
 
 import (
 	"archive/tar"
+	"bufio"
 	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -19,6 +20,10 @@ import (
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
 	cli "gopkg.in/urfave/cli.v1"
+)
+
+var (
+	reAppLog = regexp.MustCompile(`^\[([^.]+)\.([^\]]+)\] (.*)$`)
 )
 
 func init() {
@@ -44,7 +49,7 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	env, err := manifest.LoadEnvironment(".env")
+	env, err := Rack.EnvironmentGet(app)
 	if err != nil {
 		return err
 	}
@@ -61,41 +66,64 @@ func runStart(c *cli.Context) error {
 
 	bw := types.Stream{Writer: m.Writer("build", os.Stdout)}
 
-	build, err := buildDirectory(app, ".", bw)
+	b, err := buildDirectory(app, ".", bw)
 	if err != nil {
 		return err
 	}
 
-	if err := buildLogs(build, bw); err != nil {
+	if err := buildLogs(b, bw); err != nil {
 		return err
 	}
 
-	build, err = Rack.BuildGet(app, build.Id)
+	b, err = Rack.BuildGet(app, b.Id)
 	if err != nil {
 		return err
 	}
 
-	if err := Rack.ReleasePromote(app, build.Release); err != nil {
-		return err
-	}
-
-	switch build.Status {
+	switch b.Status {
 	case "created", "running", "complete":
 	case "failed":
 		return fmt.Errorf("build failed")
 	default:
-		return fmt.Errorf("unknown build status: %s", build.Status)
+		return fmt.Errorf("unknown build status: %s", b.Status)
+	}
+
+	rw := types.Stream{Writer: m.Writer("release", os.Stdout)}
+
+	if err := releaseLogs(app, b.Release, rw); err != nil {
+		return err
+	}
+
+	r, err := Rack.ReleaseGet(app, b.Release)
+	if err != nil {
+		return err
+	}
+
+	switch r.Status {
+	case "created", "promoting", "complete":
+	case "failed":
+		return fmt.Errorf("release failed: %s", r.Error)
+	default:
+		return fmt.Errorf("unknown release status: %s", r.Status)
 	}
 
 	for _, s := range m.Services {
-		m.Writef("convox", "starting: %s\n", s.Name)
-
-		go startService(m, app, s.Name, build.Release, env, ch)
 		go watchChanges(m, app, s.Name, ch)
 	}
 
-	for _, b := range m.Balancers {
-		go startBalancer(app, b, ch)
+	logs, err := Rack.AppLogs(app)
+	if err != nil {
+		return err
+	}
+
+	ls := bufio.NewScanner(logs)
+
+	for ls.Scan() {
+		match := reAppLog.FindStringSubmatch(ls.Text())
+
+		if len(match) == 4 {
+			m.Writef(match[1], "%s\n", match[3])
+		}
 	}
 
 	return <-ch
@@ -132,84 +160,6 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 	m.Writef("convox", "stopped\n")
 
 	os.Exit(0)
-}
-
-func startService(m *manifest.Manifest, app, service, release string, env []string, ch chan error) {
-	w := m.Writer(service, os.Stdout)
-
-	pss, err := Rack.ProcessList(app, types.ProcessListOptions{Service: service})
-	if err != nil {
-		ch <- err
-		return
-	}
-
-	for _, ps := range pss {
-		if err := Rack.ProcessStop(app, ps.Id); err != nil {
-			ch <- err
-			return
-		}
-	}
-
-	s, err := m.Services.Find(service)
-	if err != nil {
-		ch <- err
-		return
-	}
-
-	senv, err := s.Env(env)
-	if err != nil {
-		ch <- err
-		return
-	}
-
-	_, err = Rack.ProcessRun(app, types.ProcessRunOptions{
-		Environment: senv,
-		Release:     release,
-		Service:     service,
-		Stream: types.Stream{
-			Reader: nil,
-			Writer: w,
-		},
-	})
-
-	ch <- err
-}
-
-func startBalancer(app string, balancer manifest.Balancer, ch chan error) {
-	for _, e := range balancer.Endpoints {
-		name := fmt.Sprintf("balancer-%s-%s-%s", app, balancer.Name, e.Port)
-
-		command := ""
-
-		switch {
-		case e.Redirect != "":
-			command = fmt.Sprintf("proxy %s redirect %s", e.Protocol, e.Redirect)
-		case e.Target != "":
-			command = fmt.Sprintf("proxy %s target %s", e.Protocol, e.Target)
-		default:
-			ch <- fmt.Errorf("invalid balancer endpoint: %s:%s", balancer.Name, e.Port)
-			return
-		}
-
-		port, err := strconv.Atoi(e.Port)
-		if err != nil {
-			ch <- err
-			return
-		}
-
-		opts := types.ProcessRunOptions{
-			Command: command,
-			Image:   "convox/praxis:test8",
-			Name:    name,
-			Ports:   map[int]int{port: 3000},
-			Stream:  types.Stream{Writer: os.Stdout},
-		}
-
-		if _, err := Rack.ProcessStart(app, opts); err != nil {
-			ch <- err
-			return
-		}
-	}
 }
 
 func watchChanges(m *manifest.Manifest, app, service string, ch chan error) {
