@@ -13,6 +13,7 @@ import (
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
+	shellquote "github.com/kballard/go-shellquote"
 )
 
 func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
@@ -122,6 +123,8 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 
 	args = append(args, oargs...)
 
+	fmt.Printf("args = %+v\n", args)
+
 	data, err := exec.Command("docker", args...).CombinedOutput()
 	if err != nil {
 		return "", err
@@ -203,7 +206,14 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	args = append(args, image)
 
 	if opts.Command != "" {
-		args = append(args, "sh", "-c", opts.Command)
+		cp, err := shellquote.Split(opts.Command)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Printf("cp = %+v\n", cp)
+
+		args = append(args, cp...)
 	}
 
 	return args, nil
