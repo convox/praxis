@@ -12,6 +12,7 @@ type Service struct {
 	Name string
 
 	Build       ServiceBuild
+	Command     string
 	Environment []string
 	Image       string
 	Test        string
