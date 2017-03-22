@@ -11,7 +11,24 @@ func EnvironmentDelete(w http.ResponseWriter, r *http.Request, c *api.Context) e
 	app := c.Var("app")
 	key := c.Var("key")
 
-	return Provider.EnvironmentDelete(app, key)
+	err := Provider.EnvironmentUnset(app, key)
+	if err != nil {
+		return err
+	}
+
+	e, err := Provider.EnvironmentGet(app)
+	if err != nil {
+		return err
+	}
+
+	rl, err := Provider.ReleaseCreate(app, types.ReleaseCreateOptions{Env: e})
+	if err != nil {
+		return err
+	}
+
+	w.Header().Add("Release", rl.Id)
+
+	return nil
 }
 
 func EnvironmentGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {

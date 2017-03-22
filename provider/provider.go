@@ -30,9 +30,9 @@ type Provider interface {
 	// CertificateGenerate(domains []string) (*structs.Certificate, error)
 	// CertificateList() (structs.Certificates, error)
 
-	EnvironmentDelete(app string, key string) error
 	EnvironmentGet(app string) (types.Environment, error)
 	EnvironmentSet(app string, env types.Environment) error
+	EnvironmentUnset(app string, key string) error
 
 	FilesDelete(app, pid string, files []string) error
 	FilesUpload(app, pid string, r io.Reader) error
