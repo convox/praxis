@@ -277,6 +277,7 @@ func (p *Provider) startService(m *manifest.Manifest, app, service, release stri
 	}
 
 	_, err = p.ProcessStart(app, types.ProcessRunOptions{
+		Command:     s.Command,
 		Environment: senv,
 		Release:     release,
 		Service:     service,
