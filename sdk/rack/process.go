@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/convox/praxis/types"
 )
@@ -16,7 +17,7 @@ func (c *Client) ProcessGet(app, pid string) (ps *types.Process, err error) {
 
 func (c *Client) ProcessList(app string, opts types.ProcessListOptions) (ps types.Processes, err error) {
 	ro := RequestOptions{
-		Params: Params{
+		Query: Query{
 			"service": opts.Service,
 		},
 	}
@@ -41,13 +42,30 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 		ev.Add(k, v)
 	}
 
+	pv := url.Values{}
+
+	for k, v := range opts.Ports {
+		pv.Add(fmt.Sprintf("%d", k), fmt.Sprintf("%d", v))
+	}
+
+	vv := url.Values{}
+
+	for k, v := range opts.Volumes {
+		vv.Add(k, v)
+	}
+
 	ro := RequestOptions{
 		Body: opts.Stream,
 		Headers: Headers{
 			"Command":     opts.Command,
 			"Environment": ev.Encode(),
+			"Image":       opts.Image,
+			"Links":       strings.Join(opts.Links, ","),
+			"Name":        opts.Name,
+			"Ports":       pv.Encode(),
 			"Release":     opts.Release,
 			"Service":     opts.Service,
+			"Volumes":     vv.Encode(),
 		},
 	}
 
@@ -77,19 +95,36 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 	return 0, nil
 }
 
-func (c *Client) ProcessStart(app string, opts types.ProcessStartOptions) (string, error) {
+func (c *Client) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
 	ev := url.Values{}
 
 	for k, v := range opts.Environment {
 		ev.Add(k, v)
 	}
 
+	pv := url.Values{}
+
+	for k, v := range opts.Ports {
+		pv.Add(fmt.Sprintf("%d", k), fmt.Sprintf("%d", v))
+	}
+
+	vv := url.Values{}
+
+	for k, v := range opts.Volumes {
+		vv.Add(k, v)
+	}
+
 	ro := RequestOptions{
 		Params: Params{
 			"command":     opts.Command,
 			"environment": ev.Encode(),
+			"image":       opts.Image,
+			"links":       strings.Join(opts.Links, ","),
+			"name":        opts.Name,
+			"ports":       pv.Encode(),
 			"release":     opts.Release,
 			"service":     opts.Service,
+			"volumes":     vv.Encode(),
 		},
 	}
 

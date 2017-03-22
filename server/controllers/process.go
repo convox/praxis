@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/convox/api"
 	"github.com/convox/praxis/types"
@@ -24,9 +25,7 @@ func ProcessGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 func ProcessList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
-	service := c.Form("service")
-
-	c.LogParams("service")
+	service := c.Query("service")
 
 	_, err := Provider.AppGet(app)
 	if err != nil {
@@ -63,29 +62,69 @@ func ProcessLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 func ProcessRun(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
-	release := c.Header("Release")
-	service := c.Header("Service")
+
 	command := c.Header("Command")
 	height := c.Header("Height")
+	image := c.Header("Image")
+	links := c.Header("Links")
+	name := c.Header("Name")
+	release := c.Header("Release")
+	service := c.Header("Service")
 	width := c.Header("Width")
 
-	uenv, err := url.ParseQuery(c.Header("Environment"))
+	env := map[string]string{}
+
+	ev, err := url.ParseQuery(c.Header("Environment"))
 	if err != nil {
 		return err
 	}
 
-	env := map[string]string{}
+	for k := range ev {
+		env[k] = ev.Get(k)
+	}
 
-	for k := range uenv {
-		env[k] = uenv.Get(k)
+	ports := map[int]int{}
+
+	pv, err := url.ParseQuery(c.Header("Ports"))
+	if err != nil {
+		return err
+	}
+
+	for k := range pv {
+		ki, err := strconv.Atoi(k)
+		if err != nil {
+			return err
+		}
+
+		vi, err := strconv.Atoi(pv.Get(k))
+		if err != nil {
+			return err
+		}
+
+		ports[ki] = vi
+	}
+
+	volumes := map[string]string{}
+
+	vv, err := url.ParseQuery(c.Header("Volumes"))
+	if err != nil {
+		return err
+	}
+
+	for k := range vv {
+		volumes[k] = vv.Get(k)
 	}
 
 	opts := types.ProcessRunOptions{
 		Command:     command,
 		Environment: env,
+		Image:       image,
+		Name:        name,
+		Ports:       ports,
 		Release:     release,
 		Service:     service,
 		Stream:      types.Stream{Reader: r.Body, Writer: w},
+		Volumes:     volumes,
 	}
 
 	if height != "" {
@@ -104,6 +143,10 @@ func ProcessRun(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		}
 
 		opts.Width = w
+	}
+
+	if links != "" {
+		opts.Links = strings.Split(links, ",")
 	}
 
 	if opts.Release == "" {
@@ -133,25 +176,68 @@ func ProcessRun(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 func ProcessStart(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	command := c.Form("command")
+	image := c.Form("image")
+	links := c.Form("links")
+	name := c.Form("name")
 	release := c.Form("release")
 	service := c.Form("service")
 
-	uenv, err := url.ParseQuery(c.Form("environment"))
+	env := map[string]string{}
+
+	ev, err := url.ParseQuery(c.Form("environment"))
 	if err != nil {
 		return err
 	}
 
-	env := map[string]string{}
-
-	for k := range uenv {
-		env[k] = uenv.Get(k)
+	for k := range ev {
+		env[k] = ev.Get(k)
 	}
 
-	opts := types.ProcessStartOptions{
+	ports := map[int]int{}
+
+	pv, err := url.ParseQuery(c.Form("ports"))
+	if err != nil {
+		return err
+	}
+
+	for k := range pv {
+		ki, err := strconv.Atoi(k)
+		if err != nil {
+			return err
+		}
+
+		vi, err := strconv.Atoi(pv.Get(k))
+		if err != nil {
+			return err
+		}
+
+		ports[ki] = vi
+	}
+
+	volumes := map[string]string{}
+
+	vv, err := url.ParseQuery(c.Form("volumes"))
+	if err != nil {
+		return err
+	}
+
+	for k := range vv {
+		volumes[k] = vv.Get(k)
+	}
+
+	opts := types.ProcessRunOptions{
 		Command:     command,
 		Environment: env,
+		Image:       image,
+		Name:        name,
+		Ports:       ports,
 		Release:     release,
 		Service:     service,
+		Volumes:     volumes,
+	}
+
+	if links != "" {
+		opts.Links = strings.Split(links, ",")
 	}
 
 	if opts.Release == "" {

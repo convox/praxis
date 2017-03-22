@@ -48,3 +48,24 @@ func AppList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	return c.RenderJSON(apps)
 }
+
+func AppLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+
+	if _, err := Provider.AppGet(app); err != nil {
+		return err
+	}
+
+	logs, err := Provider.AppLogs(app)
+	if err != nil {
+		return err
+	}
+
+	w.WriteHeader(200)
+
+	if err := stream(w, logs); err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -21,6 +21,12 @@ func init() {
 		Action:      runRack,
 		Subcommands: cli.Commands{
 			cli.Command{
+				Name:        "install",
+				Description: "install a rack",
+				Action:      runRackInstall,
+				Usage:       "<name>",
+			},
+			cli.Command{
 				Name:        "start",
 				Description: "start a local rack",
 				Action:      runRackStart,
@@ -44,6 +50,25 @@ func runRack(c *cli.Context) error {
 	fmt.Printf("rack = %+v\n", rack)
 
 	return nil
+}
+
+func runRackInstall(c *cli.Context) error {
+	if len(c.Args()) != 1 {
+		return stdcli.Usage(c)
+	}
+
+	name := c.Args()[0]
+	version := "test"
+	key := "foo"
+
+	template := fmt.Sprintf("https://s3.amazonaws.com/praxis-releases/release/%s/formation/rack.json", version)
+
+	cmd := exec.Command("aws", "cloudformation", "create-stack", "--stack-name", name, "--template-url", template, "--parameters", fmt.Sprintf("ParameterKey=ApiKey,ParameterValue=%s", key), "--capabilities", "CAPABILITY_IAM")
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }
 
 func runRackStart(c *cli.Context) error {
@@ -81,6 +106,7 @@ func rackCommand(version string) (*exec.Cmd, error) {
 	exec.Command("docker", "rm", "-f", "rack").Run()
 
 	args := []string{"run"}
+	args = append(args, "-e", fmt.Sprintf("VERSION=%s", version))
 	args = append(args, "-i", "--rm", "--name=rack")
 	args = append(args, "-p", "5443:3000")
 	args = append(args, "-v", fmt.Sprintf("%s:/var/convox", filepath.Join(home, ".convox", "local")))

@@ -35,7 +35,13 @@ func runApps(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("apps = %+v\n", apps)
+	t := stdcli.NewTable("NAME", "STATUS")
+
+	for _, app := range apps {
+		t.AddRow(app.Name, app.Status)
+	}
+
+	t.Print()
 
 	return nil
 }

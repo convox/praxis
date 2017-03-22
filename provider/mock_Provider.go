@@ -92,6 +92,29 @@ func (_m *MockProvider) AppList() (types.Apps, error) {
 	return r0, r1
 }
 
+// AppLogs provides a mock function with given fields: app
+func (_m *MockProvider) AppLogs(app string) (io.ReadCloser, error) {
+	ret := _m.Called(app)
+
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(string) io.ReadCloser); ok {
+		r0 = rf(app)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadCloser)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(app)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // BuildCreate provides a mock function with given fields: app, url, opts
 func (_m *MockProvider) BuildCreate(app string, url string, opts types.BuildCreateOptions) (*types.Build, error) {
 	ret := _m.Called(app, url, opts)
@@ -131,6 +154,29 @@ func (_m *MockProvider) BuildGet(app string, id string) (*types.Build, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string) error); ok {
 		r1 = rf(app, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// BuildList provides a mock function with given fields: app
+func (_m *MockProvider) BuildList(app string) (types.Builds, error) {
+	ret := _m.Called(app)
+
+	var r0 types.Builds
+	if rf, ok := ret.Get(0).(func(string) types.Builds); ok {
+		r0 = rf(app)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Builds)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(app)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -182,6 +228,57 @@ func (_m *MockProvider) BuildUpdate(app string, id string, opts types.BuildUpdat
 	}
 
 	return r0, r1
+}
+
+// EnvironmentDelete provides a mock function with given fields: app, key
+func (_m *MockProvider) EnvironmentDelete(app string, key string) error {
+	ret := _m.Called(app, key)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(app, key)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// EnvironmentGet provides a mock function with given fields: app
+func (_m *MockProvider) EnvironmentGet(app string) (types.Environment, error) {
+	ret := _m.Called(app)
+
+	var r0 types.Environment
+	if rf, ok := ret.Get(0).(func(string) types.Environment); ok {
+		r0 = rf(app)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Environment)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(app)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// EnvironmentSet provides a mock function with given fields: app, env
+func (_m *MockProvider) EnvironmentSet(app string, env types.Environment) error {
+	ret := _m.Called(app, env)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, types.Environment) error); ok {
+		r0 = rf(app, env)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // FilesDelete provides a mock function with given fields: app, pid, files
@@ -395,18 +492,18 @@ func (_m *MockProvider) ProcessRun(app string, opts types.ProcessRunOptions) (in
 }
 
 // ProcessStart provides a mock function with given fields: app, opts
-func (_m *MockProvider) ProcessStart(app string, opts types.ProcessStartOptions) (string, error) {
+func (_m *MockProvider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
 	ret := _m.Called(app, opts)
 
 	var r0 string
-	if rf, ok := ret.Get(0).(func(string, types.ProcessStartOptions) string); ok {
+	if rf, ok := ret.Get(0).(func(string, types.ProcessRunOptions) string); ok {
 		r0 = rf(app, opts)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, types.ProcessStartOptions) error); ok {
+	if rf, ok := ret.Get(1).(func(string, types.ProcessRunOptions) error); ok {
 		r1 = rf(app, opts)
 	} else {
 		r1 = ret.Error(1)
@@ -489,6 +586,66 @@ func (_m *MockProvider) QueueStore(app string, queue string, attrs map[string]st
 	return r0
 }
 
+// RegistryAdd provides a mock function with given fields: server, username, password
+func (_m *MockProvider) RegistryAdd(server string, username string, password string) (*types.Registry, error) {
+	ret := _m.Called(server, username, password)
+
+	var r0 *types.Registry
+	if rf, ok := ret.Get(0).(func(string, string, string) *types.Registry); ok {
+		r0 = rf(server, username, password)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Registry)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = rf(server, username, password)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// RegistryList provides a mock function with given fields:
+func (_m *MockProvider) RegistryList() (types.Registries, error) {
+	ret := _m.Called()
+
+	var r0 types.Registries
+	if rf, ok := ret.Get(0).(func() types.Registries); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Registries)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// RegistryRemove provides a mock function with given fields: server
+func (_m *MockProvider) RegistryRemove(server string) error {
+	ret := _m.Called(server)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(server)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ReleaseCreate provides a mock function with given fields: app, opts
 func (_m *MockProvider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error) {
 	ret := _m.Called(app, opts)
@@ -558,18 +715,27 @@ func (_m *MockProvider) ReleaseList(app string) (types.Releases, error) {
 	return r0, r1
 }
 
-// ReleasePromote provides a mock function with given fields: app, id
-func (_m *MockProvider) ReleasePromote(app string, id string) error {
+// ReleaseLogs provides a mock function with given fields: app, id
+func (_m *MockProvider) ReleaseLogs(app string, id string) (io.ReadCloser, error) {
 	ret := _m.Called(app, id)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(string, string) io.ReadCloser); ok {
 		r0 = rf(app, id)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadCloser)
+		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // SystemGet provides a mock function with given fields:

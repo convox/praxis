@@ -4,39 +4,35 @@ import (
 	"io"
 	"os"
 
+	"github.com/convox/praxis/provider/aws"
 	"github.com/convox/praxis/provider/local"
 	"github.com/convox/praxis/types"
 )
 
 type Provider interface {
-	// Initialize(opts structs.ProviderOptions) error
-
 	// AppCancel(name string) error
 	AppCreate(name string) (*types.App, error)
 	AppDelete(name string) error
 	AppGet(name string) (*types.App, error)
 	AppList() (types.Apps, error)
+	AppLogs(app string) (io.ReadCloser, error)
 
 	BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error)
-	// BuildDelete(app, id string) (*structs.Build, error)
 	// BuildExport(app, id string, w io.Writer) error
 	BuildGet(app, id string) (*types.Build, error)
 	// BuildImport(app string, r io.Reader) (*structs.Build, error)
 	BuildLogs(app, id string) (io.ReadCloser, error)
-	// BuildList(app string, limit int64) (structs.Builds, error)
-	// BuildRelease(*structs.Build) (*structs.Release, error)
+	BuildList(app string) (types.Builds, error)
 	BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*types.Build, error)
-
-	// CapacityGet() (*structs.Capacity, error)
 
 	// CertificateCreate(pub, key, chain string) (*structs.Certificate, error)
 	// CertificateDelete(id string) error
 	// CertificateGenerate(domains []string) (*structs.Certificate, error)
 	// CertificateList() (structs.Certificates, error)
 
-	// EventSend(*structs.Event, error) error
-
-	// EnvironmentGet(app string) (structs.Environment, error)
+	EnvironmentDelete(app string, key string) error
+	EnvironmentGet(app string) (types.Environment, error)
+	EnvironmentSet(app string, env types.Environment) error
 
 	FilesDelete(app, pid string, files []string) error
 	FilesUpload(app, pid string, r io.Reader) error
@@ -51,8 +47,6 @@ type Provider interface {
 	KeyDecrypt(app, key string, data []byte) ([]byte, error)
 	KeyEncrypt(app, key string, data []byte) ([]byte, error)
 
-	// LogStream(app string, w io.Writer, opts structs.LogStreamOptions) error
-
 	// ObjectDelete(key string) error
 	// ObjectExists(key string) bool
 	ObjectFetch(app, key string) (io.ReadCloser, error)
@@ -64,27 +58,27 @@ type Provider interface {
 	ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error)
 	ProcessLogs(app, pid string) (io.ReadCloser, error)
 	ProcessRun(app string, opts types.ProcessRunOptions) (int, error)
-	ProcessStart(app string, opts types.ProcessStartOptions) (string, error)
+	ProcessStart(app string, opts types.ProcessRunOptions) (string, error)
 	ProcessStop(app, pid string) error
 
 	Proxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error)
 
-	// RegistryAdd(server, username, password string) (*structs.Registry, error)
-	// RegistryDelete(server string) error
-	// RegistryList() (structs.Registries, error)
-
 	QueueFetch(app, queue string, opts types.QueueFetchOptions) (map[string]string, error)
 	QueueStore(app, queue string, attrs map[string]string) error
+
+	RegistryAdd(server, username, password string) (*types.Registry, error)
+	RegistryList() (types.Registries, error)
+	RegistryRemove(server string) error
 
 	ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error)
 	ReleaseGet(app, id string) (*types.Release, error)
 	ReleaseList(app string) (types.Releases, error)
-	ReleasePromote(app, id string) error
+	ReleaseLogs(app, id string) (io.ReadCloser, error)
 
 	SystemGet() (*types.System, error)
-	// SystemLogs(w io.Writer, opts structs.LogStreamOptions) error
+	// SystemLogs() (io.ReadCloser, error)
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
-	// SystemSave(system structs.System) error
+	// SystemUpdate(opts types.SystemUpdateOptions) error
 
 	TableCreate(app, name string, opts types.TableCreateOptions) error
 	TableGet(app, table string) (*types.Table, error)
@@ -98,10 +92,10 @@ type Provider interface {
 }
 
 // FromEnv returns a new Provider from env vars
-func FromEnv() Provider {
+func FromEnv() (Provider, error) {
 	switch os.Getenv("PROVIDER") {
-	// case "aws":
-	//   return aws.FromEnv()
+	case "aws":
+		return aws.FromEnv()
 	default:
 		return local.FromEnv()
 	}

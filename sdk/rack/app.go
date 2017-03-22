@@ -2,6 +2,7 @@ package rack
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/convox/praxis/types"
 )
@@ -29,4 +30,13 @@ func (c *Client) AppGet(name string) (app *types.App, err error) {
 func (c *Client) AppList() (apps types.Apps, err error) {
 	err = c.Get("/apps", RequestOptions{}, &apps)
 	return
+}
+
+func (c *Client) AppLogs(app string) (io.ReadCloser, error) {
+	res, err := c.GetStream(fmt.Sprintf("/apps/%s/logs", app), RequestOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body, nil
 }

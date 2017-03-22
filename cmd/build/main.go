@@ -1,12 +1,18 @@
 package main
 
 import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/sdk/rack"
@@ -18,9 +24,14 @@ var (
 	Rack rack.Rack
 
 	flagApp      string
+	flagAuth     string
 	flagId       string
 	flagManifest string
+	flagPush     string
 	flagUrl      string
+
+	output bytes.Buffer
+	w      io.Writer
 )
 
 func init() {
@@ -29,14 +40,18 @@ func init() {
 		panic(err)
 	}
 
+	w = io.MultiWriter(os.Stdout, &output)
+
 	Rack = r
 }
 
 func main() {
 	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	fs.StringVar(&flagApp, "app", "", "app name")
+	fs.StringVar(&flagAuth, "auth", "", "registries to authenticate with")
 	fs.StringVar(&flagId, "id", "", "build id")
 	fs.StringVar(&flagManifest, "manifest", "convox.yml", "path to manifest")
+	fs.StringVar(&flagPush, "push", "", "push after build")
 	fs.StringVar(&flagUrl, "url", "", "source url")
 
 	if err := fs.Parse(os.Args[1:]); err != nil {
@@ -47,16 +62,28 @@ func main() {
 		flagApp = v
 	}
 
+	if v := os.Getenv("BUILD_AUTH"); v != "" {
+		flagAuth = v
+	}
+
 	if v := os.Getenv("BUILD_ID"); v != "" {
 		flagId = v
+	}
+
+	if v := os.Getenv("BUILD_MANIFEST"); v != "" {
+		flagManifest = v
+	}
+
+	if v := os.Getenv("BUILD_PUSH"); v != "" {
+		flagPush = v
 	}
 
 	if v := os.Getenv("BUILD_URL"); v != "" {
 		flagUrl = v
 	}
 
-	if v := os.Getenv("BUILD_MANIFEST"); v != "" {
-		flagManifest = v
+	if err := auth(); err != nil {
+		fail(err)
 	}
 
 	if err := build(); err != nil {
@@ -68,7 +95,36 @@ func main() {
 	}
 }
 
+func auth() error {
+	if flagAuth == "" {
+		return nil
+	}
+
+	var registries types.Registries
+
+	dec, err := base64.StdEncoding.DecodeString(flagAuth)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(dec, &registries); err != nil {
+		return err
+	}
+
+	for _, r := range registries {
+		if err := exec.Command("docker", "login", "-u", r.Username, "-p", r.Password, r.Hostname).Run(); err != nil {
+			return fmt.Errorf("unable to authenticate with registry: %s: %s", r.Hostname, err)
+		}
+	}
+
+	return nil
+}
+
 func build() error {
+	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Started: time.Now(), Status: "running"}); err != nil {
+		return err
+	}
+
 	tmp, err := ioutil.TempDir("", "")
 	if err != nil {
 		return err
@@ -79,7 +135,7 @@ func build() error {
 		return err
 	}
 
-	fmt.Println("preparing source")
+	fmt.Fprintf(w, "preparing source\n")
 
 	r, err := Rack.ObjectFetch(flagApp, u.Path)
 	if err != nil {
@@ -97,10 +153,6 @@ func build() error {
 		return err
 	}
 
-	if err := m.Validate([]string{}); err != nil {
-		return err
-	}
-
 	data, err := ioutil.ReadFile(mf)
 	if err != nil {
 		return err
@@ -111,9 +163,10 @@ func build() error {
 	}
 
 	opts := manifest.BuildOptions{
+		Push:   flagPush,
 		Root:   tmp,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Stdout: w,
+		Stderr: w,
 	}
 
 	if err := m.Build(flagApp, flagId, opts); err != nil {
@@ -129,24 +182,27 @@ func release() error {
 		return err
 	}
 
-	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Release: release.Id}); err != nil {
+	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Ended: time.Now(), Release: release.Id, Status: "complete"}); err != nil {
 		return err
 	}
 
-	fmt.Printf("release: %s\n", release.Id)
+	if _, err := Rack.ObjectStore(flagApp, fmt.Sprintf("convox/builds/%s/log", flagId), &output, types.ObjectStoreOptions{}); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func fail(err error) {
-	fmt.Fprintf(os.Stderr, "build error: %s\n", err)
+	fmt.Fprintf(w, "build error: %s\n", err)
 
-	opts := types.BuildUpdateOptions{
-		Status: "failed",
+	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Ended: time.Now(), Status: "failed"}); err != nil {
+		fmt.Fprintf(w, "error: could not update build: %s\n", err)
+		return
 	}
 
-	if _, err := Rack.BuildUpdate(flagApp, flagId, opts); err != nil {
-		fmt.Fprintf(os.Stderr, "error: could not update build: %s\n", err)
+	if _, err := Rack.ObjectStore(flagApp, fmt.Sprintf("convox/builds/%s/log", flagId), &output, types.ObjectStoreOptions{}); err != nil {
+		fmt.Fprintf(w, "error: could not store build logs: %s\n", err)
 		return
 	}
 

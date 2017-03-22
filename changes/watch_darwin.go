@@ -80,6 +80,7 @@ func waitForNextScan(dir string) {
 
 		select {
 		case <-ch:
+			tick = time.Tick(500 * time.Millisecond)
 			fired = true
 		case <-tick:
 			if fired {

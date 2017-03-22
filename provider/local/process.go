@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
@@ -48,61 +50,6 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 	return processList(filters, false)
 }
 
-func processList(filters []string, all bool) (types.Processes, error) {
-	args := []string{"ps"}
-
-	if all {
-		args = append(args, "-a")
-	}
-
-	for _, f := range filters {
-		args = append(args, "--filter", f)
-	}
-
-	args = append(args, "--format", "{{json .}}")
-
-	data, err := exec.Command("docker", args...).CombinedOutput()
-	if err != nil {
-		return nil, err
-	}
-
-	ps := types.Processes{}
-
-	jd := json.NewDecoder(bytes.NewReader(data))
-
-	for jd.More() {
-		var dps struct {
-			Command string
-			ID      string
-			Labels  string
-		}
-
-		if err := jd.Decode(&dps); err != nil {
-			return nil, err
-		}
-
-		labels := map[string]string{}
-
-		for _, kv := range strings.Split(dps.Labels, ",") {
-			parts := strings.SplitN(kv, "=", 2)
-
-			if len(parts) == 2 {
-				labels[parts[0]] = parts[1]
-			}
-		}
-
-		ps = append(ps, types.Process{
-			Id:      dps.ID,
-			App:     labels["convox.app"],
-			Command: strings.Trim(dps.Command, `"`),
-			Release: labels["convox.release"],
-			Service: labels["convox.service"],
-		})
-	}
-
-	return ps, nil
-}
-
 func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
 	_, err := p.ProcessGet(app, pid)
 	if err != nil {
@@ -129,47 +76,18 @@ func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
 }
 
 func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
-	release, err := p.ReleaseGet(app, opts.Release)
+	if opts.Name != "" {
+		exec.Command("docker", "rm", "-f", opts.Name).Run()
+	}
+
+	args := []string{"run"}
+
+	oargs, err := p.argsFromOpts(app, opts)
 	if err != nil {
 		return 0, err
 	}
 
-	build, err := p.BuildGet(app, release.Build)
-	if err != nil {
-		return 0, err
-	}
-
-	m, err := manifest.Load([]byte(build.Manifest))
-	if err != nil {
-		return 0, err
-	}
-
-	service, err := m.Services.Find(opts.Service)
-	if err != nil {
-		return 0, err
-	}
-
-	image := fmt.Sprintf("%s/%s:%s", app, opts.Service, release.Build)
-
-	args := []string{"run", "-i"}
-
-	for _, v := range service.Volumes {
-		args = append(args, "-v", v)
-	}
-
-	for k, v := range opts.Environment {
-		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
-	}
-
-	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
-	args = append(args, "--label", fmt.Sprintf("convox.release=%s", release.Id))
-	args = append(args, "--label", fmt.Sprintf("convox.service=%s", opts.Service))
-	args = append(args, "--link", "rack", "-e", "RACK_URL=https://rack:3000")
-	args = append(args, image)
-
-	if opts.Command != "" {
-		args = append(args, "sh", "-c", opts.Command)
-	}
+	args = append(args, oargs...)
 
 	cmd := exec.Command("docker", args...)
 
@@ -190,48 +108,19 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 	return 0, err
 }
 
-func (p *Provider) ProcessStart(app string, opts types.ProcessStartOptions) (string, error) {
-	release, err := p.ReleaseGet(app, opts.Release)
+func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
+	if opts.Name != "" {
+		exec.Command("docker", "rm", "-f", opts.Name).Run()
+	}
+
+	args := []string{"run", "--detach"}
+
+	oargs, err := p.argsFromOpts(app, opts)
 	if err != nil {
 		return "", err
 	}
 
-	build, err := p.BuildGet(app, release.Build)
-	if err != nil {
-		return "", err
-	}
-
-	m, err := manifest.Load([]byte(build.Manifest))
-	if err != nil {
-		return "", err
-	}
-
-	service, err := m.Services.Find(opts.Service)
-	if err != nil {
-		return "", err
-	}
-
-	image := fmt.Sprintf("%s/%s:%s", app, opts.Service, release.Build)
-
-	args := []string{"run", "-i", "--detach"}
-
-	for _, v := range service.Volumes {
-		args = append(args, "-v", v)
-	}
-
-	for k, v := range opts.Environment {
-		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
-	}
-
-	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
-	args = append(args, "--label", fmt.Sprintf("convox.release=%s", release.Id))
-	args = append(args, "--label", fmt.Sprintf("convox.service=%s", opts.Service))
-	args = append(args, "--link", "rack", "-e", "RACK_URL=https://rack:3000")
-	args = append(args, image)
-
-	if opts.Command != "" {
-		args = append(args, "sh", "-c", opts.Command)
-	}
+	args = append(args, oargs...)
 
 	data, err := exec.Command("docker", args...).CombinedOutput()
 	if err != nil {
@@ -243,4 +132,145 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessStartOptions) (str
 
 func (p *Provider) ProcessStop(app, pid string) error {
 	return exec.Command("docker", "stop", "-t", "2", pid).Run()
+}
+
+func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]string, error) {
+	args := []string{"-i"}
+
+	image := opts.Image
+
+	if image == "" {
+		release, err := p.ReleaseGet(app, opts.Release)
+		if err != nil {
+			return nil, err
+		}
+
+		build, err := p.BuildGet(app, release.Build)
+		if err != nil {
+			return nil, err
+		}
+
+		m, err := manifest.Load([]byte(build.Manifest))
+		if err != nil {
+			return nil, err
+		}
+
+		service, err := m.Services.Find(opts.Service)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range service.Volumes {
+			args = append(args, "-v", v)
+		}
+
+		image = fmt.Sprintf("%s/%s:%s", app, opts.Service, release.Build)
+	}
+
+	for k, v := range opts.Environment {
+		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
+	}
+
+	for _, l := range opts.Links {
+		args = append(args, "--link", l)
+	}
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
+	if opts.Name != "" {
+		args = append(args, "--name", opts.Name)
+	}
+
+	for from, to := range opts.Ports {
+		args = append(args, "-p", fmt.Sprintf("%d:%d", from, to))
+	}
+
+	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
+	args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s:3000/", hostname))
+	args = append(args, "--link", hostname)
+
+	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
+	args = append(args, "--label", fmt.Sprintf("convox.release=%s", opts.Release))
+	args = append(args, "--label", fmt.Sprintf("convox.service=%s", opts.Service))
+
+	for from, to := range opts.Volumes {
+		args = append(args, "-v", fmt.Sprintf("%s:%s", from, to))
+	}
+
+	args = append(args, image)
+
+	if opts.Command != "" {
+		args = append(args, "sh", "-c", opts.Command)
+	}
+
+	return args, nil
+}
+
+func processList(filters []string, all bool) (types.Processes, error) {
+	args := []string{"ps"}
+
+	if all {
+		args = append(args, "-a")
+	}
+
+	for _, f := range filters {
+		args = append(args, "--filter", f)
+	}
+
+	args = append(args, "--format", "{{json .}}")
+
+	data, err := exec.Command("docker", args...).CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	ps := types.Processes{}
+
+	jd := json.NewDecoder(bytes.NewReader(data))
+
+	for jd.More() {
+		var dps struct {
+			CreatedAt string
+			Command   string
+			ID        string
+			Labels    string
+		}
+
+		if err := jd.Decode(&dps); err != nil {
+			return nil, err
+		}
+
+		labels := map[string]string{}
+
+		for _, kv := range strings.Split(dps.Labels, ",") {
+			parts := strings.SplitN(kv, "=", 2)
+
+			if len(parts) == 2 {
+				labels[parts[0]] = parts[1]
+			}
+		}
+
+		if labels["convox.service"] == "" {
+			continue
+		}
+
+		started, err := time.Parse("2006-01-02 15:04:05 -0700 MST", dps.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, types.Process{
+			Id:      dps.ID,
+			App:     labels["convox.app"],
+			Command: strings.Trim(dps.Command, `"`),
+			Release: labels["convox.release"],
+			Service: labels["convox.service"],
+			Started: started,
+		})
+	}
+
+	return ps, nil
 }

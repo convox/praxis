@@ -2,13 +2,14 @@ package main
 
 import (
 	"archive/tar"
+	"bufio"
 	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -21,6 +22,10 @@ import (
 	cli "gopkg.in/urfave/cli.v1"
 )
 
+var (
+	reAppLog = regexp.MustCompile(`^\[([^.]+)\.([^\]]+)\] (.*)$`)
+)
+
 func init() {
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "start",
@@ -30,29 +35,13 @@ func init() {
 }
 
 func runStart(c *cli.Context) error {
-	if err := startLocalRack(); err != nil {
-		return err
-	}
-
-	wd, err := os.Getwd()
+	app, err := appName(c, ".")
 	if err != nil {
 		return err
 	}
 
-	abs, err := filepath.Abs(wd)
-	if err != nil {
+	if _, err := Rack.AppGet(app); err != nil {
 		return err
-	}
-
-	name := filepath.Base(abs)
-
-	app, err := Rack.AppGet(name)
-	if err != nil {
-		if strings.HasPrefix(err.Error(), "no such app:") {
-			app, err = Rack.AppCreate(name)
-		} else {
-			return err
-		}
 	}
 
 	m, err := manifest.LoadFile("convox.yml")
@@ -60,7 +49,7 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	env, err := manifest.LoadEnvironment(".env")
+	env, err := Rack.EnvironmentGet(app)
 	if err != nil {
 		return err
 	}
@@ -73,43 +62,68 @@ func runStart(c *cli.Context) error {
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	go handleSignals(sig, ch, m, app.Name)
+	go handleSignals(sig, ch, m, app)
 
-	build, err := buildDirectory(app.Name, ".")
+	bw := types.Stream{Writer: m.Writer("build", os.Stdout)}
+
+	b, err := buildDirectory(app, ".", bw)
 	if err != nil {
 		return err
 	}
 
-	if err := buildLogs(build, types.Stream{Writer: m.Writer("build", os.Stdout)}); err != nil {
+	if err := buildLogs(b, bw); err != nil {
 		return err
 	}
 
-	build, err = Rack.BuildGet(app.Name, build.Id)
+	b, err = Rack.BuildGet(app, b.Id)
 	if err != nil {
 		return err
 	}
 
-	if err := Rack.ReleasePromote(app.Name, build.Release); err != nil {
-		return err
-	}
-
-	switch build.Status {
-	case "created":
+	switch b.Status {
+	case "created", "running", "complete":
 	case "failed":
 		return fmt.Errorf("build failed")
 	default:
-		return fmt.Errorf("unknown build status: %s", build.Status)
+		return fmt.Errorf("unknown build status: %s", b.Status)
+	}
+
+	rw := types.Stream{Writer: m.Writer("release", os.Stdout)}
+
+	if err := releaseLogs(app, b.Release, rw); err != nil {
+		return err
+	}
+
+	r, err := Rack.ReleaseGet(app, b.Release)
+	if err != nil {
+		return err
+	}
+
+	switch r.Status {
+	case "created", "promoting", "complete":
+	case "failed":
+		return fmt.Errorf("release failed: %s", r.Error)
+	default:
+		return fmt.Errorf("unknown release status: %s", r.Status)
 	}
 
 	for _, s := range m.Services {
-		m.Writef("convox", "starting: %s\n", s.Name)
-
-		go startService(m, app.Name, s.Name, build.Release, env, ch)
-		go watchChanges(m, app.Name, s.Name, ch)
+		go watchChanges(m, app, s.Name, ch)
 	}
 
-	for _, b := range m.Balancers {
-		go startBalancer(app.Name, b, ch)
+	logs, err := Rack.AppLogs(app)
+	if err != nil {
+		return err
+	}
+
+	ls := bufio.NewScanner(logs)
+
+	for ls.Scan() {
+		match := reAppLog.FindStringSubmatch(ls.Text())
+
+		if len(match) == 4 {
+			m.Writef(match[1], "%s\n", match[3])
+		}
 	}
 
 	return <-ch
@@ -146,89 +160,6 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 	m.Writef("convox", "stopped\n")
 
 	os.Exit(0)
-}
-
-func startService(m *manifest.Manifest, app, service, release string, env []string, ch chan error) {
-	w := m.Writer(service, os.Stdout)
-
-	pss, err := Rack.ProcessList(app, types.ProcessListOptions{Service: service})
-	if err != nil {
-		ch <- err
-		return
-	}
-
-	for _, ps := range pss {
-		if err := Rack.ProcessStop(app, ps.Id); err != nil {
-			ch <- err
-			return
-		}
-	}
-
-	s, err := m.Services.Find(service)
-	if err != nil {
-		ch <- err
-		return
-	}
-
-	senv, err := s.Env(env)
-	if err != nil {
-		ch <- err
-		return
-	}
-
-	_, err = Rack.ProcessRun(app, types.ProcessRunOptions{
-		Environment: senv,
-		Release:     release,
-		Service:     service,
-		Stream: types.Stream{
-			Reader: nil,
-			Writer: w,
-		},
-	})
-
-	ch <- err
-}
-
-func startBalancer(app string, balancer manifest.Balancer, ch chan error) {
-	for _, e := range balancer.Endpoints {
-		name := fmt.Sprintf("balancer-%s-%s-%s", app, balancer.Name, e.Port)
-
-		exec.Command("docker", "rm", "-f", name).Run()
-
-		args := []string{"run"}
-
-		args = append(args, "--rm", "--name", name)
-		args = append(args, "-p", fmt.Sprintf("%s:3000", e.Port))
-		args = append(args, "--link", "rack")
-		args = append(args, "-e", "RACK_URL=https://rack:3000")
-		args = append(args, "-e", fmt.Sprintf("APP=%s", app))
-		args = append(args, "convox/praxis", "proxy")
-		args = append(args, e.Protocol)
-
-		switch {
-		case e.Redirect != "":
-			args = append(args, "redirect", e.Redirect)
-		case e.Target != "":
-			args = append(args, "target", e.Target)
-		default:
-			ch <- fmt.Errorf("invalid balancer endpoint: %s:%s", balancer.Name, e.Port)
-			return
-		}
-
-		// if p.Secure {
-		//   args = append(args, "secure")
-		// }
-
-		cmd := exec.Command("docker", args...)
-
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Start(); err != nil {
-			ch <- err
-			return
-		}
-	}
 }
 
 func watchChanges(m *manifest.Manifest, app, service string, ch chan error) {

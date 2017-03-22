@@ -31,15 +31,13 @@ type ProcessRunOptions struct {
 	Command     string
 	Environment map[string]string
 	Height      int
-	Width       int
+	Image       string
+	Links       []string
+	Name        string
+	Ports       map[int]int
 	Release     string
 	Service     string
 	Stream      io.ReadWriter
-}
-
-type ProcessStartOptions struct {
-	Command     string
-	Environment map[string]string
-	Release     string
-	Service     string
+	Volumes     map[string]string
+	Width       int
 }

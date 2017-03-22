@@ -1,20 +1,33 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/convox/api"
 	"github.com/convox/praxis/server/controllers"
 )
 
 func Routes(server *api.Server) {
+	server.Route("root", "GET", "/", func(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+		w.Write([]byte("ok"))
+		return nil
+	})
+
 	server.Route("app.create", "POST", "/apps", controllers.AppCreate)
 	server.Route("app.delete", "DELETE", "/apps/{name}", controllers.AppDelete)
 	server.Route("app.get", "GET", "/apps/{name}", controllers.AppGet)
 	server.Route("app.list", "GET", "/apps", controllers.AppList)
+	server.Route("app.logs", "GET", "/apps/{app}/logs", controllers.AppLogs)
 
 	server.Route("build.create", "POST", "/apps/{app}/builds", controllers.BuildCreate)
 	server.Route("build.get", "GET", "/apps/{app}/builds/{id}", controllers.BuildGet)
+	server.Route("build.list", "GET", "/apps/{app}/builds", controllers.BuildList)
 	server.Route("build.logs", "GET", "/apps/{app}/builds/{id}/logs", controllers.BuildLogs)
 	server.Route("build.update", "PUT", "/apps/{app}/builds/{id}", controllers.BuildUpdate)
+
+	server.Route("environment.delete", "DELETE", "/apps/{app}/environment/{key}", controllers.EnvironmentDelete)
+	server.Route("environment.get", "GET", "/apps/{app}/environment", controllers.EnvironmentGet)
+	server.Route("environment.set", "POST", "/apps/{app}/environment", controllers.EnvironmentSet)
 
 	server.Route("files.delete", "DELETE", "/apps/{app}/processes/{process}/files", controllers.FilesDelete)
 	server.Route("files.upload", "POST", "/apps/{app}/processes/{process}/files", controllers.FilesUpload)
@@ -37,9 +50,14 @@ func Routes(server *api.Server) {
 	server.Route("queue.fetch", "GET", "/apps/{app}/queues/{queue}", controllers.QueueFetch)
 	server.Route("queue.store", "POST", "/apps/{app}/queues/{queue}", controllers.QueueStore)
 
+	server.Route("registry.add", "POST", "/registries", controllers.RegistryAdd)
+	server.Route("registry.list", "GET", "/registries", controllers.RegistryList)
+	server.Route("registry.remove", "DELETE", "/registries/{hostname:.*}", controllers.RegistryRemove)
+
 	server.Route("release.create", "POST", "/apps/{app}/releases", controllers.ReleaseCreate)
 	server.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
-	server.Route("release.promote", "POST", "/apps/{app}/releases/{id}/promote", controllers.ReleasePromote)
+	server.Route("release.list", "GET", "/apps/{app}/releases", controllers.ReleaseList)
+	server.Route("release.logs", "GET", "/apps/{app}/releases/{id}/logs", controllers.ReleaseLogs)
 
 	server.Route("system.get", "GET", "/system", controllers.SystemGet)
 

@@ -20,10 +20,6 @@ func init() {
 }
 
 func runTest(c *cli.Context) error {
-	if err := startLocalRack(); err != nil {
-		return err
-	}
-
 	name := fmt.Sprintf("test-%d", time.Now().Unix())
 
 	app, err := Rack.AppCreate(name)
@@ -33,37 +29,28 @@ func runTest(c *cli.Context) error {
 
 	defer Rack.AppDelete(name)
 
-	build, err := buildDirectory(app.Name, ".")
-	if err != nil {
-		return err
-	}
-
 	m, err := manifest.LoadFile("convox.yml")
 	if err != nil {
 		return err
 	}
 
-	env, err := manifest.LoadEnvironment(".env")
+	env, err := Rack.EnvironmentGet(name)
 	if err != nil {
 		return err
 	}
-
-	env = append(env, fmt.Sprintf("APP=%s", name))
 
 	if err := m.Validate(env); err != nil {
 		return err
 	}
 
-	if err := buildLogs(build, types.Stream{Writer: m.Writer("build", os.Stdout)}); err != nil {
-		return err
-	}
+	bw := types.Stream{Writer: m.Writer("build", os.Stdout)}
 
-	build, err = Rack.BuildGet(app.Name, build.Id)
+	build, err := buildDirectory(app.Name, ".", bw)
 	if err != nil {
 		return err
 	}
 
-	if err := Rack.ReleasePromote(app.Name, build.Release); err != nil {
+	if err := buildLogs(build, bw); err != nil {
 		return err
 	}
 

@@ -2,6 +2,7 @@ package rack
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/convox/praxis/types"
 )
@@ -24,8 +25,18 @@ func (c *Client) ReleaseGet(app, id string) (release *types.Release, err error) 
 	return
 }
 
-func (c *Client) ReleaseList(app string) (types.Releases, error) {
-	return nil, nil
+func (c *Client) ReleaseList(app string) (releases types.Releases, err error) {
+	err = c.Get(fmt.Sprintf("/apps/%s/releases", app), RequestOptions{}, &releases)
+	return
+}
+
+func (c *Client) ReleaseLogs(app, id string) (io.ReadCloser, error) {
+	res, err := c.GetStream(fmt.Sprintf("/apps/%s/releases/%s/logs", app, id), RequestOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body, nil
 }
 
 func (c *Client) ReleasePromote(app, id string) error {

@@ -28,8 +28,8 @@ type Provider struct {
 }
 
 // FromEnv returns a new local.Provider from env vars
-func FromEnv() *Provider {
-	return &Provider{Root: coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox")}
+func FromEnv() (*Provider, error) {
+	return &Provider{Root: coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox")}, nil
 }
 
 func init() {
@@ -164,6 +164,38 @@ func (p *Provider) Logs(pid string) (io.ReadCloser, error) {
 		cmd.Wait()
 		w.Close()
 	}()
+
+	return r, nil
+}
+
+func (p *Provider) write(key string) (io.WriteCloser, error) {
+	path, err := filepath.Abs(filepath.Join(p.Root, key))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return nil, err
+	}
+
+	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_SYNC|os.O_APPEND, 0600)
+}
+
+func (p *Provider) tail(key string) (io.ReadCloser, error) {
+	path, err := filepath.Abs(filepath.Join(p.Root, key))
+	if err != nil {
+		return nil, err
+	}
+
+	r, w := io.Pipe()
+
+	cmd := exec.Command("tail", "-f", path)
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
 
 	return r, nil
 }

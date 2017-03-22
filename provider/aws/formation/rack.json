@@ -1,0 +1,343 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Mappings": {
+    "RegionConfig": {
+      "us-east-1": { "Ami": "ami-d69c74c0" },
+      "us-east-2": { "Ami": "ami-64270201" },
+      "us-west-1": { "Ami": "ami-bc90c2dc" },
+      "us-west-2": { "Ami": "ami-8e7bc4ee" },
+      "eu-west-1": { "Ami": "ami-48f9a52e" },
+      "eu-west-2": { "Ami": "ami-62aea406" },
+      "eu-central-1": { "Ami": "ami-6b428d04" },
+      "ap-northeast-1": { "Ami": "ami-372f5450" },
+      "ap-southeast-1": { "Ami": "ami-69208a0a" },
+      "ap-southeast-2": { "Ami": "ami-307f7853" },
+      "ca-central-1": { "Ami": "ami-b2e65bd6" }
+    }
+  },
+  "Outputs": {
+    "Endpoint": { "Value": { "Fn::Sub": "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/rack" } }
+  },
+  "Parameters": {
+    "ApiKey": {
+      "Description": "API key",
+      "MinLength": "1",
+      "NoEcho": true,
+      "Type": "String"
+    },
+    "Version": {
+      "Description": "Release version",
+      "MinLength" : "1",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "Network": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": { "Fn::Sub": "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/network.json" }
+      }
+    },
+    "LogGroup": {
+      "Type": "AWS::Logs::LogGroup"
+    },
+    "Registries": {
+      "Type": "AWS::SDB::Domain",
+      "Properties": {
+        "Description": { "Fn::Sub": "${AWS::StackName} registries" }
+      }
+    },
+    "InstancesSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": { "Fn::Sub": "${AWS::StackName} instances" },
+        "SecurityGroupIngress": [
+          { "IpProtocol": "tcp", "FromPort": "0", "ToPort": "65535", "CidrIp": { "Fn::GetAtt": [ "Network", "Outputs.Cidr" ] } },
+          { "IpProtocol": "udp", "FromPort": "0", "ToPort": "65535", "CidrIp": { "Fn::GetAtt": [ "Network", "Outputs.Cidr" ] } }
+        ],
+        "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
+      }
+    },
+    "InstancesProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Roles": [ { "Ref": "InstancesRole" } ]
+      }
+    },
+    "InstancesRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [ { "Effect": "Allow", "Principal": { "Service": [ "ec2.amazonaws.com" ] }, "Action": [ "sts:AssumeRole" ] } ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [ "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role" ]
+      }
+    },
+    "InstancesLaunchConfiguration": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress": "true",
+        "BlockDeviceMappings": [
+          { "DeviceName": "/dev/xvdb",  "Ebs": { "VolumeSize": "10", "VolumeType":"gp2" } },
+          { "DeviceName": "/dev/xvdcz", "Ebs": { "VolumeSize": "50", "VolumeType":"gp2" } }
+        ],
+        "IamInstanceProfile": { "Ref": "InstancesProfile" },
+        "ImageId": { "Fn::FindInMap": [ "RegionConfig", { "Ref": "AWS::Region" }, "Ami" ] },
+        "InstanceMonitoring": true,
+        "InstanceType": "t2.micro",
+        "PlacementTenancy" : "default",
+        "SecurityGroups": [ { "Ref": "InstancesSecurityGroup" } ],
+        "UserData": { "Fn::Base64":
+          { "Fn::Join": [ "", [
+            "#cloud-config\n",
+            "repo_upgrade_exclude:\n",
+            "  - kernel*\n",
+            "packages:\n",
+            "  - aws-cfn-bootstrap\n",
+            "mounts:\n",
+            "  - ['/dev/xvdb', 'none', 'swap', 'sw', '0', '0']\n",
+            "bootcmd:\n",
+            "  - mkswap /dev/xvdb\n",
+            "  - swapon /dev/xvdb\n",
+            "  - until yum install -y aws-cli nfs-utils; do echo \"Waiting for network\"; done;\n",
+            "  - mkdir /volumes\n",
+            { "Fn::Join": [ "", [ "  - while true; do mount -t nfs -o nfsvers=4.1 $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).", { "Ref": "Volumes" }, ".efs.", { "Ref": "AWS::Region" }, ".amazonaws.com:/ /volumes && break; sleep 5; done\n" ] ] },
+            "  - [ cloud-init-per, instance, docker_storage_setup, /usr/bin/docker-storage-setup ]\n",
+            "  - echo ECS_CLUSTER=", { "Ref": "RackCluster" }, " >> /etc/ecs/ecs.config\n",
+            "  - echo ECS_ENGINE_AUTH_TYPE=docker >> /etc/ecs/ecs.config\n",
+            "  - head -n -1 /etc/sysconfig/docker >> /etc/sysconfig/docker-tmp\n",
+            "  - mv /etc/sysconfig/docker-tmp /etc/sysconfig/docker\n",
+            "  - echo 'OPTIONS=\"--default-ulimit nofile=1024000:1024000\"' >> /etc/sysconfig/docker\n",
+            { "Fn::Join": [ "", [
+              "  - echo 'OPTIONS=\"${OPTIONS} --storage-opt dm.basesize=50G\"' >> /etc/sysconfig/docker\n",
+              "  - echo 'OPTIONS=\"${OPTIONS} --log-opt max-file=2 --log-opt max-size=50m --host=unix:///var/run/docker.sock --host=0.0.0.0:2376\"' >> /etc/sysconfig/docker\n",
+              "  - echo 'ECS_ENGINE_AUTH_DATA={\"index.docker.io\":{\"username\":\"\",\"password\":\"\",\"email\":\"\"}' >> /etc/ecs/ecs.config\n"
+            ] ] },
+            "  - echo -e '/var/log/docker {\\n  rotate 7\\n  daily\\n  nocompress\\n  copytruncate\\n}' >> /etc/logrotate.d/docker\n",
+            "  - export INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)\n",
+            "  - export ASG_NAME=$(/usr/bin/aws autoscaling describe-auto-scaling-instances --instance-ids=$INSTANCE_ID --region ", {"Ref":"AWS::Region"}, " --output text --query 'AutoScalingInstances[0].AutoScalingGroupName')\n",
+            "  - export LIFECYCLE_HOOK=$(/usr/bin/aws autoscaling describe-lifecycle-hooks --auto-scaling-group-name $ASG_NAME --region ", {"Ref":"AWS::Region"}, " --output text --query \"LifecycleHooks[?contains(LifecycleHookName, '", { "Ref": "AWS::StackName" }, "-InstancesLifecycleLaunching') == \\`true\\`].LifecycleHookName | [0]\")\n",
+            "  - /usr/bin/aws autoscaling complete-lifecycle-action --region ", { "Ref": "AWS::Region" }, " --instance-id $INSTANCE_ID --lifecycle-hook-name $LIFECYCLE_HOOK --auto-scaling-group-name $ASG_NAME --lifecycle-action-result CONTINUE\n",
+            "  - /opt/aws/bin/cfn-signal --stack ", { "Ref": "AWS::StackName" }, " --region ", { "Ref": "AWS::Region" }, " --resource Instances\n"
+          ] ] }
+        }
+      }
+    },
+    "Instances": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties" : {
+        "Cooldown": "5",
+        "DesiredCapacity": "2",
+        "HealthCheckType": "EC2",
+        "HealthCheckGracePeriod": "120",
+        "LaunchConfigurationName" : { "Ref": "InstancesLaunchConfiguration" },
+        "MinSize" : "2",
+        "MaxSize" : "1000",
+        "MetricsCollection": [ { "Granularity": "1Minute" } ],
+        "Tags": [ { "Key": "Name", "Value": { "Ref": "AWS::StackName" }, "PropagateAtLaunch": "true" } ],
+        "VPCZoneIdentifier": [
+          { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] },
+          { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }
+        ]
+      },
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MaxBatchSize": "1",
+          "MinInstancesInService": "2",
+          "PauseTime" : "PT5M",
+          "SuspendProcesses": [ "ScheduledActions" ],
+          "WaitOnResourceSignals": "true"
+        }
+      }
+    },
+    "Volumes": {
+      "Type": "AWS::EFS::FileSystem",
+      "Properties": {
+        "FileSystemTags": [ { "Key": "Name", "Value": { "Ref": "AWS::StackName" } } ]
+      }
+    },
+    "VolumesSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": { "Fn::Sub": "${AWS::StackName} volumes" },
+        "SecurityGroupIngress": [
+          { "IpProtocol": "tcp", "FromPort": "2049", "ToPort": "2049", "CidrIp": { "Fn::GetAtt": [ "Network", "Outputs.Cidr" ] } }
+        ],
+        "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
+      }
+    },
+    "VolumesTarget0": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "Volumes" },
+        "SubnetId": { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] },
+        "SecurityGroups": [ { "Ref": "VolumesSecurityGroup" } ]
+      }
+    },
+    "VolumesTarget1": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "Volumes" },
+        "SubnetId": { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] },
+        "SecurityGroups": [ { "Ref": "VolumesSecurityGroup" } ]
+      }
+    },
+    "Api": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": { "Ref": "AWS::StackName" }
+      }
+    },
+    "ApiDeployment": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "DependsOn": [ "ApiProxy" ],
+      "Properties": {
+        "RestApiId": { "Ref": "Api" }
+      }
+    },
+    "ApiResource": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": { "Fn::GetAtt": [ "Api", "RootResourceId" ] },
+        "PathPart": "{proxy+}",
+        "RestApiId": { "Ref": "Api" }
+      }
+    },
+    "ApiProxy": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "ANY",
+        "Integration": {
+          "IntegrationHttpMethod": "ANY",
+          "PassthroughBehavior": "WHEN_NO_MATCH",
+          "RequestParameters": { "integration.request.path.proxy": "method.request.path.proxy" },
+          "Type": "HTTP_PROXY",
+          "Uri": { "Fn::Sub": "http://${Balancer.DNSName}/{proxy}" }
+        },
+        "RequestParameters": { "method.request.path.proxy": "true" },
+        "ResourceId": { "Ref": "ApiResource" },
+        "RestApiId": { "Ref": "Api" }
+      }
+    },
+    "ApiRoot": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "ANY",
+        "Integration": {
+          "IntegrationHttpMethod": "ANY",
+          "PassthroughBehavior": "WHEN_NO_MATCH",
+          "Type": "HTTP_PROXY",
+          "Uri": { "Fn::Sub": "http://${Balancer.DNSName}/" }
+        },
+        "ResourceId": { "Fn::GetAtt": [ "Api", "RootResourceId" ] },
+        "RestApiId": { "Ref": "Api" }
+      }
+    },
+    "ApiStage": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "DeploymentId": { "Ref": "ApiDeployment" },
+        "RestApiId": { "Ref": "Api" },
+        "StageName": "rack"
+      }
+    },
+    "Balancer": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Scheme": "internet-facing",
+        "SecurityGroups": [ { "Ref": "BalancerSecurityGroup" } ],
+        "Subnets": [
+          { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] },
+          { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }
+        ]
+      }
+    },
+    "BalancerListener": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "DefaultActions": [ { "Type": "forward", "TargetGroupArn": { "Ref": "BalancerTargetGroup" } } ],
+        "LoadBalancerArn": { "Ref" : "Balancer" },
+        "Port": "80",
+        "Protocol": "HTTP"
+      }
+    },
+    "BalancerSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": { "Fn::Sub": "${AWS::StackName} balancer" },
+        "SecurityGroupIngress": [
+          { "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80", "CidrIp": "0.0.0.0/0" }
+        ],
+        "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
+      }
+    },
+    "BalancerTargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "HealthCheckIntervalSeconds": 60,
+        "UnhealthyThresholdCount": 10,
+        "HealthCheckPath": "/",
+        "Port": "3000",
+        "Protocol": "HTTPS",
+        "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
+      }
+    },
+    "RackCluster": {
+      "Type": "AWS::ECS::Cluster"
+    },
+    "RackRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [ { "Effect": "Allow", "Principal": { "Service": [ "ecs.amazonaws.com" ] }, "Action": [ "sts:AssumeRole" ] } ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [ "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole" ]
+      }
+    },
+    "RackService": {
+      "Type": "AWS::ECS::Service",
+      "DependsOn": [ "BalancerListener", "Instances" ],
+      "Properties": {
+        "Cluster": { "Ref": "RackCluster" },
+        "DeploymentConfiguration": { "MinimumHealthyPercent": "50", "MaximumPercent": "200" },
+        "DesiredCount": "2",
+        "LoadBalancers": [ { "ContainerName": "rack", "ContainerPort": "3000", "TargetGroupArn": { "Ref": "BalancerTargetGroup" } } ],
+        "Role": { "Ref": "RackRole" },
+        "TaskDefinition": { "Ref": "RackTasks" }
+      }
+    },
+    "RackTasks": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [ "bin/rack" ],
+            "Environment": [
+              { "Name": "VERSION", "Value": { "Ref": "Version" } }
+            ],
+            "Essential": "true",
+            "Image": { "Fn::Sub": "convox/praxis:${Version}" },
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-region": { "Ref": "AWS::Region" },
+                "awslogs-group": { "Ref": "LogGroup" },
+                "awslogs-stream-prefix": "rack"
+              }
+            },
+            "Memory": "128",
+            "MountPoints": [ { "SourceVolume": "docker", "ContainerPath": "/var/run/docker.sock" } ],
+            "Name": "rack",
+            "PortMappings": [ { "ContainerPort": "3000", "Protocol": "tcp" } ]
+          }
+        ],
+        "Family": { "Fn::Sub": "${AWS::StackName}-rack" },
+        "Volumes": [ { "Name": "docker", "Host": { "SourcePath": "/var/run/docker.sock" } } ]
+      }
+    }
+  }
+}
