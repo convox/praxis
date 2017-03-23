@@ -8,9 +8,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 )
 
+var lock sync.Mutex
+
 func (p *Provider) storageDelete(key string) error {
+	lock.Lock()
+	defer lock.Unlock()
+
 	if p.Root == "" {
 		return fmt.Errorf("cannot delete with empty root")
 	}
@@ -28,6 +34,9 @@ func (p *Provider) storageDelete(key string) error {
 }
 
 func (p *Provider) storageDeleteAll(key string) error {
+	lock.Lock()
+	defer lock.Unlock()
+
 	if p.Root == "" {
 		return fmt.Errorf("cannot delete with empty root")
 	}
@@ -36,6 +45,9 @@ func (p *Provider) storageDeleteAll(key string) error {
 }
 
 func (p *Provider) Exists(key string) bool {
+	lock.Lock()
+	defer lock.Unlock()
+
 	path, err := filepath.Abs(filepath.Join(p.Root, key))
 	if err != nil {
 		return false
@@ -49,6 +61,9 @@ func (p *Provider) Exists(key string) bool {
 }
 
 func (p *Provider) storageList(key string) ([]string, error) {
+	lock.Lock()
+	defer lock.Unlock()
+
 	path, err := filepath.Abs(filepath.Join(p.Root, key))
 	if err != nil {
 		return nil, err
@@ -77,6 +92,9 @@ func (p *Provider) storageLoad(key string, v interface{}) error {
 }
 
 func (p *Provider) storageRead(key string) (io.ReadCloser, error) {
+	lock.Lock()
+	defer lock.Unlock()
+
 	path, err := filepath.Abs(filepath.Join(p.Root, key))
 	if err != nil {
 		return nil, err
@@ -90,6 +108,9 @@ func (p *Provider) storageRead(key string) (io.ReadCloser, error) {
 }
 
 func (p *Provider) storageStore(key string, v interface{}) error {
+	lock.Lock()
+	defer lock.Unlock()
+
 	path, err := filepath.Abs(filepath.Join(p.Root, key))
 	if err != nil {
 		return err
@@ -123,6 +144,9 @@ func (p *Provider) storageStore(key string, v interface{}) error {
 }
 
 func (p *Provider) storageTail(key string) (io.ReadCloser, error) {
+	lock.Lock()
+	defer lock.Unlock()
+
 	path, err := filepath.Abs(filepath.Join(p.Root, key))
 	if err != nil {
 		return nil, err
@@ -142,6 +166,9 @@ func (p *Provider) storageTail(key string) (io.ReadCloser, error) {
 }
 
 func (p *Provider) storageWrite(key string) (io.WriteCloser, error) {
+	lock.Lock()
+	defer lock.Unlock()
+
 	path, err := filepath.Abs(filepath.Join(p.Root, key))
 	if err != nil {
 		return nil, err
