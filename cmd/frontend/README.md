@@ -2,7 +2,7 @@
 
 ## Usage
 
-    $ frontend
+    $ sudo frontend
 
 ## Add an endpoint
 
