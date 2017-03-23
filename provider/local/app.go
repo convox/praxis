@@ -20,7 +20,7 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 		Status: "running",
 	}
 
-	if err := p.Store(fmt.Sprintf("apps/%s/app.json", app.Name), app); err != nil {
+	if err := p.storageStore(fmt.Sprintf("apps/%s/app.json", app.Name), app); err != nil {
 		return nil, err
 	}
 
@@ -43,13 +43,13 @@ func (p *Provider) AppDelete(app string) error {
 		return err
 	}
 
-	return p.DeleteAll(fmt.Sprintf("apps/%s", app))
+	return p.storageDeleteAll(fmt.Sprintf("apps/%s", app))
 }
 
 func (p *Provider) AppGet(name string) (*types.App, error) {
 	var app types.App
 
-	if err := p.Load(fmt.Sprintf("apps/%s/app.json", name), &app); err != nil {
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/app.json", name), &app); err != nil {
 		if strings.HasPrefix(err.Error(), "no such key:") {
 			return nil, fmt.Errorf("no such app: %s", name)
 		}
@@ -60,7 +60,7 @@ func (p *Provider) AppGet(name string) (*types.App, error) {
 }
 
 func (p *Provider) AppList() (types.Apps, error) {
-	names, err := p.List("apps")
+	names, err := p.storageList("apps")
 	if err != nil {
 		return nil, err
 	}

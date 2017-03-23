@@ -26,7 +26,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		r.Env = opts.Env
 	}
 
-	if err := p.Store(fmt.Sprintf("apps/%s/releases/%s/release.json", app, r.Id), r); err != nil {
+	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, r.Id), r); err != nil {
 		return nil, err
 	}
 
@@ -39,7 +39,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 				r.Status = "complete"
 			}
 
-			p.Store(fmt.Sprintf("apps/%s/releases/%s/release.json", app, r.Id), r)
+			p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, r.Id), r)
 		}()
 	}
 
@@ -47,12 +47,12 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 }
 
 func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
-	err = p.Load(fmt.Sprintf("/apps/%s/releases/%s/release.json", app, id), &release)
+	err = p.storageLoad(fmt.Sprintf("/apps/%s/releases/%s/release.json", app, id), &release)
 	return
 }
 
 func (p *Provider) ReleaseList(app string) (types.Releases, error) {
-	ids, err := p.List(fmt.Sprintf("apps/%s/releases", app))
+	ids, err := p.storageList(fmt.Sprintf("apps/%s/releases", app))
 	if err != nil {
 		return nil, err
 	}
@@ -83,11 +83,11 @@ func (p *Provider) ReleaseLogs(app, id string) (io.ReadCloser, error) {
 
 	switch r.Status {
 	case "complete", "failed":
-		return p.Read(key)
+		return p.storageRead(key)
 	default:
 		r, w := io.Pipe()
 
-		log, err := p.tail(fmt.Sprintf("apps/%s/releases/%s/log", app, id))
+		log, err := p.storageTail(fmt.Sprintf("apps/%s/releases/%s/log", app, id))
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +140,7 @@ func (p *Provider) releasePromote(app, release string) error {
 
 	r.Status = "promoting"
 
-	if err := p.Store(fmt.Sprintf("apps/%s/releases/%s/release.json", app, release), r); err != nil {
+	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, release), r); err != nil {
 		return err
 	}
 
@@ -151,7 +151,7 @@ func (p *Provider) releasePromote(app, release string) error {
 
 	a.Release = r.Id
 
-	if err := p.Store(fmt.Sprintf("apps/%s/app.json", a.Name), a); err != nil {
+	if err := p.storageStore(fmt.Sprintf("apps/%s/app.json", a.Name), a); err != nil {
 		return err
 	}
 
@@ -160,7 +160,7 @@ func (p *Provider) releasePromote(app, release string) error {
 		return err
 	}
 
-	log, err := p.write(fmt.Sprintf("apps/%s/releases/%s/log", app, release))
+	log, err := p.storageWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, release))
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func (p *Provider) releasePromote(app, release string) error {
 
 	r.Status = "complete"
 
-	if err := p.Store(fmt.Sprintf("apps/%s/releases/%s/release.json", app, release), r); err != nil {
+	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, release), r); err != nil {
 		return err
 	}
 

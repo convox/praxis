@@ -26,7 +26,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		Created: time.Now().UTC(),
 	}
 
-	if err := p.Store(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
+	if err := p.storageStore(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
 		return nil, err
 	}
 
@@ -69,7 +69,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 
 	build.Process = pid
 
-	if err := p.Store(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
+	if err := p.storageStore(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
 		return nil, err
 	}
 
@@ -77,12 +77,12 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 }
 
 func (p *Provider) BuildGet(app, id string) (build *types.Build, err error) {
-	err = p.Load(fmt.Sprintf("apps/%s/builds/%s", app, id), &build)
+	err = p.storageLoad(fmt.Sprintf("apps/%s/builds/%s", app, id), &build)
 	return
 }
 
 func (p *Provider) BuildList(app string) (types.Builds, error) {
-	ids, err := p.List(fmt.Sprintf("apps/%s/builds", app))
+	ids, err := p.storageList(fmt.Sprintf("apps/%s/builds", app))
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func (p *Provider) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*
 		build.Status = opts.Status
 	}
 
-	if err := p.Store(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
+	if err := p.storageStore(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
 		return nil, err
 	}
 

@@ -19,7 +19,7 @@ func (p *Provider) RegistryAdd(hostname, username, password string) (*types.Regi
 		return nil, fmt.Errorf("registry already exists: %s", hostname)
 	}
 
-	if err := p.Store(fmt.Sprintf("registries/%s", hostname), r); err != nil {
+	if err := p.storageStore(fmt.Sprintf("registries/%s", hostname), r); err != nil {
 		return nil, err
 	}
 
@@ -27,7 +27,7 @@ func (p *Provider) RegistryAdd(hostname, username, password string) (*types.Regi
 }
 
 func (p *Provider) RegistryList() (types.Registries, error) {
-	names, err := p.List("registries")
+	names, err := p.storageList("registries")
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (p *Provider) RegistryList() (types.Registries, error) {
 	var r types.Registry
 
 	for i, name := range names {
-		if err := p.Load(fmt.Sprintf("registries/%s", name), &r); err != nil {
+		if err := p.storageLoad(fmt.Sprintf("registries/%s", name), &r); err != nil {
 			return nil, err
 		}
 
@@ -54,5 +54,5 @@ func (p *Provider) RegistryRemove(hostname string) error {
 		return fmt.Errorf("no such registry: %s", hostname)
 	}
 
-	return p.Delete(key)
+	return p.storageDelete(key)
 }

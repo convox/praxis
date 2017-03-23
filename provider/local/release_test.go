@@ -29,7 +29,7 @@ func TestReleaseCreateGet(t *testing.T) {
 		fetched, err := p.ReleaseGet("app", rel.Id)
 		assert.NoError(t, err)
 
-		assert.Equal(t, rel, fetched)
+		assert.EqualValues(t, rel, fetched)
 	}
 }
 

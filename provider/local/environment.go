@@ -10,7 +10,7 @@ import (
 func (p *Provider) EnvironmentGet(app string) (types.Environment, error) {
 	var env types.Environment
 
-	if err := p.Load(fmt.Sprintf("apps/%s/environment", app), &env); err != nil {
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/environment", app), &env); err != nil {
 		if strings.HasPrefix(err.Error(), "no such key:") {
 			return types.Environment{}, nil
 		}
@@ -30,7 +30,7 @@ func (p *Provider) EnvironmentSet(app string, env types.Environment) error {
 		cenv[k] = v
 	}
 
-	return p.Store(fmt.Sprintf("apps/%s/environment", app), cenv)
+	return p.storageStore(fmt.Sprintf("apps/%s/environment", app), cenv)
 }
 
 func (p *Provider) EnvironmentUnset(app string, key string) error {
@@ -41,5 +41,5 @@ func (p *Provider) EnvironmentUnset(app string, key string) error {
 
 	delete(cenv, key)
 
-	return p.Store(fmt.Sprintf("apps/%s/environment", app), cenv)
+	return p.storageStore(fmt.Sprintf("apps/%s/environment", app), cenv)
 }

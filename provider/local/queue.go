@@ -21,7 +21,7 @@ func (p *Provider) QueueFetch(app, queue string, opts types.QueueFetchOptions) (
 		for {
 			select {
 			case <-time.Tick(100 * time.Millisecond):
-				dirs, err := p.List(fmt.Sprintf("apps/%s/queues/%s/", app, queue))
+				dirs, err := p.storageList(fmt.Sprintf("apps/%s/queues/%s/", app, queue))
 				if err != nil {
 					errChan <- err
 					return
@@ -50,11 +50,11 @@ func (p *Provider) QueueFetch(app, queue string, opts types.QueueFetchOptions) (
 	}
 
 	var attrs map[string]string
-	if err := p.Load(fmt.Sprintf("apps/%s/queues/%s/%s/attrs.json", app, queue, ts), &attrs); err != nil {
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/queues/%s/%s/attrs.json", app, queue, ts), &attrs); err != nil {
 		return nil, err
 	}
 
-	if err := p.DeleteAll(fmt.Sprintf("apps/%s/queues/%s/%s", app, queue, ts)); err != nil {
+	if err := p.storageDeleteAll(fmt.Sprintf("apps/%s/queues/%s/%s", app, queue, ts)); err != nil {
 		return nil, err
 	}
 
@@ -62,7 +62,7 @@ func (p *Provider) QueueFetch(app, queue string, opts types.QueueFetchOptions) (
 }
 
 func (p *Provider) QueueStore(app, queue string, attrs map[string]string) error {
-	if err := p.Store(fmt.Sprintf("apps/%s/queues/%s/%d/attrs.json", app, queue, time.Now().UnixNano()), attrs); err != nil {
+	if err := p.storageStore(fmt.Sprintf("apps/%s/queues/%s/%d/attrs.json", app, queue, time.Now().UnixNano()), attrs); err != nil {
 		return err
 	}
 
