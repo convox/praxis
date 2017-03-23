@@ -30,13 +30,10 @@ func start() error {
 		return err
 	}
 
-	if err := startApi(ip); err != nil {
-		return err
-	}
+	go startDns(ip)
+	go startApi(ip)
 
-	if err := startDns(ip); err != nil {
-		return err
-	}
+	select {}
 
 	return nil
 }
@@ -70,7 +67,7 @@ func createListener(name string) (string, error) {
 
 	ip := fmt.Sprintf("%s.0", subnet)
 
-	cmd = exec.Command("ifconfig", name, ip, "netmask", "255.255.255.0", "up")
+	cmd = exec.Command("ifconfig", name, ip, "netmask", "255.255.255.255", "up")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -100,8 +97,10 @@ func resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
 		for _, q := range m.Question {
 			switch q.Qtype {
 			case dns.TypeA:
-				if rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, "172.32.0.1")); err == nil {
-					m.Answer = append(m.Answer, rr)
+				if ip, ok := hosts[q.Name]; ok {
+					if rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip)); err == nil {
+						m.Answer = append(m.Answer, rr)
+					}
 				}
 			}
 		}
@@ -124,6 +123,7 @@ func resolvePassthrough(w dns.ResponseWriter, r *dns.Msg) {
 	w.WriteMsg(rs)
 }
 
+var hosts = map[string]string{}
 var endpoints = map[string]string{}
 var lock sync.Mutex
 
@@ -132,9 +132,27 @@ func createEndpoint(w http.ResponseWriter, r *http.Request) {
 	defer lock.Unlock()
 
 	addr := r.FormValue("addr")
+	host := r.FormValue("host")
 	port := r.FormValue("port")
 
+	if addr == "" {
+		http.Error(w, "addr required", 500)
+		return
+	}
+
+	if host == "" {
+		http.Error(w, "host required", 500)
+		return
+	}
+
+	if port == "" {
+		http.Error(w, "port required", 500)
+		return
+	}
+
 	ip := fmt.Sprintf("%s.%d", subnet, len(endpoints)+1)
+
+	hosts[fmt.Sprintf("%s.", host)] = ip
 
 	cmd := exec.Command("sudo", "ifconfig", "vlan0", "alias", ip, "netmask", "255.255.255.255")
 	cmd.Stdout = os.Stdout
@@ -145,9 +163,6 @@ func createEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpoints[ip] = addr
-
-	aaa := fmt.Sprintf("%s:%s", ip, port)
-	fmt.Printf("aaa = %+v\n", aaa)
 
 	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%s", ip, port))
 	if err != nil {
@@ -186,8 +201,6 @@ func handleConnection(cn net.Conn) {
 		cn.Write([]byte(fmt.Sprintf("no endpoint\n")))
 		return
 	}
-
-	fmt.Printf("ep = %+v\n", ep)
 
 	out, err := net.Dial("tcp", ep)
 	if err != nil {
