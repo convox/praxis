@@ -50,9 +50,11 @@ func TestTableList(t *testing.T) {
 	tables, err := p.TableList("app")
 	assert.NoError(t, err)
 
-	for i := range tables {
-		assert.Equal(t, expects[i].Name, tables[i].Name)
-		assert.Equal(t, expects[i].Indexes, tables[i].Indexes)
+	if assert.Len(t, tables, len(expects)) {
+		for i := range tables {
+			assert.Equal(t, expects[i].Name, tables[i].Name)
+			assert.Equal(t, expects[i].Indexes, tables[i].Indexes)
+		}
 	}
 }
 
