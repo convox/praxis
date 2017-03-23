@@ -19,7 +19,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		App:     app,
 		Build:   opts.Build,
 		Env:     opts.Env,
-		Created: time.Now(),
+		Created: time.Now().UTC(),
 	}
 
 	if err := p.releaseStore(release); err != nil {

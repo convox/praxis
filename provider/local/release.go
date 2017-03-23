@@ -107,7 +107,7 @@ func (p *Provider) releaseFork(app string) (*types.Release, error) {
 		Id:      types.Id("R", 10),
 		App:     app,
 		Status:  "created",
-		Created: time.Now(),
+		Created: time.Now().UTC(),
 	}
 
 	rs, err := p.ReleaseList(app)

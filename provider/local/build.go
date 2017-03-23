@@ -23,7 +23,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		Id:      id,
 		App:     app,
 		Status:  "created",
-		Created: time.Now(),
+		Created: time.Now().UTC(),
 	}
 
 	if err := p.Store(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
