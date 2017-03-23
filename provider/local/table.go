@@ -3,6 +3,7 @@ package local
 import (
 	"encoding/base64"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/convox/praxis/types"
@@ -46,6 +47,8 @@ func (p *Provider) TableList(app string) (types.Tables, error) {
 
 		tables[i] = *table
 	}
+
+	sort.Slice(tables, tables.Less)
 
 	return tables, nil
 }

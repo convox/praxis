@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/convox/api"
 	"github.com/convox/praxis/types"
@@ -38,6 +39,8 @@ func TableList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	if err != nil {
 		return err
 	}
+
+	sort.Slice(t, t.Less)
 
 	return c.RenderJSON(t)
 }
