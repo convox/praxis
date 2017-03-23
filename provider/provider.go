@@ -47,6 +47,9 @@ type Provider interface {
 	KeyDecrypt(app, key string, data []byte) ([]byte, error)
 	KeyEncrypt(app, key string, data []byte) ([]byte, error)
 
+	MetricList(app, namespace string, opts types.MetricListOptions) ([]string, error)
+	MetricGet(app, namespace, metric string, opts types.MetricGetOptions) ([]string, error)
+
 	// ObjectDelete(key string) error
 	// ObjectExists(key string) bool
 	ObjectFetch(app, key string) (io.ReadCloser, error)
