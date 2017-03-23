@@ -79,6 +79,17 @@ func getMetrics(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("METRICS: %+v\n", metrics)
+	if len(metrics) == 0 {
+		fmt.Printf("No metrics for %s %s\n", ns, m)
+		return nil
+	}
+
+	t := stdcli.NewTable("TIME", "MIN", "MAX", "AVG", "P95")
+	for _, m := range metrics {
+		fmt.Printf("METRIC: %+v\n", m)
+		// t.AddRow(r.Id, r.Build, r.Status, helpers.HumanizeTime(r.Created))
+	}
+	t.Print()
+
 	return nil
 }
