@@ -55,3 +55,12 @@ func appName(c *cli.Context, dir string) (string, error) {
 
 	return filepath.Base(abs), nil
 }
+
+func errorExit(fn cli.ActionFunc, code int) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		if err := fn(c); err != nil {
+			return cli.NewExitError(err.Error(), code)
+		}
+		return nil
+	}
+}

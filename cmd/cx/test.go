@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/convox/praxis/manifest"
@@ -15,7 +16,7 @@ func init() {
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "test",
 		Description: "run tests",
-		Action:      runTest,
+		Action:      errorExit(runTest, 1),
 	})
 }
 
@@ -34,10 +35,17 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	env, err := Rack.EnvironmentGet(name)
-	if err != nil {
-		return err
+	env := map[string]string{}
+
+	for _, e := range os.Environ() {
+		parts := strings.SplitN(e, "=", 2)
+
+		if len(parts) == 2 {
+			env[parts[0]] = parts[1]
+		}
 	}
+
+	fmt.Printf("env = %+v\n", env)
 
 	if err := m.Validate(env); err != nil {
 		return err
