@@ -45,8 +45,6 @@ func runTest(c *cli.Context) error {
 		}
 	}
 
-	fmt.Printf("env = %+v\n", env)
-
 	if err := m.Validate(env); err != nil {
 		return err
 	}
