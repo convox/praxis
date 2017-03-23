@@ -3,7 +3,7 @@
 set -e
 cd $(dirname $(dirname $0))
 
-[ -n "$TEST" ] && (go test -coverprofile=coverage.txt -covermode=atomic $TEST; exit)
+[ -n "$TEST" ] && (go test -coverprofile=coverage.txt -covermode=atomic -run $TEST; exit)
 
 find . -name '*.go' -exec dirname {} \; | grep -v '^\./vendor/' | sort -u | while read dir; do
   go test -coverprofile=profile.out -covermode=atomic $dir
