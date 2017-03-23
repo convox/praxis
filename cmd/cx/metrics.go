@@ -49,7 +49,15 @@ func listMetrics(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("METRICS: %+v\n", metrics)
+	if len(metrics) == 0 {
+		fmt.Printf("No metrics for %s\n", ns)
+		return nil
+	}
+
+	for _, m := range metrics {
+		fmt.Println(m)
+	}
+
 	return nil
 }
 
