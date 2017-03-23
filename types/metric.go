@@ -11,3 +11,12 @@ type MetricGetOptions struct {
 	End      string
 	Interval string
 }
+
+var MetricNames = map[string][]string{
+	"balancer": []string{
+		"request-count",
+		"response-time",
+		"server-errror-count",
+		"user-error-count",
+	},
+}
