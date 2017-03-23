@@ -91,6 +91,7 @@ func resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
 	m.SetReply(r)
 	m.Compress = false
 	m.RecursionAvailable = true
+	m.Authoritative = true
 
 	switch r.Opcode {
 	case dns.OpcodeQuery:
