@@ -6,8 +6,13 @@
 
 ## Add an endpoint
 
-    $ curl -X POST http://10.42.84.0:9477/endpoints -d host=foo.bar.convox -d port=443 -d addr=127.0.0.1:5443
-    10.42.84.1:443
+    $ curl -X POST http://10.42.84.0:9477/endpoints/foo.bar.convox -d port=443 -d target=127.0.0.1:5443
+    {
+      "host": "foo.bar.convox",
+      "ip": "10.42.84.1",
+      "port": 443,
+      "target": "127.0.0.1:5443"
+    }
 
 ## Configure DNS
 

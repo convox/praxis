@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -42,8 +43,8 @@ func startApi(ip string) error {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/endpoints", listEndpoints).Methods("GET")
-	r.HandleFunc("/endpoints", createEndpoint).Methods("POST")
-	r.HandleFunc("/endpoints/{ip}", deleteEndpoint).Methods("DELETE")
+	r.HandleFunc("/endpoints/{host}", createEndpoint).Methods("POST")
+	r.HandleFunc("/endpoints/{host}", deleteEndpoint).Methods("DELETE")
 
 	return http.ListenAndServe(fmt.Sprintf("%s:9477", ip), r)
 }
@@ -124,22 +125,27 @@ func resolvePassthrough(w dns.ResponseWriter, r *dns.Msg) {
 	w.WriteMsg(rs)
 }
 
+type Endpoint struct {
+	Host   string `json:"host"`
+	Ip     string `json:"ip"`
+	Port   int    `json:"port"`
+	Target string `json:"target"`
+
+	listener net.Listener `json:"-"`
+}
+
+var endpoints = map[string]map[int]Endpoint{}
 var hosts = map[string]string{}
-var endpoints = map[string]string{}
 var lock sync.Mutex
 
 func createEndpoint(w http.ResponseWriter, r *http.Request) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	addr := r.FormValue("addr")
-	host := r.FormValue("host")
-	port := r.FormValue("port")
+	host := mux.Vars(r)["host"]
 
-	if addr == "" {
-		http.Error(w, "addr required", 500)
-		return
-	}
+	port := r.FormValue("port")
+	target := r.FormValue("target")
 
 	if host == "" {
 		http.Error(w, "host required", 500)
@@ -148,6 +154,17 @@ func createEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	if port == "" {
 		http.Error(w, "port required", 500)
+		return
+	}
+
+	if target == "" {
+		http.Error(w, "target required", 500)
+		return
+	}
+
+	pi, err := strconv.Atoi(port)
+	if err != nil {
+		http.Error(w, "invalid port", 500)
 		return
 	}
 
@@ -163,17 +180,36 @@ func createEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	endpoints[ip] = addr
-
 	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%s", ip, port))
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
+	ep := Endpoint{
+		Host:     host,
+		Ip:       ip,
+		Port:     pi,
+		Target:   target,
+		listener: ln,
+	}
+
+	if _, ok := endpoints[ip]; !ok {
+		endpoints[ip] = map[int]Endpoint{}
+	}
+
+	endpoints[ip][pi] = ep
+	hosts[host] = ip
+
 	go handleListener(ln)
 
-	w.Write([]byte(fmt.Sprintf("%s:%s", ip, port)))
+	data, err := json.MarshalIndent(ep, "", "  ")
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	w.Write(data)
 }
 
 func handleListener(ln net.Listener) {
@@ -191,19 +227,25 @@ func handleListener(ln net.Listener) {
 func handleConnection(cn net.Conn) {
 	defer cn.Close()
 
-	host, _, err := net.SplitHostPort(cn.LocalAddr().String())
+	ip, port, err := net.SplitHostPort(cn.LocalAddr().String())
 	if err != nil {
 		cn.Write([]byte(fmt.Sprintf("error: %s\n", err)))
 		return
 	}
 
-	ep, ok := endpoints[host]
+	pi, err := strconv.Atoi(port)
+	if err != nil {
+		cn.Write([]byte(fmt.Sprintf("error: %s\n", err)))
+		return
+	}
+
+	ep, ok := endpoints[ip][pi]
 	if !ok {
 		cn.Write([]byte(fmt.Sprintf("no endpoint\n")))
 		return
 	}
 
-	out, err := net.Dial("tcp", ep)
+	out, err := net.Dial("tcp", ep.Target)
 	if err != nil {
 		cn.Write([]byte(fmt.Sprintf("error: %s\n", err)))
 	}
@@ -218,7 +260,15 @@ func deleteEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func listEndpoints(w http.ResponseWriter, r *http.Request) {
-	data, err := json.Marshal(endpoints)
+	ep := []Endpoint{}
+
+	for _, m := range endpoints {
+		for _, e := range m {
+			ep = append(ep, e)
+		}
+	}
+
+	data, err := json.MarshalIndent(ep, "", "  ")
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

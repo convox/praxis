@@ -522,6 +522,12 @@
 			"revisionTime": "2016-05-04T02:26:26Z"
 		},
 		{
+			"checksumSHA1": "bm+LYMH3gA6Xiq8kwh0FOueSjTM=",
+			"path": "github.com/miekg/dns",
+			"revision": "5a15a35f5f671cf6ad8b316b50607c76e5e87fb6",
+			"revisionTime": "2017-02-15T20:40:16Z"
+		},
+		{
 			"checksumSHA1": "BT3BK4a+5+8WCnM1e71uIwJGsBs=",
 			"path": "github.com/mitchellh/go-homedir",
 			"revision": "1f6da4a72e57d4e7edd4a7295a585e0a3999a2d4",
@@ -617,10 +623,10 @@
 			"revisionTime": "2017-02-15T08:41:58Z"
 		},
 		{
-			"checksumSHA1": "/oZpHfYc+ZgOwYAhlvcMhmETYpw=",
+			"checksumSHA1": "92lp1kcQB5hfAhtiXbwWt1ASy9U=",
 			"path": "golang.org/x/sys/unix",
-			"revision": "99f16d856c9836c42d24e7ab64ea72916925fa97",
-			"revisionTime": "2017-03-08T15:04:45Z"
+			"revision": "8fd966b47dbdd4faa03de0d06e3d733baeb9a1a9",
+			"revisionTime": "2016-04-10T19:02:41Z"
 		},
 		{
 			"checksumSHA1": "fpW2dhGFC6SrVzipJx7fjg2DIH8=",
