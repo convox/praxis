@@ -21,6 +21,4 @@ func Serve(iface, subnet string) error {
 	log.Success()
 
 	select {}
-
-	return nil
 }
