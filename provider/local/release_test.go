@@ -66,46 +66,4 @@ func TestReleaseList(t *testing.T) {
 		assert.Equal(t, "B1", rs[5].Build)
 		assert.Equal(t, map[string]string(nil), rs[5].Env)
 	}
-
-	// expects := types.Releases{
-	//   {App: "app", Build: "BTEST3", Env: map[string]string{"APP": "app", "FOO": "baz"}},
-	//   {App: "app", Build: "BTEST2", Env: map[string]string{"APP": "app", "FOO": "bar"}},
-	//   {App: "app", Build: "BTEST", Env: map[string]string{"APP": "app", "FOO": "bar"}},
-	// }
-
-	// opts := types.ReleaseCreateOptions{
-	//   Build: "BTEST",
-	//   Env: map[string]string{
-	//     "APP": "app",
-	//     "FOO": "bar",
-	//   },
-	// }
-	// var r *types.Release
-	// r, err = p.ReleaseCreate("app", opts)
-	// fmt.Printf("r = %+v\n", r)
-	// assert.NoError(t, err)
-
-	// opts.Build = "BTEST2"
-	// r, err = p.ReleaseCreate("app", opts)
-	// fmt.Printf("r = %+v\n", r)
-	// assert.NoError(t, err)
-
-	// opts.Build = "BTEST3"
-	// opts.Env["FOO"] = "baz"
-	// r, err = p.ReleaseCreate("app", opts)
-	// fmt.Printf("r = %+v\n", r)
-	// assert.NoError(t, err)
-
-	// rels, err := p.ReleaseList("app")
-	// assert.Len(t, rels, 3)
-
-	// fmt.Printf("rels = %+v\n", rels)
-
-	// for i := range rels {
-	//   assert.Equal(t, expects[i].App, rels[i].App)
-	//   assert.Equal(t, expects[i].Build, rels[i].Build)
-	//   assert.Equal(t, expects[i].Env, rels[i].Env)
-	//   assert.Equal(t, false, rels[i].Created.IsZero())
-	//   assert.NotEqual(t, "", rels[i].Id)
-	// }
 }
