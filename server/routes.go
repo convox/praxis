@@ -35,6 +35,9 @@ func Routes(server *api.Server) {
 	server.Route("key.decrypt", "POST", "/apps/{app}/keys/{key}/decrypt", controllers.KeyDecrypt)
 	server.Route("key.encrypt", "POST", "/apps/{app}/keys/{key}/encrypt", controllers.KeyEncrypt)
 
+	server.Route("metric.get", "GET", "/apps/{app}/metrics/{namespace}/{metric}", controllers.MetricGet)
+	server.Route("metric.list", "GET", "/apps/{app}/metrics/{namespace}", controllers.MetricList)
+
 	server.Route("object.fetch", "GET", "/apps/{app}/objects/{key:.*}", controllers.ObjectFetch)
 	server.Route("object.store", "POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)
 

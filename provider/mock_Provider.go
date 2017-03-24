@@ -230,20 +230,6 @@ func (_m *MockProvider) BuildUpdate(app string, id string, opts types.BuildUpdat
 	return r0, r1
 }
 
-// EnvironmentDelete provides a mock function with given fields: app, key
-func (_m *MockProvider) EnvironmentDelete(app string, key string) error {
-	ret := _m.Called(app, key)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(app, key)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // EnvironmentGet provides a mock function with given fields: app
 func (_m *MockProvider) EnvironmentGet(app string) (types.Environment, error) {
 	ret := _m.Called(app)
@@ -274,6 +260,20 @@ func (_m *MockProvider) EnvironmentSet(app string, env types.Environment) error 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string, types.Environment) error); ok {
 		r0 = rf(app, env)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// EnvironmentUnset provides a mock function with given fields: app, key
+func (_m *MockProvider) EnvironmentUnset(app string, key string) error {
+	ret := _m.Called(app, key)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(app, key)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -348,6 +348,52 @@ func (_m *MockProvider) KeyEncrypt(app string, key string, data []byte) ([]byte,
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string, []byte) error); ok {
 		r1 = rf(app, key, data)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MetricGet provides a mock function with given fields: app, namespace, metric, opts
+func (_m *MockProvider) MetricGet(app string, namespace string, metric string, opts types.MetricGetOptions) ([]string, error) {
+	ret := _m.Called(app, namespace, metric, opts)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(string, string, string, types.MetricGetOptions) []string); ok {
+		r0 = rf(app, namespace, metric, opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string, types.MetricGetOptions) error); ok {
+		r1 = rf(app, namespace, metric, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MetricList provides a mock function with given fields: app, namespace
+func (_m *MockProvider) MetricList(app string, namespace string) ([]string, error) {
+	ret := _m.Called(app, namespace)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(string, string) []string); ok {
+		r0 = rf(app, namespace)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, namespace)
 	} else {
 		r1 = ret.Error(1)
 	}
