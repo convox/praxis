@@ -1,8 +1,12 @@
 package local
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"math/rand"
+	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -11,6 +15,10 @@ import (
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error) {
 	r, err := p.releaseFork(app)
@@ -235,17 +243,45 @@ func (p *Provider) startBalancer(app string, balancer manifest.Balancer) error {
 			return err
 		}
 
+		rp := rand.Intn(40000) + 20000
+
+		fmt.Printf("rp = %+v\n", rp)
+
 		opts := types.ProcessRunOptions{
 			Command: command,
 			Image:   sys.Image,
 			Name:    name,
-			Ports:   map[int]int{port: 3000},
+			Ports:   map[int]int{rp: 3000},
 			Stream:  types.Stream{Writer: os.Stdout},
 		}
 
 		if _, err := p.ProcessStart(app, opts); err != nil {
 			return err
 		}
+
+		uv := url.Values{}
+		uv.Add("port", strconv.Itoa(port))
+		uv.Add("target", fmt.Sprintf("localhost:%d", rp))
+
+		fmt.Printf("uv = %+v\n", uv)
+
+		host := fmt.Sprintf("%s.%s.convox", balancer.Name, app)
+
+		fmt.Printf("host = %+v\n", host)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("http://10.42.84.0:9477/endpoints/%s", host), bytes.NewReader([]byte(uv.Encode())))
+		if err != nil {
+			return err
+		}
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("res = %+v\n", res)
 	}
 
 	return nil

@@ -8,6 +8,10 @@
 
     $ cx rack start
 
+#### Start the DNS proxy
+
+    $ sudo cx rack frontend
+
 #### Create and deploy an application
 
     $ cd ~/myapp
