@@ -3,7 +3,6 @@ package frontend
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -24,8 +23,6 @@ type Endpoint struct {
 	Ip     string `json:"ip"`
 	Port   int    `json:"port"`
 	Target string `json:"target"`
-
-	listener net.Listener `json:"-"`
 }
 
 func startApi(ip, iface, subnet string) error {
