@@ -378,13 +378,13 @@ func (_m *MockProvider) MetricGet(app string, namespace string, metric string, o
 	return r0, r1
 }
 
-// MetricList provides a mock function with given fields: app, namespace, opts
-func (_m *MockProvider) MetricList(app string, namespace string, opts types.MetricListOptions) ([]string, error) {
-	ret := _m.Called(app, namespace, opts)
+// MetricList provides a mock function with given fields: app, namespace
+func (_m *MockProvider) MetricList(app string, namespace string) ([]string, error) {
+	ret := _m.Called(app, namespace)
 
 	var r0 []string
-	if rf, ok := ret.Get(0).(func(string, string, types.MetricListOptions) []string); ok {
-		r0 = rf(app, namespace, opts)
+	if rf, ok := ret.Get(0).(func(string, string) []string); ok {
+		r0 = rf(app, namespace)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
@@ -392,8 +392,8 @@ func (_m *MockProvider) MetricList(app string, namespace string, opts types.Metr
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, types.MetricListOptions) error); ok {
-		r1 = rf(app, namespace, opts)
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, namespace)
 	} else {
 		r1 = ret.Error(1)
 	}

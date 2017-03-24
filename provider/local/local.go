@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/convox/logger"
+	"github.com/convox/praxis/types"
 )
 
 var (
@@ -24,12 +25,24 @@ var (
 var Logger = logger.New("ns=provider.aws")
 
 type Provider struct {
-	Root string
+	Metrics types.MetricNamespace
+	Root    string
 }
 
 // FromEnv returns a new local.Provider from env vars
 func FromEnv() (*Provider, error) {
-	return &Provider{Root: coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox")}, nil
+	metrics := types.MetricNamespace{
+		"service": types.MetricEntity{},
+	}
+
+	p := &Provider{
+		Root:    coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
+		Metrics: metrics,
+	}
+
+	go p.collectMetrics()
+
+	return p, nil
 }
 
 func init() {

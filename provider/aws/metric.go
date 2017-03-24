@@ -6,7 +6,7 @@ import (
 	"github.com/convox/praxis/types"
 )
 
-func (p *Provider) MetricList(app, namespace string, opts types.MetricListOptions) ([]string, error) {
+func (p *Provider) MetricList(app, namespace string) ([]string, error) {
 	if metrics, ok := types.MetricNames[namespace]; ok {
 		return metrics, nil
 	}

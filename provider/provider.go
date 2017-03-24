@@ -47,7 +47,7 @@ type Provider interface {
 	KeyDecrypt(app, key string, data []byte) ([]byte, error)
 	KeyEncrypt(app, key string, data []byte) ([]byte, error)
 
-	MetricList(app, namespace string, opts types.MetricListOptions) ([]string, error)
+	MetricList(app, namespace string) ([]string, error)
 	MetricGet(app, namespace, metric string, opts types.MetricGetOptions) ([]string, error)
 
 	// ObjectDelete(key string) error
