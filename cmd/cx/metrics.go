@@ -20,31 +20,31 @@ func init() {
 				Name:        "list",
 				Description: "list metrics",
 				Usage:       "<namespace>",
-				Action:      listMetrics,
+				Action:      runMetricsList,
 			},
 			cli.Command{
 				Name:        "get",
 				Description: "display metrics",
 				Usage:       "<namespace> <metric>",
-				Action:      getMetrics,
+				Action:      runGetMetrics,
 			},
 		},
 	})
 }
 
-func listMetrics(c *cli.Context) error {
-	app, err := appName(c, ".")
-	if err != nil {
-		return err
-	}
-
+func runMetricsList(c *cli.Context) error {
 	if c.NArg() != 1 {
 		return stdcli.Usage(c)
 	}
 
 	ns := c.Args()[0]
 
-	metrics, err := Rack.MetricList(app, ns, types.MetricListOptions{})
+	app, err := appName(c, ".")
+	if err != nil {
+		return err
+	}
+
+	metrics, err := Rack.MetricList(app, ns)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func listMetrics(c *cli.Context) error {
 	return nil
 }
 
-func getMetrics(c *cli.Context) error {
+func runGetMetrics(c *cli.Context) error {
 	app, err := appName(c, ".")
 	if err != nil {
 		return err

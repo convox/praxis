@@ -24,7 +24,7 @@ func MetricList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	ns := c.Var("namespace")
 
-	metrics, err := Provider.MetricList(app, ns, types.MetricListOptions{})
+	metrics, err := Provider.MetricList(app, ns)
 	if err != nil {
 		return err
 	}

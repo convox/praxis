@@ -12,7 +12,7 @@ func (c *Client) MetricGet(app, namespace, metric string, opts types.MetricGetOp
 	return metrics, err
 }
 
-func (c *Client) MetricList(app, namespace string, opts types.MetricListOptions) ([]string, error) {
+func (c *Client) MetricList(app, namespace string) ([]string, error) {
 	metrics := []string{}
 	err := c.Get(fmt.Sprintf("/apps/%s/metrics/%s", app, namespace), RequestOptions{}, &metrics)
 	return metrics, err
