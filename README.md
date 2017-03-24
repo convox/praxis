@@ -17,11 +17,11 @@
 #### Set environment variables
 
     $ cx env set FOO=bar
-    
+
 #### See running processes
 
     $ cx ps
-    
+
 #### Start the application in the foreground
 
     $ cx start
@@ -36,4 +36,4 @@ Convox, Inc. 2017
 
 ## LICENSE
 
-GPLv2
+[Apache License, v2.0](https://www.apache.org/licenses/LICENSE-2.0)

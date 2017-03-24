@@ -13,7 +13,7 @@ func testProvider() (*local.Provider, error) {
 		return nil, err
 	}
 
-	return &local.Provider{Root: tmp}, nil
+	return &local.Provider{Root: tmp, Test: true}, nil
 }
 
 func cleanup(p *local.Provider) {

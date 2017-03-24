@@ -3,6 +3,7 @@ package local
 import (
 	"encoding/base64"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/convox/praxis/types"
@@ -14,13 +15,13 @@ func (p *Provider) TableCreate(app, name string, opts types.TableCreateOptions) 
 		Indexes: opts.Indexes,
 	}
 
-	return p.Store(fmt.Sprintf("apps/%s/tables/%s/table.json", app, name), t)
+	return p.storageStore(fmt.Sprintf("apps/%s/tables/%s/table.json", app, name), t)
 }
 
 func (p *Provider) TableGet(app, table string) (*types.Table, error) {
 	var t *types.Table
 
-	if err := p.Load(fmt.Sprintf("apps/%s/tables/%s/table.json", app, table), &t); err != nil {
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/tables/%s/table.json", app, table), &t); err != nil {
 		if strings.HasPrefix(err.Error(), "no such key:") {
 			return nil, fmt.Errorf("no such table: %s", table)
 		}
@@ -31,7 +32,7 @@ func (p *Provider) TableGet(app, table string) (*types.Table, error) {
 }
 
 func (p *Provider) TableList(app string) (types.Tables, error) {
-	tt, err := p.List(fmt.Sprintf("apps/%s/tables", app))
+	tt, err := p.storageList(fmt.Sprintf("apps/%s/tables", app))
 	if err != nil {
 		return nil, err
 	}
@@ -47,11 +48,13 @@ func (p *Provider) TableList(app string) (types.Tables, error) {
 		tables[i] = *table
 	}
 
+	sort.Slice(tables, tables.Less)
+
 	return tables, nil
 }
 
 func (p *Provider) TableTruncate(app, table string) error {
-	return p.DeleteAll(fmt.Sprintf("apps/%s/tables/%s/indexes", app, table))
+	return p.storageDeleteAll(fmt.Sprintf("apps/%s/tables/%s/indexes", app, table))
 }
 
 func (p *Provider) TableRowDelete(app, table, key string, opts types.TableRowDeleteOptions) error {
@@ -112,7 +115,7 @@ func (p *Provider) TableRowStore(app, table string, attrs types.TableRow) (strin
 
 		ea := encodeAttrs(attrs)
 
-		if err := p.Store(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, index, ea[index], ea["id"]), ea); err != nil {
+		if err := p.storageStore(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, index, ea[index], ea["id"]), ea); err != nil {
 			return "", err
 		}
 	}
@@ -140,18 +143,18 @@ func (p *Provider) TableRowsDelete(app, table string, keys []string, opts types.
 
 			ei := encodeAttrs(item)
 
-			if err := p.Delete(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, in, ei[in], ei["id"])); err != nil {
+			if err := p.storageDelete(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s.json", app, table, in, ei[in], ei["id"])); err != nil {
 				return err
 			}
 
 			dir := fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, in, ei[in])
-			entries, err := p.List(dir)
+			entries, err := p.storageList(dir)
 			if err != nil {
 				return err
 			}
 
 			if len(entries) == 0 {
-				if err := p.Delete(dir); err != nil {
+				if err := p.storageDelete(dir); err != nil {
 					return err
 				}
 			}
@@ -171,7 +174,7 @@ func (p *Provider) TableRowsGet(app, table string, keys []string, opts types.Tab
 
 		ek := encodeValue(key)
 
-		entries, err := p.List(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, coalesce(opts.Index, "id"), ek))
+		entries, err := p.storageList(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, coalesce(opts.Index, "id"), ek))
 		if err != nil {
 			return nil, err
 		}
@@ -179,7 +182,7 @@ func (p *Provider) TableRowsGet(app, table string, keys []string, opts types.Tab
 		for _, e := range entries {
 			var attrs map[string]string
 
-			if err := p.Load(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s", app, table, coalesce(opts.Index, "id"), ek, e), &attrs); err != nil {
+			if err := p.storageLoad(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/%s", app, table, coalesce(opts.Index, "id"), ek, e), &attrs); err != nil {
 				return nil, err
 			}
 

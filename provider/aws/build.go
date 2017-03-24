@@ -23,7 +23,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		Id:      id,
 		App:     app,
 		Status:  "created",
-		Created: time.Now(),
+		Created: time.Now().UTC(),
 	}
 
 	if err := p.buildStore(build); err != nil {

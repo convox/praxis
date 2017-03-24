@@ -8,6 +8,8 @@ type Table struct {
 
 type Tables []Table
 
+func (v Tables) Less(i, j int) bool { return v[i].Name < v[j].Name }
+
 type TableCreateOptions struct {
 	Indexes []string
 }

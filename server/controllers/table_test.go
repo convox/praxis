@@ -132,7 +132,7 @@ func TestTableList(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, []byte(`[{"Name":"table","Indexes":["foo","baz"]},{"Name":"table2","Indexes":["baz"]},{"Name":"table1","Indexes":["floor"]}]`), data)
+	assert.Equal(t, string(`[{"Name":"table","Indexes":["foo","baz"]},{"Name":"table1","Indexes":["floor"]},{"Name":"table2","Indexes":["baz"]}]`), string(data))
 }
 
 func TestTableRowStore(t *testing.T) {

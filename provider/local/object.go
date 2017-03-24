@@ -18,7 +18,7 @@ func (p *Provider) ObjectFetch(app, key string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("no such key: %s", key)
 	}
 
-	return p.Read(token)
+	return p.storageRead(token)
 }
 
 func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error) {
@@ -30,7 +30,7 @@ func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectSt
 		return nil, fmt.Errorf("key must not be blank")
 	}
 
-	if err := p.Store(fmt.Sprintf("apps/%s/objects/%s", app, key), r); err != nil {
+	if err := p.storageStore(fmt.Sprintf("apps/%s/objects/%s", app, key), r); err != nil {
 		return nil, err
 	}
 

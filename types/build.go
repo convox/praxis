@@ -6,8 +6,8 @@ type Build struct {
 	Id       string `json:"id"`
 	App      string `json:"app"`
 	Manifest string `json:"manifest"`
-	Release  string `json:"release"`
 	Process  string `json:"process"`
+	Release  string `json:"release"`
 	Status   string `json:"status"`
 
 	Created time.Time `json:"created"`

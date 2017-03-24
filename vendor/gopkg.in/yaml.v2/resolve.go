@@ -3,7 +3,6 @@ package yaml
 import (
 	"encoding/base64"
 	"math"
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -81,8 +80,6 @@ func resolvableTag(tag string) bool {
 	return false
 }
 
-var yamlStyleFloat = regexp.MustCompile(`^[-+]?[0-9]*\.?[0-9]+([eE][-+][0-9]+)?$`)
-
 func resolve(tag string, in string) (rtag string, out interface{}) {
 	if !resolvableTag(tag) {
 		return tag, in
@@ -134,37 +131,19 @@ func resolve(tag string, in string) (rtag string, out interface{}) {
 					return yaml_INT_TAG, intv
 				}
 			}
-			uintv, err := strconv.ParseUint(plain, 0, 64)
+			floatv, err := strconv.ParseFloat(plain, 64)
 			if err == nil {
-				return yaml_INT_TAG, uintv
-			}
-			if yamlStyleFloat.MatchString(plain) {
-				floatv, err := strconv.ParseFloat(plain, 64)
-				if err == nil {
-					return yaml_FLOAT_TAG, floatv
-				}
+				return yaml_FLOAT_TAG, floatv
 			}
 			if strings.HasPrefix(plain, "0b") {
 				intv, err := strconv.ParseInt(plain[2:], 2, 64)
 				if err == nil {
-					if intv == int64(int(intv)) {
-						return yaml_INT_TAG, int(intv)
-					} else {
-						return yaml_INT_TAG, intv
-					}
-				}
-				uintv, err := strconv.ParseUint(plain[2:], 2, 64)
-				if err == nil {
-					return yaml_INT_TAG, uintv
+					return yaml_INT_TAG, int(intv)
 				}
 			} else if strings.HasPrefix(plain, "-0b") {
 				intv, err := strconv.ParseInt(plain[3:], 2, 64)
 				if err == nil {
-					if intv == int64(int(intv)) {
-						return yaml_INT_TAG, -int(intv)
-					} else {
-						return yaml_INT_TAG, -intv
-					}
+					return yaml_INT_TAG, -int(intv)
 				}
 			}
 			// XXX Handle timestamps here.

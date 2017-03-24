@@ -85,7 +85,7 @@ func (l *HandlerList) copy() HandlerList {
 	n := HandlerList{
 		AfterEachFn: l.AfterEachFn,
 	}
-	n.list = append(make([]NamedHandler, 0, len(l.list)), l.list...)
+	n.list = append([]NamedHandler{}, l.list...)
 	return n
 }
 

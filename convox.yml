@@ -12,7 +12,7 @@ services:
       - PROVIDER=local
       - RACK=dev
       - VERSION
-    test: make check test
+    test: make test
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/convox:/var/convox
