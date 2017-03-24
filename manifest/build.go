@@ -29,7 +29,7 @@ type BuildSource struct {
 }
 
 func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
-	builds := map[string]Service{}
+	builds := map[string][]Service{}
 	pushes := map[string]string{}
 	tags := map[string]string{}
 
@@ -37,7 +37,7 @@ func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
 		hash := s.BuildHash()
 		to := fmt.Sprintf("%s/%s:%s", prefix, s.Name, tag)
 
-		builds[hash] = s
+		builds[hash] = append(builds[hash], s)
 		tags[hash] = to
 
 		if opts.Push != "" {
@@ -45,14 +45,16 @@ func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
 		}
 	}
 
-	for hash, service := range builds {
-		if service.Image != "" {
-			if err := service.pull(hash, opts); err != nil {
-				return err
-			}
-		} else {
-			if err := service.build(hash, opts); err != nil {
-				return err
+	for hash, services := range builds {
+		for _, service := range services {
+			if service.Image != "" {
+				if err := service.pull(hash, opts); err != nil {
+					return err
+				}
+			} else {
+				if err := service.build(hash, opts); err != nil {
+					return err
+				}
 			}
 		}
 	}
