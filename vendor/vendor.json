@@ -510,6 +510,12 @@
 			"revisionTime": "2015-12-08T07:18:31Z"
 		},
 		{
+			"checksumSHA1": "v3FvbNaR/CPHNmKqyVNLM4SXjX0=",
+			"path": "github.com/kballard/go-shellquote",
+			"revision": "d8ec1a69a250a17bb0e419c386eac1f3711dc142",
+			"revisionTime": "2015-08-10T07:47:51Z"
+		},
+		{
 			"checksumSHA1": "uulQHQ7IsRKqDudBC8Go9J0gtAc=",
 			"path": "github.com/kr/text",
 			"revision": "7cafcd837844e784b526369c9bce262804aebc60",
