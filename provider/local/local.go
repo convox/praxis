@@ -22,7 +22,7 @@ var (
 )
 
 // Logger is a package-wide logger
-var Logger = logger.New("ns=provider.aws")
+var Logger = logger.New("ns=provider.local")
 
 type Provider struct {
 	Metrics types.MetricNamespace

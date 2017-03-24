@@ -26,7 +26,6 @@ func (p *Provider) MetricGet(app, namespace, metric string, opts types.MetricGet
 func (p *Provider) collectMetrics() {
 	for {
 		p.collectDockerStats()
-		fmt.Printf("p.Metrics = %+v\n", p.Metrics)
 		time.Sleep(30 * time.Second)
 	}
 }
@@ -35,17 +34,15 @@ func (p *Provider) collectDockerStats() {
 
 	apps, err := p.AppList()
 	if err != nil {
-		fmt.Printf("stats apps: %s\n", err)
+		Logger.Error(fmt.Errorf("stats apps: %s", err))
 		return
 	}
 
 	dstats := dockerStats()
 	if dstats == nil {
-		fmt.Println("empty docker stats")
+		Logger.Logf("empty docker stats")
 		return
 	}
-
-	fmt.Printf("dstats = %+v\n", dstats)
 
 	for _, app := range apps {
 		appMetrics, ok := p.Metrics["service"][app.Name]
@@ -55,7 +52,7 @@ func (p *Provider) collectDockerStats() {
 
 		pss, err := p.ProcessList(app.Name, types.ProcessListOptions{})
 		if err != nil {
-			fmt.Printf("stats ps: %s\n", err)
+			Logger.Error(fmt.Errorf("stats ps: %s", err))
 			continue
 		}
 
@@ -79,7 +76,7 @@ func (p *Provider) collectDockerStats() {
 func dockerStats() map[string]types.MetricPoints {
 	out, err := exec.Command("docker", "stats", "--no-stream", "--format", "{{.Container}}:{{.CPUPerc}}:{{.MemPerc}}").CombinedOutput()
 	if err != nil {
-		fmt.Printf("stats docker: %s\n", err)
+		Logger.Error(fmt.Errorf("stats docker: %s", err))
 		return nil
 	}
 
@@ -94,13 +91,13 @@ func dockerStats() map[string]types.MetricPoints {
 
 		cpu, err := strconv.ParseFloat(strings.TrimRight(stats[1], "%"), 32)
 		if err != nil {
-			fmt.Printf("stats cpu %s\n", err)
+			Logger.Error(fmt.Errorf("stats cpu %s", err))
 			return nil
 		}
 
 		mem, err := strconv.ParseFloat(strings.TrimRight(stats[2], "%"), 32)
 		if err != nil {
-			fmt.Printf("stats mem %s\n", err)
+			Logger.Error(fmt.Errorf("stats mem %s", err))
 			return nil
 		}
 
@@ -125,7 +122,7 @@ func dockerStats() map[string]types.MetricPoints {
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Printf("stats scanner %s\n", err)
+		Logger.Error(fmt.Errorf("stats scanner %s", err))
 		return nil
 	}
 
