@@ -128,12 +128,9 @@ func registerBalancerWithFrontend(app string, balancer manifest.Balancer) error 
 
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
+		if _, err := http.DefaultClient.Do(req); err != nil {
 			return err
 		}
-
-		fmt.Printf("res = %+v\n", res)
 	}
 
 	return nil
