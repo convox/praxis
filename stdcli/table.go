@@ -7,8 +7,9 @@ import (
 )
 
 type Table struct {
-	Headers []string
-	Rows    [][]string
+	Headers     []string
+	Rows        [][]string
+	SkipHeaders bool
 }
 
 func NewTable(headers ...string) *Table {
@@ -20,7 +21,9 @@ func (t *Table) AddRow(values ...string) {
 }
 
 func (t *Table) Print() {
-	t.printHeaders(t.Headers)
+	if !t.SkipHeaders {
+		t.printHeaders(t.Headers)
+	}
 
 	for _, row := range t.Rows {
 		t.printValues(row)
