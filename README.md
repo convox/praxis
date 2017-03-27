@@ -12,9 +12,13 @@
 
     $ cx rack start
 
-#### Create and deploy an application
+#### Build a convox.yml
 
     $ cd ~/myapp
+    $ vi convox.yml
+    
+#### Deploy the application to your local Rack
+
     $ cx apps create myapp
     $ cx deploy
 
