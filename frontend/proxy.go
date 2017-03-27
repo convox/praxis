@@ -8,19 +8,19 @@ import (
 	"sync"
 )
 
-func createProxy(ip, port, target string) error {
+func createProxy(ip, port, target string) (net.Listener, error) {
 	log := Log.At("proxy.create").Namespace("ip=%s port=%s target=%s", ip, port, target).Start()
 
 	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%s", ip, port))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	go handleListener(ln)
 
 	log.Success()
 
-	return nil
+	return ln, nil
 }
 
 func handleListener(ln net.Listener) {
@@ -59,7 +59,6 @@ func handleConnection(cn net.Conn) {
 	ep, ok := endpoints[ip][pi]
 	if !ok {
 		cn.Write([]byte(fmt.Sprintf("no endpoint\n")))
-		log.Error(err)
 		return
 	}
 

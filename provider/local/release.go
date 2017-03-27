@@ -2,14 +2,15 @@ package local
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/convox/praxis/manifest"
@@ -218,6 +219,104 @@ func (p *Provider) releasePromote(app, release string) error {
 	return nil
 }
 
+var registers = map[*Provider]bool{}
+
+func (p *Provider) registerBalancers() {
+	if _, ok := registers[p]; ok {
+		return
+	}
+
+	tick := time.Tick(1 * time.Minute)
+
+	for range tick {
+		if err := p.registerBalancersTick(); err != nil {
+			fmt.Printf("err = %+v\n", err)
+		}
+	}
+}
+
+func (p *Provider) registerBalancersTick() error {
+	apps, err := p.AppList()
+	if err != nil {
+		return err
+	}
+
+	for _, app := range apps {
+		if app.Release == "" {
+			continue
+		}
+
+		r, err := p.ReleaseGet(app.Name, app.Release)
+		if err != nil {
+			return err
+		}
+
+		b, err := p.BuildGet(app.Name, r.Build)
+		if err != nil {
+			return err
+		}
+
+		m, err := manifest.Load([]byte(b.Manifest))
+		if err != nil {
+			return err
+		}
+
+		for _, b := range m.Balancers {
+			if err := registerBalancerWithFrontend(app.Name, b); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func registerBalancerWithFrontend(app string, balancer manifest.Balancer) error {
+	host := fmt.Sprintf("%s.%s.convox", balancer.Name, app)
+
+	for _, e := range balancer.Endpoints {
+		data, err := exec.Command("docker", "inspect", "-f", "{{json .HostConfig.PortBindings}}", fmt.Sprintf("balancer-%s-%s-%s", app, balancer.Name, e.Port)).CombinedOutput()
+		if err != nil {
+			return err
+		}
+
+		var bindings map[string][]struct {
+			HostPort string
+		}
+
+		if err := json.Unmarshal(data, &bindings); err != nil {
+			return err
+		}
+
+		bind, ok := bindings["3000/tcp"]
+		if !ok || len(bind) < 1 || bind[0].HostPort == "" {
+			return fmt.Errorf("invalid balancer binding")
+		}
+
+		port := bind[0].HostPort
+
+		uv := url.Values{}
+		uv.Add("port", e.Port)
+		uv.Add("target", fmt.Sprintf("localhost:%s", port))
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("http://10.42.84.0:9477/endpoints/%s", host), bytes.NewReader([]byte(uv.Encode())))
+		if err != nil {
+			return err
+		}
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("res = %+v\n", res)
+	}
+
+	return nil
+}
+
 func (p *Provider) startBalancer(app string, balancer manifest.Balancer) error {
 	for _, e := range balancer.Endpoints {
 		name := fmt.Sprintf("balancer-%s-%s-%s", app, balancer.Name, e.Port)
@@ -231,11 +330,6 @@ func (p *Provider) startBalancer(app string, balancer manifest.Balancer) error {
 			command = fmt.Sprintf("proxy %s target %s", e.Protocol, e.Target)
 		default:
 			return fmt.Errorf("invalid balancer endpoint: %s:%s", balancer.Name, e.Port)
-		}
-
-		port, err := strconv.Atoi(e.Port)
-		if err != nil {
-			return err
 		}
 
 		sys, err := p.SystemGet()
@@ -259,29 +353,11 @@ func (p *Provider) startBalancer(app string, balancer manifest.Balancer) error {
 			return err
 		}
 
-		uv := url.Values{}
-		uv.Add("port", strconv.Itoa(port))
-		uv.Add("target", fmt.Sprintf("localhost:%d", rp))
-
-		fmt.Printf("uv = %+v\n", uv)
-
-		host := fmt.Sprintf("%s.%s.convox", balancer.Name, app)
-
-		fmt.Printf("host = %+v\n", host)
-
-		req, err := http.NewRequest("POST", fmt.Sprintf("http://10.42.84.0:9477/endpoints/%s", host), bytes.NewReader([]byte(uv.Encode())))
-		if err != nil {
+		if err := registerBalancerWithFrontend(app, balancer); err != nil {
 			return err
 		}
 
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("res = %+v\n", res)
+		go p.registerBalancers()
 	}
 
 	return nil

@@ -15,7 +15,7 @@ func Serve(iface, subnet string) error {
 		return err
 	}
 
-	go startDns(ip)
+	go startDns("convox", ip)
 	go startApi(ip, iface, subnet)
 
 	log.Success()

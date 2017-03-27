@@ -3,13 +3,20 @@ package frontend
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
+)
+
+const (
+	cleanupInterval = 30 * time.Second
+	endpointTTL     = 2 * time.Minute
 )
 
 var (
@@ -19,10 +26,13 @@ var (
 )
 
 type Endpoint struct {
-	Host   string `json:"host"`
-	Ip     string `json:"ip"`
-	Port   int    `json:"port"`
-	Target string `json:"target"`
+	Host   string    `json:"host"`
+	Ip     string    `json:"ip"`
+	Port   int       `json:"port"`
+	Target string    `json:"target"`
+	Until  time.Time `json:"until"`
+
+	listener net.Listener
 }
 
 func startApi(ip, iface, subnet string) error {
@@ -32,7 +42,37 @@ func startApi(ip, iface, subnet string) error {
 	r.HandleFunc("/endpoints/{host}", createEndpoint(iface, subnet)).Methods("POST")
 	r.HandleFunc("/endpoints/{host}", deleteEndpoint).Methods("DELETE")
 
+	go cleanupEndpoints()
+
 	return http.ListenAndServe(fmt.Sprintf("%s:9477", ip), r)
+}
+
+func cleanupEndpoints() {
+	tick := time.Tick(cleanupInterval)
+
+	for range tick {
+		log := Log.At("endpoint.cleanup")
+
+		for host, pe := range endpoints {
+			log = log.Namespace("host=%q", host)
+
+			for port, e := range pe {
+				log = log.Namespace("port=%d", port)
+
+				if e.Until.Before(time.Now()) {
+					e.listener.Close()
+
+					delete(endpoints[host], port)
+
+					if len(endpoints[host]) == 0 {
+						delete(endpoints, host)
+					}
+
+					log.Success()
+				}
+			}
+		}
+	}
 }
 
 func createEndpoint(iface, subnet string) http.HandlerFunc {
@@ -88,15 +128,23 @@ func createEndpoint(iface, subnet string) http.HandlerFunc {
 			Ip:     ip,
 			Port:   pi,
 			Target: target,
+			Until:  time.Now().Add(endpointTTL).UTC(),
+		}
+
+		_, exists := endpoints[ip][pi]
+
+		if !exists {
+			ln, err := createProxy(ip, port, target)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+				log.Error(err)
+				return
+			}
+
+			ep.listener = ln
 		}
 
 		endpoints[ip][pi] = ep
-
-		if err := createProxy(ip, port, target); err != nil {
-			http.Error(w, err.Error(), 500)
-			log.Error(err)
-			return
-		}
 
 		data, err := json.MarshalIndent(ep, "", "  ")
 		if err != nil {
@@ -134,14 +182,6 @@ func listEndpoints(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func ipForHost(iface, subnet, host string) (string, error) {
-	if ip, ok := hosts[host]; ok {
-		return ip, nil
-	}
-
-	return createHost(iface, subnet, host)
-}
-
 func createHost(iface, subnet, host string) (string, error) {
 	ip := fmt.Sprintf("%s.%d", subnet, len(endpoints)+1)
 
@@ -156,4 +196,12 @@ func createHost(iface, subnet, host string) (string, error) {
 	hosts[host] = ip
 
 	return ip, nil
+}
+
+func ipForHost(iface, subnet, host string) (string, error) {
+	if ip, ok := hosts[host]; ok {
+		return ip, nil
+	}
+
+	return createHost(iface, subnet, host)
 }
