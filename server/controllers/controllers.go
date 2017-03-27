@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/convox/praxis/provider"
 )
@@ -21,7 +22,8 @@ var (
 func init() {
 	p, err := provider.FromEnv()
 	if err != nil {
-		panic(fmt.Errorf("unable to load provider: %s", err))
+		fmt.Fprintf(os.Stderr, "error: provider: %s\n", err)
+		os.Exit(1)
 	}
 
 	Provider = p

@@ -34,6 +34,10 @@ type Provider struct {
 func FromEnv() (*Provider, error) {
 	p := &Provider{Root: coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox")}
 
+	if err := checkFrontend(); err != nil {
+		return nil, err
+	}
+
 	go p.registerBalancers()
 
 	return p, nil
@@ -41,6 +45,18 @@ func FromEnv() (*Provider, error) {
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
+}
+
+func checkFrontend() error {
+	c := http.DefaultClient
+
+	c.Timeout = 2 * time.Second
+
+	if _, err := c.Get("http://10.42.84.0:9477/endpoints"); err != nil {
+		return fmt.Errorf("unable to register with frontend")
+	}
+
+	return nil
 }
 
 func (p *Provider) registerBalancers() {
