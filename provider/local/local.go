@@ -99,7 +99,7 @@ func registerBalancerWithFrontend(app string, balancer manifest.Balancer) error 
 	for _, e := range balancer.Endpoints {
 		data, err := exec.Command("docker", "inspect", "-f", "{{json .HostConfig.PortBindings}}", fmt.Sprintf("balancer-%s-%s-%s", app, balancer.Name, e.Port)).CombinedOutput()
 		if err != nil {
-			return err
+			continue
 		}
 
 		var bindings map[string][]struct {
