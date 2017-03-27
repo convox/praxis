@@ -181,6 +181,10 @@ func (p *Provider) releasePromote(app, release string) error {
 	for _, b := range m.Balancers {
 		fmt.Fprintf(log, "starting balancer: %s\n", b.Name)
 
+		for _, e := range b.Endpoints {
+			fmt.Fprintf(log, "  %s://%s.%s.convox:%s\n", e.Protocol, b.Name, a.Name, e.Port)
+		}
+
 		if err := p.startBalancer(app, b); err != nil {
 			return err
 		}

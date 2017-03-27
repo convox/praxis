@@ -4,13 +4,13 @@
 
 ## USAGE
 
-#### Start a local Rack
-
-    $ cx rack start
-
 #### Start the DNS proxy
 
     $ sudo cx rack frontend
+
+#### Start a local Rack
+
+    $ cx rack start
 
 #### Create and deploy an application
 
