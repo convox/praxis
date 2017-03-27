@@ -21,7 +21,7 @@
 
   * [rails](https://gist.github.com/ddollar/4c2368dbb7058652cfe758affd2208b2)
   * [contrived](https://gist.github.com/ddollar/df189f18b44a233294dc6627c130d9e7)
-  * [convox/praxis](https://github.com/convox/praxis/blob/master/convox.yml)
+  * [praxis](https://github.com/convox/praxis/blob/master/convox.yml)
 
 #### Deploy the application to your local Rack
 
