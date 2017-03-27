@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/convox/praxis/frontend"
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	homedir "github.com/mitchellh/go-homedir"
@@ -20,6 +22,23 @@ func init() {
 		Description: "show system information",
 		Action:      runRack,
 		Subcommands: cli.Commands{
+			cli.Command{
+				Name:        "frontend",
+				Description: "start a local rack frontend",
+				Action:      runRackFrontend,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "interface, i",
+						Usage: "interface name",
+						Value: "vlan1",
+					},
+					cli.StringFlag{
+						Name:  "subnet, s",
+						Usage: "subnet",
+						Value: "10.42.84",
+					},
+				},
+			},
 			cli.Command{
 				Name:        "install",
 				Description: "install a rack",
@@ -48,6 +67,23 @@ func runRack(c *cli.Context) error {
 	}
 
 	fmt.Printf("rack = %+v\n", rack)
+
+	return nil
+}
+
+func runRackFrontend(c *cli.Context) error {
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+
+	if u.Uid != "0" {
+		return fmt.Errorf("must run as root")
+	}
+
+	if err := frontend.Serve(c.String("interface"), c.String("subnet")); err != nil {
+		return err
+	}
 
 	return nil
 }

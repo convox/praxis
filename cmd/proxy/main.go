@@ -130,10 +130,14 @@ func handleTarget(protocol, target string) error {
 			return err
 		}
 
-		ln = tls.NewListener(ln, &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			NextProtos:   []string{"h2"},
-		})
+		cfg := &tls.Config{Certificates: []tls.Certificate{cert}}
+
+		switch u.Scheme {
+		case "https", "tls":
+			cfg.NextProtos = []string{"h2"}
+		}
+
+		ln = tls.NewListener(ln, cfg)
 	}
 
 	for {
