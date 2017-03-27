@@ -213,7 +213,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 			return nil, err
 		}
 
-		fmt.Printf("cp = %+v\n", cp)
+		// fmt.Printf("cp = %+v\n", cp)
 
 		args = append(args, cp...)
 	}

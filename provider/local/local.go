@@ -158,8 +158,6 @@ func (p *Provider) startBalancer(app string, balancer manifest.Balancer) error {
 
 		rp := rand.Intn(40000) + 20000
 
-		fmt.Printf("rp = %+v\n", rp)
-
 		opts := types.ProcessRunOptions{
 			Command: command,
 			Image:   sys.Image,
