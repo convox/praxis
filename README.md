@@ -12,11 +12,16 @@
 
     $ cx rack start
 
-#### Build a convox.yml
+#### Create a convox.yml
 
     $ cd ~/myapp
     $ vi convox.yml
     
+###### Examples
+
+  * [rails](https://gist.github.com/ddollar/4c2368dbb7058652cfe758affd2208b2)
+  * [convox/praxis](https://github.com/convox/praxis/blob/master/convox.yml)
+
 #### Deploy the application to your local Rack
 
     $ cx apps create myapp
