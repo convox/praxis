@@ -2,7 +2,6 @@ package frontend
 
 import (
 	"fmt"
-	"os/exec"
 )
 
 func setupResolver(root, ip string) error {
@@ -18,7 +17,7 @@ func setupResolver(root, ip string) error {
 		return err
 	}
 
-	if err := exec.Command("systemctl", "restart", "NetworkManager").Run(); err != nil {
+	if err := execute("systemctl", "restart", "NetworkManager"); err != nil {
 		return err
 	}
 

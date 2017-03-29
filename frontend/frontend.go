@@ -3,6 +3,7 @@ package frontend
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/convox/logger"
@@ -27,6 +28,15 @@ func Serve(iface, subnet string) error {
 	log.Success()
 
 	select {}
+}
+
+func execute(command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }
 
 func writeFile(path string, data []byte) error {
