@@ -42,7 +42,7 @@ func (p *Provider) storageBucket(key string, fn BucketFunc) error {
 }
 
 func (p *Provider) storageDelete(key string) error {
-	path, name, err := storagePopKey(key)
+	path, name, err := storageKeyParts(key)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (p *Provider) storageDelete(key string) error {
 }
 
 func (p *Provider) storageDeleteAll(prefix string) error {
-	path, name, err := storagePopKey(prefix)
+	path, name, err := storageKeyParts(prefix)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (p *Provider) storageDeleteAll(prefix string) error {
 }
 
 func (p *Provider) storageExists(key string) bool {
-	path, name, err := storagePopKey(key)
+	path, name, err := storageKeyParts(key)
 	if err != nil {
 		return false
 	}
@@ -112,7 +112,7 @@ func (p *Provider) storageLoad(key string, v interface{}) error {
 }
 
 func (p *Provider) storageRead(key string) ([]byte, error) {
-	path, name, err := storagePopKey(key)
+	path, name, err := storageKeyParts(key)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (p *Provider) storageRead(key string) ([]byte, error) {
 }
 
 func (p *Provider) storageStore(key string, v interface{}) error {
-	path, name, err := storagePopKey(key)
+	path, name, err := storageKeyParts(key)
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (p *Provider) storageLogWrite(key string, entry []byte) error {
 	})
 }
 
-func storagePopKey(key string) (string, string, error) {
+func storageKeyParts(key string) (string, string, error) {
 	parts := strings.Split(key, "/")
 
 	if len(parts) < 2 {
