@@ -1,70 +1,62 @@
 package local
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/convox/praxis/types"
 )
 
 func (p *Provider) QueueFetch(app, queue string, opts types.QueueFetchOptions) (map[string]string, error) {
-	tsChan := make(chan string)
-	errChan := make(chan error)
-	done := make(chan bool)
+	tick := time.Tick(200 * time.Millisecond)
+	timeout := time.After(time.Duration(coalescei(opts.Timeout, 10)) * time.Second)
 
-	timeout := 10
-	if opts.Timeout > 0 {
-		timeout = opts.Timeout
-	}
-
-	go func() {
-		for {
-			select {
-			case <-time.Tick(100 * time.Millisecond):
-				dirs, err := p.storageList(fmt.Sprintf("apps/%s/queues/%s", app, queue))
-				if err != nil {
-					errChan <- err
-					return
-				}
-
-				if len(dirs) > 0 {
-					tsChan <- dirs[0]
-					return
-				}
-
-			case <-done:
-				return
+	for {
+		select {
+		case <-tick:
+			item, err := p.queueFetchItem(app, queue)
+			if err != nil {
+				return nil, err
 			}
+			if item != nil {
+				return item, nil
+			}
+		case <-timeout:
+			return nil, nil
 		}
-	}()
-
-	var ts string
-	select {
-	case <-time.After(time.Duration(timeout) * time.Second):
-		done <- true
-		return nil, nil
-	case err := <-errChan:
-		return nil, err
-	case ts = <-tsChan:
-		//setting value
 	}
-
-	var attrs map[string]string
-	if err := p.storageLoad(fmt.Sprintf("apps/%s/queues/%s/%s/attrs.json", app, queue, ts), &attrs); err != nil {
-		return nil, err
-	}
-
-	if err := p.storageDeleteAll(fmt.Sprintf("apps/%s/queues/%s/%s", app, queue, ts)); err != nil {
-		return nil, err
-	}
-
-	return attrs, nil
 }
 
 func (p *Provider) QueueStore(app, queue string, attrs map[string]string) error {
-	if err := p.storageStore(fmt.Sprintf("apps/%s/queues/%s/%d/attrs.json", app, queue, time.Now().UnixNano()), attrs); err != nil {
+	data, err := json.Marshal(attrs)
+	if err != nil {
 		return err
 	}
 
-	return nil
+	return p.storageLogWrite(fmt.Sprintf("apps/%s/queues/%s", app, queue), data)
+}
+
+func (p *Provider) queueFetchItem(app, queue string) (map[string]string, error) {
+	var item map[string]string
+
+	err := p.storageBucket(fmt.Sprintf("apps/%s/queues/%s", app, queue), func(bucket *bolt.Bucket) error {
+		k, v := bucket.Cursor().First()
+
+		if k == nil {
+			return nil
+		}
+
+		if err := json.Unmarshal(v, &item); err != nil {
+			return err
+		}
+
+		return bucket.Delete(k)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return item, nil
 }
