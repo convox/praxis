@@ -2,14 +2,12 @@ package frontend
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 )
 
 func createHost(iface, subnet, host string) (string, error) {
 	ip := fmt.Sprintf("%s.%d", subnet, len(endpoints)+1)
 
-	if err := execute("ifconfig", iface, "alias", ip, "netmask", "255.255.255.255"), err != nil {
+	if err := execute("ifconfig", iface, "alias", ip, "netmask", "255.255.255.255"); err != nil {
 		return "", err
 	}
 
