@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"io/ioutil"
 	"net/http/httptest"
-	"os"
 
 	"github.com/convox/praxis/provider/local"
 	"github.com/convox/praxis/sdk/rack"
@@ -13,8 +12,6 @@ import (
 )
 
 var ts *httptest.Server
-
-const tmpDir = "/tmp/convox"
 
 func setup() (rack.Rack, error) {
 	tmp, err := ioutil.TempDir("", "praxis")
@@ -46,5 +43,4 @@ func setup() (rack.Rack, error) {
 
 func cleanup() {
 	ts.Close()
-	os.RemoveAll(tmpDir)
 }

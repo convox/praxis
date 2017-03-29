@@ -17,7 +17,7 @@ func New() *Server {
 	return &Server{Server: server}
 }
 
-func Setup() error {
+func (s *Server) Setup() error {
 	if err := controllers.Init(); err != nil {
 		return err
 	}
