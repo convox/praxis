@@ -2,10 +2,7 @@ package frontend
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 func setupResolver(root, ip string) error {
@@ -26,12 +23,4 @@ func setupResolver(root, ip string) error {
 	}
 
 	return nil
-}
-
-func writeFile(path string, data []byte) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return err
-	}
-
-	return ioutil.WriteFile(path, data, 0644)
 }
