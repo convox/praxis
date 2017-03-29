@@ -3,8 +3,8 @@ package rack_test
 import (
 	"testing"
 
-	"github.com/alecthomas/assert"
 	"github.com/convox/praxis/cycle"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestKeyDecrypt(t *testing.T) {
