@@ -170,7 +170,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		image = fmt.Sprintf("%s/%s:%s", app, opts.Service, release.Build)
 	}
 
-	args = append(args, "--dns", "10.42.84.0")
+	args = append(args, "--dns", p.Frontend)
 
 	for k, v := range opts.Environment {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))

@@ -2,9 +2,6 @@ package frontend
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 
 	"github.com/miekg/dns"
 )
@@ -20,17 +17,6 @@ func startDns(root, ip string) error {
 	server := &dns.Server{Addr: fmt.Sprintf("%s:53", ip), Net: "udp"}
 
 	return server.ListenAndServe()
-}
-
-func setupResolver(root, ip string) error {
-	path := filepath.Join("/etc", "resolver", root)
-	dir := filepath.Dir(path)
-
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-
-	return ioutil.WriteFile(path, []byte(fmt.Sprintf("nameserver %s\nport 53\n", ip)), 0644)
 }
 
 func resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
