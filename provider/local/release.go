@@ -50,7 +50,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 }
 
 func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
-	err = p.storageLoad(fmt.Sprintf("/apps/%s/releases/%s/release.json", app, id), &release)
+	err = p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), &release)
 	return
 }
 
@@ -86,23 +86,23 @@ func (p *Provider) ReleaseLogs(app, id string) (io.ReadCloser, error) {
 
 	switch r.Status {
 	case "complete", "failed":
-		return p.storageRead(key)
 	default:
-		r, w := io.Pipe()
-
-		log, err := p.storageTail(fmt.Sprintf("apps/%s/releases/%s/log", app, id))
-		if err != nil {
-			return nil, err
-		}
-
-		go io.Copy(w, log)
-
-		go p.waitForRelease(app, id, func() {
-			w.Close()
-		})
-
-		return r, nil
+		p.waitForRelease(app, id, nil)
 	}
+
+	lr, lw := io.Pipe()
+
+	go func() {
+		defer lw.Close()
+		p.storageLogRead(key, func(at time.Time, entry []byte) {
+			lw.Write(entry)
+		})
+	}()
+	if err != nil {
+		return nil, err
+	}
+
+	return lr, nil
 }
 
 func (p *Provider) releaseFork(app string) (*types.Release, error) {
@@ -163,15 +163,10 @@ func (p *Provider) releasePromote(app, release string) error {
 		return err
 	}
 
-	log, err := p.storageWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, release))
-	if err != nil {
-		return err
-	}
-
-	defer log.Close()
+	log := fmt.Sprintf("apps/%s/releases/%s/log", app, release)
 
 	for _, s := range m.Services {
-		fmt.Fprintf(log, "starting service: %s\n", s.Name)
+		p.storageLogWrite(log, []byte(fmt.Sprintf("starting service: %s\n", s.Name)))
 
 		if err := p.startService(m, app, s.Name, r.Id); err != nil {
 			return err
@@ -179,10 +174,10 @@ func (p *Provider) releasePromote(app, release string) error {
 	}
 
 	for _, b := range m.Balancers {
-		fmt.Fprintf(log, "starting balancer: %s\n", b.Name)
+		p.storageLogWrite(log, []byte(fmt.Sprintf("starting balancer: %s\n", b.Name)))
 
 		for _, e := range b.Endpoints {
-			fmt.Fprintf(log, "  %s://%s.%s.convox:%s\n", e.Protocol, b.Name, a.Name, e.Port)
+			p.storageLogWrite(log, []byte(fmt.Sprintf("  %s://%s.%s.convox:%s\n", e.Protocol, b.Name, a.Name, e.Port)))
 		}
 
 		if err := p.startBalancer(app, b); err != nil {
@@ -231,5 +226,7 @@ func (p *Provider) waitForRelease(app, id string, fn func()) {
 		}
 	}
 
-	fn()
+	if fn != nil {
+		fn()
+	}
 }

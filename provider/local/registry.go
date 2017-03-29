@@ -15,7 +15,7 @@ func (p *Provider) RegistryAdd(hostname, username, password string) (*types.Regi
 
 	key := fmt.Sprintf("registries/%s", hostname)
 
-	if p.Exists(key) {
+	if p.storageExists(key) {
 		return nil, fmt.Errorf("registry already exists: %s", hostname)
 	}
 
@@ -50,7 +50,7 @@ func (p *Provider) RegistryList() (types.Registries, error) {
 func (p *Provider) RegistryRemove(hostname string) error {
 	key := fmt.Sprintf("registries/%s", hostname)
 
-	if !p.Exists(key) {
+	if !p.storageExists(key) {
 		return fmt.Errorf("no such registry: %s", hostname)
 	}
 

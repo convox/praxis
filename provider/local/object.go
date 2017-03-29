@@ -1,8 +1,10 @@
 package local
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 
 	"github.com/convox/praxis/types"
 )
@@ -14,11 +16,16 @@ func (p *Provider) ObjectFetch(app, key string) (io.ReadCloser, error) {
 
 	token := fmt.Sprintf("apps/%s/objects/%s", app, key)
 
-	if !p.Exists(token) {
+	if !p.storageExists(token) {
 		return nil, fmt.Errorf("no such key: %s", key)
 	}
 
-	return p.storageRead(token)
+	data, err := p.storageRead(token)
+	if err != nil {
+		return nil, err
+	}
+
+	return ioutil.NopCloser(bytes.NewReader(data)), nil
 }
 
 func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error) {

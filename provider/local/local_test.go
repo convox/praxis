@@ -13,7 +13,17 @@ func testProvider() (*local.Provider, error) {
 		return nil, err
 	}
 
-	return &local.Provider{Frontend: "none", Root: tmp, Test: true}, nil
+	p := &local.Provider{
+		Frontend: "none",
+		Root:     tmp,
+		Test:     true,
+	}
+
+	if err := p.Init(); err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
 func testProviderCleanup(p *local.Provider) {

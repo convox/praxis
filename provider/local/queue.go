@@ -21,7 +21,7 @@ func (p *Provider) QueueFetch(app, queue string, opts types.QueueFetchOptions) (
 		for {
 			select {
 			case <-time.Tick(100 * time.Millisecond):
-				dirs, err := p.storageList(fmt.Sprintf("apps/%s/queues/%s/", app, queue))
+				dirs, err := p.storageList(fmt.Sprintf("apps/%s/queues/%s", app, queue))
 				if err != nil {
 					errChan <- err
 					return
