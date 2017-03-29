@@ -187,9 +187,11 @@ func (m *Manifest) BuildSources(service string) ([]BuildSource, error) {
 					// do nothing
 				default:
 					remote := replaceEnv(parts[2], env)
-					if !strings.HasPrefix(remote, "/") {
+
+					if !filepath.IsAbs(remote) {
 						remote = filepath.Join(wd, remote)
 					}
+
 					bs = append(bs, BuildSource{Local: parts[1], Remote: remote})
 				}
 			}
