@@ -11,7 +11,7 @@ import (
 func TestTableCreateGet(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(p)
+	defer testProviderCleanup(p)
 
 	err = p.TableCreate("app", "table", types.TableCreateOptions{})
 	assert.NoError(t, err)
@@ -26,7 +26,7 @@ func TestTableCreateGet(t *testing.T) {
 func TestTableList(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(p)
+	defer testProviderCleanup(p)
 
 	zero, err := p.TableList("app")
 	assert.NoError(t, err)
@@ -61,7 +61,7 @@ func TestTableList(t *testing.T) {
 func TestTableTruncate(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(p)
+	defer testProviderCleanup(p)
 
 	if err := p.TableCreate("app", "table", types.TableCreateOptions{Indexes: []string{"data"}}); !assert.NoError(t, err) {
 		assert.FailNow(t, "table create failed")
@@ -91,7 +91,7 @@ func TestTableTruncate(t *testing.T) {
 func TestTableRowGet(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(p)
+	defer testProviderCleanup(p)
 
 	err = p.TableCreate("app", "table", types.TableCreateOptions{Indexes: []string{"foo"}})
 	assert.NoError(t, err)
@@ -119,7 +119,7 @@ func TestTableRowGet(t *testing.T) {
 func TestTableRowStore(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(p)
+	defer testProviderCleanup(p)
 
 	err = p.TableCreate("app", "table", types.TableCreateOptions{Indexes: []string{"status"}})
 	assert.NoError(t, err)
@@ -152,7 +152,7 @@ func TestTableRowStore(t *testing.T) {
 func TestTableRowStoreBytes(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(p)
+	defer testProviderCleanup(p)
 
 	almostUTF8 := []byte{0x47, 0x51, 0xaf, 0x38, 0xdb, 0x23, 0x1, 0x5c, 0xc1, 0xa8, 0xc, 0x34, 0xcc, 0xc1, 0xef, 0x5c, 0x57, 0xa6, 0x92, 0x8, 0xe7, 0x6c, 0xcc, 0xfe, 0x1e, 0x1, 0x3, 0xe0, 0xed, 0xb2, 0x31, 0xdc, 0x2d, 0x37, 0x35, 0x36, 0x2c, 0x10, 0xa0, 0x6e, 0xf6, 0x39, 0xca, 0xb3, 0xbe, 0x3a, 0x99, 0xe1, 0x86, 0xbb, 0xaa, 0xca, 0x46, 0xd6, 0xe4, 0xf1}
 
@@ -171,7 +171,7 @@ func TestTableRowStoreBytes(t *testing.T) {
 func TestTableRowsGet(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(p)
+	defer testProviderCleanup(p)
 
 	err = p.TableCreate("app", "table", types.TableCreateOptions{})
 	assert.NoError(t, err)
@@ -200,7 +200,7 @@ func TestTableRowsGet(t *testing.T) {
 func TestTableRowsDelete(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(p)
+	defer testProviderCleanup(p)
 
 	opts := types.TableCreateOptions{
 		Indexes: []string{"city"},

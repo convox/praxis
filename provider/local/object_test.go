@@ -12,7 +12,7 @@ import (
 func TestObjectStoreFetch(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(p)
+	defer testProviderCleanup(p)
 
 	_, err = p.AppCreate("app")
 	assert.NoError(t, err)
