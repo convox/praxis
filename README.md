@@ -23,10 +23,10 @@
   * [contrived](https://gist.github.com/ddollar/df189f18b44a233294dc6627c130d9e7)
   * [praxis](https://github.com/convox/praxis/blob/master/convox.yml)
 
-#### Deploy the application to your local Rack
+#### Start a local application
 
     $ cx apps create myapp
-    $ cx deploy
+    $ cx start
 
 #### Set environment variables
 
@@ -35,10 +35,6 @@
 #### See running processes
 
     $ cx ps
-
-#### Start the application in the foreground
-
-    $ cx start
 
 ## DEVELOPMENT
 
