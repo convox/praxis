@@ -2,7 +2,6 @@ package rack_test
 
 import (
 	"crypto/tls"
-	"fmt"
 	"io/ioutil"
 	"net/http/httptest"
 	"os"
@@ -22,8 +21,6 @@ func setup() (rack.Rack, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("tmp = %+v\n", tmp)
 
 	p := &local.Provider{
 		Frontend: "none",
