@@ -10,7 +10,7 @@ import (
 func TestReleaseCreateGet(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(p)
+	defer testProviderCleanup(p)
 
 	_, err = p.AppCreate("app")
 	assert.NoError(t, err)
@@ -36,7 +36,7 @@ func TestReleaseCreateGet(t *testing.T) {
 func TestReleaseList(t *testing.T) {
 	p, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(p)
+	defer testProviderCleanup(p)
 
 	_, err = p.AppCreate("app")
 	if !assert.NoError(t, err) {

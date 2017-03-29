@@ -9,7 +9,7 @@ import (
 func TestAppCreate(t *testing.T) {
 	local, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(local)
+	defer testProviderCleanup(local)
 
 	app, err := local.AppCreate("test")
 	assert.NoError(t, err)
@@ -19,7 +19,7 @@ func TestAppCreate(t *testing.T) {
 func TestAppCreateAlreadyExists(t *testing.T) {
 	local, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(local)
+	defer testProviderCleanup(local)
 
 	_, err = local.AppCreate("test")
 	assert.NoError(t, err)
@@ -31,7 +31,7 @@ func TestAppCreateAlreadyExists(t *testing.T) {
 func TestAppDelete(t *testing.T) {
 	local, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(local)
+	defer testProviderCleanup(local)
 
 	_, err = local.AppCreate("test")
 	assert.NoError(t, err)
@@ -49,7 +49,7 @@ func TestAppDelete(t *testing.T) {
 func TestAppDeleteNonexistant(t *testing.T) {
 	local, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(local)
+	defer testProviderCleanup(local)
 
 	err = local.AppDelete("test")
 	assert.EqualError(t, err, "no such app: test")
@@ -58,7 +58,7 @@ func TestAppDeleteNonexistant(t *testing.T) {
 func TestAppGet(t *testing.T) {
 	local, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(local)
+	defer testProviderCleanup(local)
 
 	_, err = local.AppGet("test")
 	assert.EqualError(t, err, "no such app: test")
@@ -74,7 +74,7 @@ func TestAppGet(t *testing.T) {
 func TestAppGetNonexistant(t *testing.T) {
 	local, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(local)
+	defer testProviderCleanup(local)
 
 	_, err = local.AppGet("test")
 	assert.EqualError(t, err, "no such app: test")
@@ -83,7 +83,7 @@ func TestAppGetNonexistant(t *testing.T) {
 func TestAppList(t *testing.T) {
 	local, err := testProvider()
 	assert.NoError(t, err)
-	defer cleanup(local)
+	defer testProviderCleanup(local)
 
 	apps, err := local.AppList()
 	assert.NoError(t, err)

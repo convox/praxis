@@ -10,6 +10,6 @@ jobs:
       - run: go install ./cmd/cx
       - run:
           background: true
-          command: cx rack start ${CIRCLE_BUILD_NUM}
+          command: cx rack start ${CIRCLE_BUILD_NUM} --frontend=none
       - run: sleep 2
       - run: docker run -it --link rack -e RACK_URL=https://rack:3000 -e VERSION=${CIRCLE_BUILD_NUM} convox/praxis:${CIRCLE_BUILD_NUM} cx test

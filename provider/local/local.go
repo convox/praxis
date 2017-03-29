@@ -26,19 +26,21 @@ var (
 var Logger = logger.New("ns=provider.aws")
 
 type Provider struct {
-	Test bool
-	Root string
+	Frontend string
+	Root     string
+	Test     bool
 }
 
 // FromEnv returns a new local.Provider from env vars
 func FromEnv() (*Provider, error) {
-	p := &Provider{Root: coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox")}
-
-	if err := checkFrontend(); err != nil {
-		return nil, err
+	p := &Provider{
+		Frontend: coalesce(os.Getenv("PROVIDER_FRONTEND"), "10.42.84.0"),
+		Root:     coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
 	}
 
-	go p.registerBalancers()
+	if err := p.initialize(); err != nil {
+		return nil, err
+	}
 
 	return p, nil
 }
@@ -47,12 +49,26 @@ func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
 }
 
-func checkFrontend() error {
+func (p *Provider) initialize() error {
+	if err := p.checkFrontend(); err != nil {
+		return err
+	}
+
+	go p.registerBalancers()
+
+	return nil
+}
+
+func (p *Provider) checkFrontend() error {
+	if p.Frontend == "none" {
+		return nil
+	}
+
 	c := http.DefaultClient
 
 	c.Timeout = 2 * time.Second
 
-	if _, err := c.Get("http://10.42.84.0:9477/endpoints"); err != nil {
+	if _, err := c.Get(fmt.Sprintf("http://%s:9477/endpoints", p.Frontend)); err != nil {
 		return fmt.Errorf("unable to register with frontend")
 	}
 
@@ -74,6 +90,10 @@ func (p *Provider) registerBalancers() {
 }
 
 func (p *Provider) registerBalancersTick() error {
+	if p.Frontend == "none" {
+		return nil
+	}
+
 	apps, err := p.AppList()
 	if err != nil {
 		return err
@@ -100,7 +120,7 @@ func (p *Provider) registerBalancersTick() error {
 		}
 
 		for _, b := range m.Balancers {
-			if err := registerBalancerWithFrontend(app.Name, b); err != nil {
+			if err := p.registerBalancerWithFrontend(app.Name, b); err != nil {
 				return err
 			}
 		}
@@ -109,7 +129,11 @@ func (p *Provider) registerBalancersTick() error {
 	return nil
 }
 
-func registerBalancerWithFrontend(app string, balancer manifest.Balancer) error {
+func (p *Provider) registerBalancerWithFrontend(app string, balancer manifest.Balancer) error {
+	if p.Frontend == "none" {
+		return nil
+	}
+
 	host := fmt.Sprintf("%s.%s.convox", balancer.Name, app)
 
 	for _, e := range balancer.Endpoints {
@@ -137,7 +161,7 @@ func registerBalancerWithFrontend(app string, balancer manifest.Balancer) error 
 		uv.Add("port", e.Port)
 		uv.Add("target", fmt.Sprintf("localhost:%s", port))
 
-		req, err := http.NewRequest("POST", fmt.Sprintf("http://10.42.84.0:9477/endpoints/%s", host), bytes.NewReader([]byte(uv.Encode())))
+		req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:9477/endpoints/%s", p.Frontend, host), bytes.NewReader([]byte(uv.Encode())))
 		if err != nil {
 			return err
 		}
@@ -186,7 +210,7 @@ func (p *Provider) startBalancer(app string, balancer manifest.Balancer) error {
 			return err
 		}
 
-		if err := registerBalancerWithFrontend(app, balancer); err != nil {
+		if err := p.registerBalancerWithFrontend(app, balancer); err != nil {
 			return err
 		}
 
