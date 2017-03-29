@@ -58,6 +58,10 @@ func (p *Provider) Init() error {
 		return err
 	}
 
+	if err := os.MkdirAll(p.Root, 0700); err != nil {
+		return err
+	}
+
 	db, err := bolt.Open(filepath.Join(p.Root, "rack.db"), 0600, nil)
 	if err != nil {
 		return err
