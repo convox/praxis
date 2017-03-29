@@ -60,6 +60,10 @@ func (p *Provider) initialize() error {
 }
 
 func (p *Provider) checkFrontend() error {
+	if p.Frontend == "none" {
+		return nil
+	}
+
 	c := http.DefaultClient
 
 	c.Timeout = 2 * time.Second
@@ -86,6 +90,10 @@ func (p *Provider) registerBalancers() {
 }
 
 func (p *Provider) registerBalancersTick() error {
+	if p.Frontend == "none" {
+		return nil
+	}
+
 	apps, err := p.AppList()
 	if err != nil {
 		return err
@@ -122,6 +130,10 @@ func (p *Provider) registerBalancersTick() error {
 }
 
 func (p *Provider) registerBalancerWithFrontend(app string, balancer manifest.Balancer) error {
+	if p.Frontend == "none" {
+		return nil
+	}
+
 	host := fmt.Sprintf("%s.%s.convox", balancer.Name, app)
 
 	for _, e := range balancer.Endpoints {

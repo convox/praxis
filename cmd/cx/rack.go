@@ -7,10 +7,8 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/convox/praxis/frontend"
-	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	homedir "github.com/mitchellh/go-homedir"
 	cli "gopkg.in/urfave/cli.v1"
@@ -49,6 +47,13 @@ func init() {
 				Name:        "start",
 				Description: "start a local rack",
 				Action:      runRackStart,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "frontend",
+						Usage: "frontend host",
+						Value: "10.42.84.0",
+					},
+				},
 			},
 			cli.Command{
 				Name:        "update",
@@ -118,7 +123,7 @@ func runRackStart(c *cli.Context) error {
 		return stdcli.Usage(c)
 	}
 
-	cmd, err := rackCommand(version)
+	cmd, err := rackCommand(version, c.String("frontend"))
 	if err != nil {
 		return err
 	}
@@ -133,7 +138,7 @@ func runRackUpdate(c *cli.Context) error {
 	return nil
 }
 
-func rackCommand(version string) (*exec.Cmd, error) {
+func rackCommand(version string, frontend string) (*exec.Cmd, error) {
 	home, err := homedir.Dir()
 	if err != nil {
 		return nil, err
@@ -142,6 +147,7 @@ func rackCommand(version string) (*exec.Cmd, error) {
 	exec.Command("docker", "rm", "-f", "rack").Run()
 
 	args := []string{"run"}
+	args = append(args, "-e", fmt.Sprintf("PROVIDER_FRONTEND=%s", frontend))
 	args = append(args, "-e", fmt.Sprintf("VERSION=%s", version))
 	args = append(args, "-i", "--rm", "--name=rack")
 	args = append(args, "-p", "5443:3000")
@@ -159,45 +165,4 @@ func rackRunning() bool {
 	}
 
 	return len(strings.Split(string(data), "\n")) > 1
-}
-
-func startLocalRack() error {
-	if rackRunning() {
-		return nil
-	}
-
-	home, err := homedir.Dir()
-	if err != nil {
-		return err
-	}
-
-	// TODO: make directory, etc
-	fd, err := os.OpenFile(filepath.Join(home, ".convox", "rack.log"), os.O_CREATE|os.O_APPEND, 0600)
-	if err != nil {
-		return err
-	}
-
-	cmd, err := rackCommand("latest")
-	if err != nil {
-		return err
-	}
-
-	cmd.Stdout = fd
-	cmd.Stderr = fd
-
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-
-	rk := rack.New("localhost:5443")
-
-	for {
-		if _, err := rk.AppList(); err == nil {
-			break
-		}
-
-		time.Sleep(20 * time.Millisecond)
-	}
-
-	return nil
 }
