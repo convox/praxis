@@ -9,8 +9,10 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/convox/logger"
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
@@ -29,6 +31,8 @@ type Provider struct {
 	Frontend string
 	Root     string
 	Test     bool
+
+	db *bolt.DB
 }
 
 // FromEnv returns a new local.Provider from env vars
@@ -38,7 +42,7 @@ func FromEnv() (*Provider, error) {
 		Root:     coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
 	}
 
-	if err := p.initialize(); err != nil {
+	if err := p.Init(); err != nil {
 		return nil, err
 	}
 
@@ -49,14 +53,42 @@ func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
 }
 
-func (p *Provider) initialize() error {
+func (p *Provider) Init() error {
 	if err := p.checkFrontend(); err != nil {
 		return err
 	}
 
-	go p.registerBalancers()
+	db, err := bolt.Open(filepath.Join(p.Root, "rack.db"), 0600, nil)
+	if err != nil {
+		return err
+	}
+
+	p.db = db
+
+	if _, err := p.createRootBucket("rack"); err != nil {
+		return err
+	}
 
 	return nil
+}
+
+func (p *Provider) createRootBucket(name string) (*bolt.Bucket, error) {
+	tx, err := p.db.Begin(true)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	bucket, err := tx.CreateBucketIfNotExists([]byte("rack"))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return bucket, err
 }
 
 func (p *Provider) checkFrontend() error {

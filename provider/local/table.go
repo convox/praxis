@@ -147,14 +147,14 @@ func (p *Provider) TableRowsDelete(app, table string, keys []string, opts types.
 				return err
 			}
 
-			dir := fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, in, ei[in])
+			dir := fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s", app, table, in, ei[in])
 			entries, err := p.storageList(dir)
 			if err != nil {
 				return err
 			}
 
 			if len(entries) == 0 {
-				if err := p.storageDelete(dir); err != nil {
+				if err := p.storageDeleteAll(dir); err != nil {
 					return err
 				}
 			}
@@ -174,7 +174,7 @@ func (p *Provider) TableRowsGet(app, table string, keys []string, opts types.Tab
 
 		ek := encodeValue(key)
 
-		entries, err := p.storageList(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s/", app, table, coalesce(opts.Index, "id"), ek))
+		entries, err := p.storageList(fmt.Sprintf("apps/%s/tables/%s/indexes/%s/%s", app, table, coalesce(opts.Index, "id"), ek))
 		if err != nil {
 			return nil, err
 		}

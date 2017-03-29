@@ -5,178 +5,182 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
-	"os/exec"
-	"path/filepath"
+	"strings"
 	"sync"
+	"time"
+
+	"github.com/boltdb/bolt"
 )
 
 var lock sync.Mutex
 
-func (p *Provider) storageDelete(key string) error {
-	lock.Lock()
-	defer lock.Unlock()
+type BucketFunc func(bucket *bolt.Bucket) error
 
-	if p.Root == "" {
-		return fmt.Errorf("cannot delete with empty root")
-	}
-
-	path, err := filepath.Abs(filepath.Join(p.Root, key))
+func (p *Provider) storageBucket(key string, fn BucketFunc) error {
+	tx, err := p.db.Begin(true)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return fmt.Errorf("no such key: %s", key)
-	}
+	cur := tx.Bucket([]byte("rack"))
 
-	return os.Remove(path)
-}
-
-func (p *Provider) storageDeleteAll(key string) error {
-	lock.Lock()
-	defer lock.Unlock()
-
-	if p.Root == "" {
-		return fmt.Errorf("cannot delete with empty root")
-	}
-
-	return os.RemoveAll(filepath.Join(p.Root, key))
-}
-
-func (p *Provider) Exists(key string) bool {
-	lock.Lock()
-	defer lock.Unlock()
-
-	path, err := filepath.Abs(filepath.Join(p.Root, key))
-	if err != nil {
-		return false
-	}
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return false
-	}
-
-	return true
-}
-
-func (p *Provider) storageList(key string) ([]string, error) {
-	lock.Lock()
-	defer lock.Unlock()
-
-	path, err := filepath.Abs(filepath.Join(p.Root, key))
-	if err != nil {
-		return nil, err
-	}
-
-	fd, err := os.Open(path)
-	if err != nil {
-		return []string{}, nil
-	}
-
-	return fd.Readdirnames(-1)
-}
-
-func (p *Provider) storageLoad(key string, v interface{}) error {
-	r, err := p.storageRead(key)
-	if err != nil {
-		return err
-	}
-
-	data, err := ioutil.ReadAll(r)
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(data, v)
-}
-
-func (p *Provider) storageRead(key string) (io.ReadCloser, error) {
-	lock.Lock()
-	defer lock.Unlock()
-
-	path, err := filepath.Abs(filepath.Join(p.Root, key))
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil, fmt.Errorf("no such key: %s", key)
-	}
-
-	return os.Open(path)
-}
-
-func (p *Provider) storageStore(key string, v interface{}) error {
-	lock.Lock()
-	defer lock.Unlock()
-
-	path, err := filepath.Abs(filepath.Join(p.Root, key))
-	if err != nil {
-		return err
-	}
-
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return err
-	}
-
-	if r, ok := v.(io.Reader); ok {
-		fd, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	for _, kp := range strings.Split(key, "/") {
+		b, err := cur.CreateBucketIfNotExists([]byte(kp))
 		if err != nil {
 			return err
 		}
 
-		defer fd.Close()
-
-		if _, err := io.Copy(fd, r); err != nil {
-			return err
-		}
-
-		return nil
+		cur = b
 	}
 
-	data, err := json.Marshal(v)
+	if err := fn(cur); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (p *Provider) storageDelete(key string) error {
+	path, name, err := storagePopKey(key)
 	if err != nil {
 		return err
 	}
 
-	return ioutil.WriteFile(path, data, 0600)
+	return p.storageBucket(path, func(bucket *bolt.Bucket) error {
+		return bucket.Delete([]byte(name))
+	})
 }
 
-func (p *Provider) storageTail(key string) (io.ReadCloser, error) {
-	lock.Lock()
-	defer lock.Unlock()
+func (p *Provider) storageDeleteAll(prefix string) error {
+	path, name, err := storagePopKey(prefix)
+	if err != nil {
+		return err
+	}
 
-	path, err := filepath.Abs(filepath.Join(p.Root, key))
+	return p.storageBucket(path, func(bucket *bolt.Bucket) error {
+		if bucket.Bucket([]byte(name)) == nil {
+			return nil
+		}
+		return bucket.DeleteBucket([]byte(name))
+	})
+}
+
+func (p *Provider) storageExists(key string) bool {
+	path, name, err := storagePopKey(key)
+	if err != nil {
+		return false
+	}
+
+	var buf map[string]interface{}
+	err = p.storageLoad(key, &buf)
+
+	err = p.storageBucket(path, func(bucket *bolt.Bucket) error {
+		item := bucket.Get([]byte(name))
+		if item == nil {
+			return fmt.Errorf("not found")
+		}
+		return nil
+	})
+
+	return err == nil
+}
+
+func (p *Provider) storageList(prefix string) ([]string, error) {
+	items := []string{}
+
+	err := p.storageBucket(prefix, func(bucket *bolt.Bucket) error {
+		return bucket.ForEach(func(k, v []byte) error {
+			items = append(items, string(k))
+			return nil
+		})
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	r, w := io.Pipe()
-
-	cmd := exec.Command("tail", "-f", path)
-	cmd.Stdout = w
-	cmd.Stderr = w
-
-	if err := cmd.Start(); err != nil {
-		return nil, err
-	}
-
-	return r, nil
+	return items, nil
 }
 
-func (p *Provider) storageWrite(key string) (io.WriteCloser, error) {
-	lock.Lock()
-	defer lock.Unlock()
+func (p *Provider) storageLoad(key string, v interface{}) error {
+	data, err := p.storageRead(key)
+	if err != nil {
+		return err
+	}
 
-	path, err := filepath.Abs(filepath.Join(p.Root, key))
+	return json.Unmarshal(data, &v)
+}
+
+func (p *Provider) storageRead(key string) ([]byte, error) {
+	path, name, err := storagePopKey(key)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+	var data []byte
+
+	err = p.storageBucket(path, func(bucket *bolt.Bucket) error {
+		data = bucket.Get([]byte(name))
+		if data == nil {
+			return fmt.Errorf("no such key: %s", key)
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_SYNC|os.O_APPEND, 0600)
+	return data, nil
+}
+
+func (p *Provider) storageStore(key string, v interface{}) error {
+	path, name, err := storagePopKey(key)
+	if err != nil {
+		return err
+	}
+
+	var data []byte
+
+	switch t := v.(type) {
+	case io.Reader:
+		data, err = ioutil.ReadAll(t)
+	default:
+		data, err = json.Marshal(v)
+	}
+	if err != nil {
+		return err
+	}
+
+	return p.storageBucket(path, func(bucket *bolt.Bucket) error {
+		return bucket.Put([]byte(name), data)
+	})
+}
+
+func (p *Provider) storageLogRead(key string, fn func(at time.Time, entry []byte)) error {
+	return p.storageBucket(key, func(bucket *bolt.Bucket) error {
+		return bucket.ForEach(func(k, v []byte) error {
+			at, err := time.Parse(sortableTime, string(k))
+			if err != nil {
+				return err
+			}
+			fn(at, v)
+			return nil
+		})
+	})
+}
+
+func (p *Provider) storageLogWrite(key string, entry []byte) error {
+	return p.storageBucket(key, func(bucket *bolt.Bucket) error {
+		return bucket.Put([]byte(time.Now().Format(sortableTime)), entry)
+	})
+}
+
+func storagePopKey(key string) (string, string, error) {
+	parts := strings.Split(key, "/")
+
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("cannot pop key: %s", key)
+	}
+
+	return strings.Join(parts[0:len(parts)-1], "/"), parts[len(parts)-1], nil
 }
