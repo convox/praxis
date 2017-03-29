@@ -9,3 +9,13 @@ func coalesce(strings ...string) string {
 
 	return ""
 }
+
+func coalescei(ints ...int) int {
+	for _, i := range ints {
+		if i > 0 {
+			return i
+		}
+	}
+
+	return 0
+}

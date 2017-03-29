@@ -1,37 +1,34 @@
 package rack_test
 
 import (
-	"encoding/hex"
-	"fmt"
 	"testing"
 
+	"github.com/convox/praxis/cycle"
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	plainText = "this is data to be encrypted"
-	encHex    = "0109a2789d79141f96fd1d37dd8cb94d00f1d35ced3c87be0c4305b64aaabe40ccff1a580dacd69ce6d842fd"
-)
+func TestKeyDecrypt(t *testing.T) {
+	r, c := testRack()
 
-func TestEncrypt(t *testing.T) {
-	rack, err := setup()
-	assert.NoError(t, err)
-	defer cleanup()
+	c.Add(
+		cycle.HTTPRequest{Method: "POST", Path: "/apps/app/keys/key/decrypt", Body: []byte("eNcRyPtEd")},
+		cycle.HTTPResponse{Code: 200, Body: []byte("message")},
+	)
 
-	enc, err := rack.KeyEncrypt("app", "key", []byte(plainText))
+	data, err := r.KeyDecrypt("app", "key", []byte("eNcRyPtEd"))
 	assert.NoError(t, err)
-	assert.Equal(t, encHex, fmt.Sprintf("%x", enc))
+	assert.Equal(t, "message", string(data))
 }
 
-func TestDecrypt(t *testing.T) {
-	rack, err := setup()
-	assert.NoError(t, err)
-	defer cleanup()
+func TestKeyEncrypt(t *testing.T) {
+	r, c := testRack()
 
-	bytes, err := hex.DecodeString(encHex)
-	assert.NoError(t, err)
+	c.Add(
+		cycle.HTTPRequest{Method: "POST", Path: "/apps/app/keys/key/encrypt", Body: []byte("message")},
+		cycle.HTTPResponse{Code: 200, Body: []byte("eNcRyPtEd")},
+	)
 
-	dec, err := rack.KeyDecrypt("app", "key", []byte(bytes))
+	data, err := r.KeyEncrypt("app", "key", []byte("message"))
 	assert.NoError(t, err)
-	assert.Equal(t, plainText, string(dec))
+	assert.Equal(t, "eNcRyPtEd", string(data))
 }

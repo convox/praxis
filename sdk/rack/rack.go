@@ -17,19 +17,15 @@ type Mock struct {
 
 type Rack provider.Provider
 
-func New(host string) Rack {
-	return &Client{
-		Host: host,
-	}
-}
-
-func NewFromEnv() (Rack, error) {
-	u, err := url.Parse(coalesce(os.Getenv("RACK_URL"), "https://localhost:5443"))
+func New(rackUrl string) (Rack, error) {
+	u, err := url.Parse(coalesce(rackUrl, "https://localhost:5443"))
 	if err != nil {
 		return nil, err
 	}
 
-	return &Client{
-		Host: u.Host,
-	}, nil
+	return &Client{Host: u.Host}, nil
+}
+
+func NewFromEnv() (Rack, error) {
+	return New(os.Getenv("RACK_URL"))
 }

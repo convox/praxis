@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/convox/praxis/provider"
 )
@@ -19,14 +18,15 @@ var (
 	Provider provider.Provider
 )
 
-func init() {
+func Init() error {
 	p, err := provider.FromEnv()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: provider: %s\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	Provider = p
+
+	return nil
 }
 
 func randomString() (string, error) {

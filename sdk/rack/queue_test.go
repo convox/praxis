@@ -3,25 +3,32 @@ package rack_test
 import (
 	"testing"
 
+	"github.com/convox/praxis/cycle"
 	"github.com/convox/praxis/types"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestQueueStoreFetch(t *testing.T) {
-	rack, err := setup()
+func TestQueueStore(t *testing.T) {
+	r, c := testRack()
+
+	c.Add(
+		cycle.HTTPRequest{Method: "POST", Path: "/apps/app/queues/queue", Body: []byte("data=foo")},
+		cycle.HTTPResponse{Code: 200},
+	)
+
+	err := r.QueueStore("app", "queue", map[string]string{"data": "foo"})
 	assert.NoError(t, err)
-	defer cleanup()
+}
 
-	attrs := map[string]string{
-		"data": "foo",
-	}
+func TestQueueFetch(t *testing.T) {
+	r, c := testRack()
 
-	if err := rack.QueueStore("app", "key", attrs); !assert.NoError(t, err) {
-		assert.FailNow(t, "unable to store message")
+	c.Add(
+		cycle.HTTPRequest{Method: "GET", Path: "/apps/app/queues/queue"},
+		cycle.HTTPResponse{Code: 200, Body: []byte(`{"data":"foo"}`)},
+	)
 
-	}
-
-	fm, err := rack.QueueFetch("app", "key", types.QueueFetchOptions{})
+	attrs, err := r.QueueFetch("app", "queue", types.QueueFetchOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, attrs, fm)
+	assert.Equal(t, map[string]string{"data": "foo"}, attrs)
 }
