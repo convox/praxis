@@ -1,46 +1,31 @@
 package rack_test
 
 import (
-	"crypto/tls"
-	"io/ioutil"
 	"net/http/httptest"
 
-	"github.com/convox/praxis/provider/local"
+	"github.com/convox/praxis/cycle"
 	"github.com/convox/praxis/sdk/rack"
-	"github.com/convox/praxis/server"
-	"github.com/convox/praxis/server/controllers"
 )
 
 var ts *httptest.Server
 
-func setup() (rack.Rack, error) {
-	tmp, err := ioutil.TempDir("", "praxis")
+func testRack() (rack.Rack, *cycle.HTTP) {
+	c, err := cycle.NewHTTP()
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	p := &local.Provider{
-		Frontend: "none",
-		Root:     tmp,
-		Test:     true,
+	r, err := rack.New(c.Listen())
+	if err != nil {
+		panic(err)
 	}
 
-	if err := p.Init(); err != nil {
-		return nil, err
-	}
-
-	controllers.Provider = p
-
-	ts = httptest.NewUnstartedServer(server.New())
-	ts.TLS = &tls.Config{
-		NextProtos: []string{"h2"},
-	}
-
-	ts.StartTLS()
-
-	return rack.New(ts.URL)
+	return r, c
 }
 
 func cleanup() {
 	ts.Close()
+}
+
+type Server struct {
 }
