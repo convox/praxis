@@ -36,6 +36,11 @@
 
     $ cx ps
 
+## Development
+
+### Testing
+
+    $ VERSION=dev cx test
 ## COPYRIGHT
 
 Convox, Inc. 2017
