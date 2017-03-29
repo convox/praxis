@@ -36,10 +36,6 @@
 
     $ cx ps
 
-## DEVELOPMENT
-
-    $ make dev
-
 ## COPYRIGHT
 
 Convox, Inc. 2017
