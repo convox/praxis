@@ -18,10 +18,10 @@ import (
 )
 
 type Client struct {
-	Host    string
-	Key     string
-	Socket  string
-	Version string
+	Endpoint *url.URL
+	Key      string
+	Socket   string
+	Version  string
 }
 
 type Headers map[string]string
@@ -197,7 +197,7 @@ func (c *Client) Request(method, path string, opts RequestOptions) (*http.Reques
 		return nil, err
 	}
 
-	req, err := http.NewRequest(method, fmt.Sprintf("https://%s%s?%s", c.Host, path, qs), r)
+	req, err := http.NewRequest(method, fmt.Sprintf("%s%s?%s", c.Endpoint.String(), path, qs), r)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (c *Client) Request(method, path string, opts RequestOptions) (*http.Reques
 		req.Header.Set(k, v)
 	}
 
-	req.SetBasicAuth("convox", string(c.Key))
+	req.SetBasicAuth(c.Endpoint.User.Username(), "")
 
 	return req, nil
 }
