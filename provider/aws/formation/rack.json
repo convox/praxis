@@ -295,7 +295,10 @@
           "Statement": [ { "Effect": "Allow", "Principal": { "Service": [ "ecs.amazonaws.com" ] }, "Action": [ "sts:AssumeRole" ] } ],
           "Version": "2012-10-17"
         },
-        "ManagedPolicyArns": [ "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole" ]
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole",
+          "arn:aws:iam::aws:policy/AdministratorAccess"
+        ]
       }
     },
     "RackService": {
