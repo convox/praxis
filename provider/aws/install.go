@@ -16,15 +16,10 @@ func (p *Provider) Install(name string, opts types.InstallOptions) (string, erro
 	version := coalesce(opts.Version, "latest")
 	template := fmt.Sprintf("https://s3.amazonaws.com/praxis-releases/release/%s/formation/rack.json", version)
 
-	key, err := types.Key(64)
-	if err != nil {
-		return "", err
-	}
-
-	_, err = p.CloudFormation().CreateStack(&cloudformation.CreateStackInput{
+	_, err := p.CloudFormation().CreateStack(&cloudformation.CreateStackInput{
 		Capabilities: []*string{aws.String("CAPABILITY_IAM")},
 		Parameters: []*cloudformation.Parameter{
-			&cloudformation.Parameter{ParameterKey: aws.String("ApiKey"), ParameterValue: aws.String(key)},
+			&cloudformation.Parameter{ParameterKey: aws.String("ApiKey"), ParameterValue: aws.String(opts.Key)},
 			&cloudformation.Parameter{ParameterKey: aws.String("Version"), ParameterValue: aws.String(version)},
 		},
 		StackName:   aws.String(name),

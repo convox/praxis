@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -118,6 +119,11 @@ func runRackInstall(c *cli.Context) error {
 	ptype := c.Args()[0]
 	name := c.Args()[1]
 
+	key, err := types.Key(64)
+	if err != nil {
+		return err
+	}
+
 	switch ptype {
 	case "aws":
 		if err := fetchCredentialsAWS(); err != nil {
@@ -132,6 +138,7 @@ func runRackInstall(c *cli.Context) error {
 
 	endpoint, err := p.Install(name, types.InstallOptions{
 		Color:   true,
+		Key:     key,
 		Output:  os.Stdout,
 		Version: c.String("version"),
 	})
@@ -139,7 +146,14 @@ func runRackInstall(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("endpoint = %+v\n", endpoint)
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return err
+	}
+
+	u.User = url.UserPassword(key, "")
+
+	fmt.Printf("RACK_URL=%s\n", u.String())
 
 	return nil
 }
