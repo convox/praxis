@@ -100,8 +100,6 @@
             "  - aws-cfn-bootstrap\n",
             "  - aws-cli\n",
             "  - nfs-utils\n",
-            "mounts:\n",
-            "  - ['/dev/xvdb', 'none', 'swap', 'sw', '0', '0']\n",
             "bootcmd:\n",
             "  - iptables --insert FORWARD 1 --in-interface docker+ --destination 169.254.169.254/32 --jump DROP\n",
             "  - mkdir /volumes\n",
