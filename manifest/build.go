@@ -174,7 +174,7 @@ func (m *Manifest) BuildSources(service string) ([]BuildSource, error) {
 			continue
 		}
 
-		switch parts[0] {
+		switch strings.ToUpper(parts[0]) {
 		case "ADD", "COPY":
 			if len(parts) > 2 {
 				u, err := url.Parse(parts[1])
@@ -186,7 +186,13 @@ func (m *Manifest) BuildSources(service string) ([]BuildSource, error) {
 				case "http", "https":
 					// do nothing
 				default:
-					bs = append(bs, BuildSource{Local: parts[1], Remote: filepath.Join(wd, replaceEnv(parts[2], env))})
+					remote := replaceEnv(parts[2], env)
+
+					if !filepath.IsAbs(remote) {
+						remote = filepath.Join(wd, remote)
+					}
+
+					bs = append(bs, BuildSource{Local: parts[1], Remote: remote})
 				}
 			}
 		case "ENV":
