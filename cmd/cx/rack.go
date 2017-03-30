@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,7 +11,9 @@ import (
 	"strings"
 
 	"github.com/convox/praxis/frontend"
+	"github.com/convox/praxis/provider"
 	"github.com/convox/praxis/stdcli"
+	"github.com/convox/praxis/types"
 	homedir "github.com/mitchellh/go-homedir"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -41,7 +45,14 @@ func init() {
 				Name:        "install",
 				Description: "install a rack",
 				Action:      runRackInstall,
-				Usage:       "<name>",
+				Usage:       "<provider> <name>",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "version",
+						Usage: "rack version",
+						Value: "latest",
+					},
+				},
 			},
 			cli.Command{
 				Name:        "start",
@@ -54,6 +65,12 @@ func init() {
 						Value: "10.42.84.0",
 					},
 				},
+			},
+			cli.Command{
+				Name:        "uninstall",
+				Description: "uninstall a rack",
+				Action:      runRackUninstall,
+				Usage:       "<name>",
 			},
 			cli.Command{
 				Name:        "update",
@@ -94,22 +111,37 @@ func runRackFrontend(c *cli.Context) error {
 }
 
 func runRackInstall(c *cli.Context) error {
-	if len(c.Args()) != 1 {
+	if len(c.Args()) != 2 {
 		return stdcli.Usage(c)
 	}
 
-	name := c.Args()[0]
-	version := "test"
-	key := "foo"
+	ptype := c.Args()[0]
+	name := c.Args()[1]
 
-	template := fmt.Sprintf("https://s3.amazonaws.com/praxis-releases/release/%s/formation/rack.json", version)
+	switch ptype {
+	case "aws":
+		if err := fetchCredentialsAWS(); err != nil {
+			return err
+		}
+	}
 
-	cmd := exec.Command("aws", "cloudformation", "create-stack", "--stack-name", name, "--template-url", template, "--parameters", fmt.Sprintf("ParameterKey=ApiKey,ParameterValue=%s", key), "--capabilities", "CAPABILITY_IAM")
+	p, err := provider.FromType(ptype)
+	if err != nil {
+		return err
+	}
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	endpoint, err := p.Install(name, types.InstallOptions{
+		Color:   true,
+		Output:  os.Stdout,
+		Version: c.String("version"),
+	})
+	if err != nil {
+		return err
+	}
 
-	return cmd.Run()
+	fmt.Printf("endpoint = %+v\n", endpoint)
+
+	return nil
 }
 
 func runRackStart(c *cli.Context) error {
@@ -134,6 +166,20 @@ func runRackStart(c *cli.Context) error {
 	return cmd.Run()
 }
 
+func runRackUninstall(c *cli.Context) error {
+	if len(c.Args()) != 1 {
+		return stdcli.Usage(c)
+	}
+
+	name := c.Args()[0]
+
+	if _, err := aws("cloudformation", "delete-stack", "--stack-name", name); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func runRackUpdate(c *cli.Context) error {
 	return nil
 }
@@ -147,6 +193,7 @@ func rackCommand(version string, frontend string) (*exec.Cmd, error) {
 	exec.Command("docker", "rm", "-f", "rack").Run()
 
 	args := []string{"run"}
+	args = append(args, "-e", "PROVIDER=local")
 	args = append(args, "-e", fmt.Sprintf("PROVIDER_FRONTEND=%s", frontend))
 	args = append(args, "-e", fmt.Sprintf("VERSION=%s", version))
 	args = append(args, "-i", "--rm", "--name=rack")
@@ -158,11 +205,72 @@ func rackCommand(version string, frontend string) (*exec.Cmd, error) {
 	return exec.Command("docker", args...), nil
 }
 
-func rackRunning() bool {
-	data, err := exec.Command("docker", "ps", "--filter", "name=rack", "--format", "{{json .}}").CombinedOutput()
-	if err != nil {
-		return false
+func aws(args ...string) ([]byte, error) {
+	var buf bytes.Buffer
+
+	cmd := exec.Command("aws", args...)
+
+	cmd.Stdout = &buf
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return nil, err
 	}
 
-	return len(strings.Split(string(data), "\n")) > 1
+	return buf.Bytes(), nil
+}
+
+func fetchCredentialsAWS() error {
+	data, err := aws("configure", "get", "region")
+	if err != nil || len(data) == 0 {
+		return fmt.Errorf("aws cli must be configured, try `aws configure`")
+	}
+
+	os.Setenv("AWS_REGION", strings.TrimSpace(string(data)))
+
+	data, err = aws("configure", "get", "role_arn")
+	if err == nil && len(data) > 0 {
+		return fetchCredentialsAWSRole(strings.TrimSpace(string(data)))
+	}
+
+	data, err = aws("configure", "get", "aws_access_key_id")
+	if err != nil || len(data) == 0 {
+		return fmt.Errorf("aws cli must be configured, try `aws configure`")
+	}
+
+	os.Setenv("AWS_ACCESS_KEY_ID", strings.TrimSpace(string(data)))
+
+	data, err = aws("configure", "get", "aws_secret_access_key")
+	if err != nil || len(data) == 0 {
+		return fmt.Errorf("aws cli must be configured, try `aws configure`")
+	}
+
+	os.Setenv("AWS_SECRET_ACCESS_KEY", strings.TrimSpace(string(data)))
+
+	return nil
+}
+
+func fetchCredentialsAWSRole(role string) error {
+	data, err := aws("sts", "assume-role", "--role-arn", role, "--role-session-name", "convox-cli")
+	if err != nil {
+		return err
+	}
+
+	var auth struct {
+		Credentials struct {
+			AccessKeyId     string
+			SecretAccessKey string
+			SessionToken    string
+		}
+	}
+
+	if err := json.Unmarshal(data, &auth); err != nil {
+		return err
+	}
+
+	os.Setenv("AWS_ACCESS_KEY_ID", auth.Credentials.AccessKeyId)
+	os.Setenv("AWS_SECRET_ACCESS_KEY", auth.Credentials.SecretAccessKey)
+	os.Setenv("AWS_SESSION_TOKEN", auth.Credentials.SessionToken)
+
+	return nil
 }

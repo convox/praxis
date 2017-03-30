@@ -17,11 +17,11 @@ func init() {
 }
 
 func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
-	return nil, nil
+	return nil, fmt.Errorf("unimplemented")
 }
 
 func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error) {
-	return nil, nil
+	return nil, fmt.Errorf("unimplemented")
 }
 
 func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
@@ -33,7 +33,7 @@ func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
 }
 
 func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
-	return 0, nil
+	return 0, fmt.Errorf("unimplemented")
 }
 
 func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
@@ -70,5 +70,5 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 }
 
 func (p *Provider) ProcessStop(app, pid string) error {
-	return nil
+	return fmt.Errorf("unimplemented")
 }

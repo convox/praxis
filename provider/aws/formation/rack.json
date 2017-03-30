@@ -317,6 +317,8 @@
           {
             "Command": [ "bin/rack" ],
             "Environment": [
+              { "Name": "AWS_REGION", "Value": { "Ref": "AWS::Region" } },
+              { "Name": "PROVIDER", "Value": "aws" },
               { "Name": "VERSION", "Value": { "Ref": "Version" } }
             ],
             "Essential": "true",
