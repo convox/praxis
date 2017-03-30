@@ -344,6 +344,26 @@ func (p *Provider) rackResource(resource string) (string, error) {
 	return p.stackResource(p.Rack, resource)
 }
 
+func (p *Provider) stackOutput(name string, output string) (string, error) {
+	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(name),
+	})
+	if err != nil {
+		return "", err
+	}
+	if len(res.Stacks) < 1 {
+		return "", fmt.Errorf("no such stack: %s", name)
+	}
+
+	for _, o := range res.Stacks[0].Outputs {
+		if *o.OutputKey == output {
+			return *o.OutputValue, nil
+		}
+	}
+
+	return "", fmt.Errorf("no such output for stack %s: %s", name, output)
+}
+
 func (p *Provider) stackResource(name string, resource string) (string, error) {
 	res, err := p.CloudFormation().DescribeStackResource(&cloudformation.DescribeStackResourceInput{
 		LogicalResourceId: aws.String(resource),

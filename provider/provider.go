@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -46,6 +47,8 @@ type Provider interface {
 
 	KeyDecrypt(app, key string, data []byte) ([]byte, error)
 	KeyEncrypt(app, key string, data []byte) ([]byte, error)
+
+	Install(name string, opts types.InstallOptions) (string, error)
 
 	// ObjectDelete(key string) error
 	// ObjectExists(key string) bool
@@ -93,10 +96,16 @@ type Provider interface {
 
 // FromEnv returns a new Provider from env vars
 func FromEnv() (Provider, error) {
-	switch os.Getenv("PROVIDER") {
+	return FromType(os.Getenv("PROVIDER"))
+}
+
+func FromType(t string) (Provider, error) {
+	switch t {
 	case "aws":
 		return aws.FromEnv()
-	default:
+	case "local":
 		return local.FromEnv()
+	default:
+		return nil, fmt.Errorf("invalid provider type: %s", t)
 	}
 }
