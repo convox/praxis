@@ -104,6 +104,4 @@ func (p *Provider) installProgress(name string, opts types.InstallOptions) error
 
 		time.Sleep(2 * time.Second)
 	}
-
-	return nil
 }
