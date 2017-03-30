@@ -193,6 +193,7 @@ func rackCommand(version string, frontend string) (*exec.Cmd, error) {
 	exec.Command("docker", "rm", "-f", "rack").Run()
 
 	args := []string{"run"}
+	args = append(args, "-e", "PROVIDER=local")
 	args = append(args, "-e", fmt.Sprintf("PROVIDER_FRONTEND=%s", frontend))
 	args = append(args, "-e", fmt.Sprintf("VERSION=%s", version))
 	args = append(args, "-i", "--rm", "--name=rack")
