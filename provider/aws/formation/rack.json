@@ -82,8 +82,7 @@
       "Properties": {
         "AssociatePublicIpAddress": "true",
         "BlockDeviceMappings": [
-          { "DeviceName": "/dev/xvdb",  "Ebs": { "VolumeSize": "10", "VolumeType":"gp2" } },
-          { "DeviceName": "/dev/xvdcz", "Ebs": { "VolumeSize": "50", "VolumeType":"gp2" } }
+          { "DeviceName": "/dev/xvdcz", "Ebs": { "VolumeSize": "200", "VolumeType":"gp2" } }
         ],
         "IamInstanceProfile": { "Ref": "InstancesProfile" },
         "ImageId": { "Fn::FindInMap": [ "RegionConfig", { "Ref": "AWS::Region" }, "Ami" ] },
