@@ -318,6 +318,7 @@
             "Command": [ "bin/rack" ],
             "Environment": [
               { "Name": "AWS_REGION", "Value": { "Ref": "AWS::Region" } },
+              { "Name": "PASSWORD", "Value": { "Ref": "ApiKey" } },
               { "Name": "PROVIDER", "Value": "aws" },
               { "Name": "VERSION", "Value": { "Ref": "Version" } }
             ],
