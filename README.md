@@ -36,11 +36,23 @@
 
     $ cx ps
 
-## Development
+## DEVELOPMENT
 
-### Testing
+Start with a local Rack running in the background.
 
-    $ VERSION=dev cx test
+#### Start a development Rack
+
+    $ cx start
+    
+#### Use the development Rack
+
+    $ export RACK_URL=https://rack.praxis.convox:6443
+    $ cx apps
+    
+#### Run the tests
+
+    $ env VERSION=test cx test
+
 ## COPYRIGHT
 
 Convox, Inc. 2017
