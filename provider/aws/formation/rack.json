@@ -196,6 +196,18 @@
         }
       }
     },
+    "BalancerCertificate": {
+      "Type": "AWS::CertificateManager::Certificate",
+      "Properties": {
+        "DomainName": { "Fn::Sub": "${Balancer.LoadBalancerName}.${AWS::Region}.rack.convox.io" },
+        "DomainValidationOptions": [
+          {
+            "DomainName": { "Fn::Sub": "${Balancer.LoadBalancerName}.${AWS::Region}.rack.convox.io" },
+            "ValidationDomain": "convox.io"
+          }
+        ]
+      }
+    },
     "Balancer": {
       "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
       "Properties": {
@@ -210,10 +222,11 @@
     "BalancerListener": {
       "Type": "AWS::ElasticLoadBalancingV2::Listener",
       "Properties": {
+        "Certificates": [ { "CertificateArn": { "Ref": "BalancerCertificate" } } ],
         "DefaultActions": [ { "Type": "forward", "TargetGroupArn": { "Ref": "BalancerTargetGroup" } } ],
         "LoadBalancerArn": { "Ref" : "Balancer" },
-        "Port": "80",
-        "Protocol": "HTTP"
+        "Port": "443",
+        "Protocol": "HTTPS"
       }
     },
     "BalancerSecurityGroup": {
@@ -221,7 +234,7 @@
       "Properties": {
         "GroupDescription": { "Fn::Sub": "${AWS::StackName} balancer" },
         "SecurityGroupIngress": [
-          { "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80", "CidrIp": "0.0.0.0/0" }
+          { "IpProtocol": "tcp", "FromPort": "443", "ToPort": "443", "CidrIp": "0.0.0.0/0" }
         ],
         "Tags": [ { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-balancer" } } ],
         "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
