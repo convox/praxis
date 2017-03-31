@@ -58,7 +58,9 @@ func cleanupEndpoints() {
 				log = log.Namespace("port=%d", port)
 
 				if e.Until.Before(time.Now()) {
-					e.listener.Close()
+					if e.listener != nil {
+						e.listener.Close()
+					}
 
 					delete(endpoints[host], port)
 
