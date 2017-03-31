@@ -23,7 +23,7 @@ func New(endpoint string) (Rack, error) {
 		return nil, err
 	}
 
-	return &Client{Endpoint: u}, nil
+	return &Client{Endpoint: u, Version: "dev"}, nil
 }
 
 func NewFromEnv() (Rack, error) {

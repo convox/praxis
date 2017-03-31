@@ -309,27 +309,6 @@ func (_m *MockProvider) FilesUpload(app string, pid string, r io.Reader) error {
 	return r0
 }
 
-// Install provides a mock function with given fields: name, opts
-func (_m *MockProvider) Install(name string, opts types.InstallOptions) (string, error) {
-	ret := _m.Called(name, opts)
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func(string, types.InstallOptions) string); ok {
-		r0 = rf(name, opts)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, types.InstallOptions) error); ok {
-		r1 = rf(name, opts)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // KeyDecrypt provides a mock function with given fields: app, key, data
 func (_m *MockProvider) KeyDecrypt(app string, key string, data []byte) ([]byte, error) {
 	ret := _m.Called(app, key, data)
@@ -775,6 +754,48 @@ func (_m *MockProvider) SystemGet() (*types.System, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func() error); ok {
 		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SystemInstall provides a mock function with given fields: name, opts
+func (_m *MockProvider) SystemInstall(name string, opts types.SystemInstallOptions) (string, error) {
+	ret := _m.Called(name, opts)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, types.SystemInstallOptions) string); ok {
+		r0 = rf(name, opts)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, types.SystemInstallOptions) error); ok {
+		r1 = rf(name, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SystemUninstall provides a mock function with given fields: name, opts
+func (_m *MockProvider) SystemUninstall(name string, opts types.SystemInstallOptions) (string, error) {
+	ret := _m.Called(name, opts)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, types.SystemInstallOptions) string); ok {
+		r0 = rf(name, opts)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, types.SystemInstallOptions) error); ok {
+		r1 = rf(name, opts)
 	} else {
 		r1 = ret.Error(1)
 	}

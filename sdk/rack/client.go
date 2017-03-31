@@ -197,20 +197,29 @@ func (c *Client) Request(method, path string, opts RequestOptions) (*http.Reques
 		return nil, err
 	}
 
-	req, err := http.NewRequest(method, fmt.Sprintf("%s%s?%s", c.Endpoint.String(), path, qs), r)
+	endpoint := fmt.Sprintf("%s://%s%s%s?%s", c.Endpoint.Scheme, c.Endpoint.Host, c.Endpoint.Path, path, qs)
+	fmt.Printf("endpoint = %+v\n", endpoint)
+
+	req, err := http.NewRequest(method, endpoint, r)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Accept", "*/*")
 	req.Header.Set("Content-Type", opts.ContentType())
-	req.Header.Add("Version", c.Version)
+	req.Header.Set("Host", "0b3k8bks05.execute-api.us-east-1.amazonaws.com")
+	req.Header.Set("User-Agent", fmt.Sprintf("convox/%s", c.Version))
+	req.Header.Set("Version", c.Version)
 
-	for k, v := range opts.Headers {
-		req.Header.Set(k, v)
+	// for k, v := range opts.Headers {
+	//   req.Header.Set(k, v)
+	// }
+
+	if c.Endpoint.User != nil {
+		req.SetBasicAuth(c.Endpoint.User.Username(), "")
 	}
 
-	req.SetBasicAuth(c.Endpoint.User.Username(), "")
+	fmt.Printf("req = %+v\n", req)
 
 	return req, nil
 }

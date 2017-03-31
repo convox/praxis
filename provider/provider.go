@@ -48,8 +48,6 @@ type Provider interface {
 	KeyDecrypt(app, key string, data []byte) ([]byte, error)
 	KeyEncrypt(app, key string, data []byte) ([]byte, error)
 
-	Install(name string, opts types.InstallOptions) (string, error)
-
 	// ObjectDelete(key string) error
 	// ObjectExists(key string) bool
 	ObjectFetch(app, key string) (io.ReadCloser, error)
@@ -79,6 +77,9 @@ type Provider interface {
 	ReleaseLogs(app, id string) (io.ReadCloser, error)
 
 	SystemGet() (*types.System, error)
+	SystemInstall(name string, opts types.SystemInstallOptions) (string, error)
+	SystemUninstall(name string, opts types.SystemInstallOptions) error
+
 	// SystemLogs() (io.ReadCloser, error)
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
 	// SystemUpdate(opts types.SystemUpdateOptions) error

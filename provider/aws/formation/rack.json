@@ -92,26 +92,16 @@
         "SecurityGroups": [ { "Ref": "InstancesSecurityGroup" } ],
         "UserData": { "Fn::Base64":
           { "Fn::Join": [ "", [
-            "#cloud-config\n",
-            "repo_upgrade_exclude:\n",
-            "  - kernel*\n",
-            "packages:\n",
-            "  - aws-cfn-bootstrap\n",
-            "  - aws-cli\n",
-            "  - nfs-utils\n",
-            "bootcmd:\n",
-            "  - iptables --insert FORWARD 1 --in-interface docker+ --destination 169.254.169.254/32 --jump DROP\n",
-            "  - mkdir /volumes\n",
-            "  - while true; do mount -t nfs -o nfsvers=4.1 $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).", { "Ref": "Volumes" }, ".efs.", { "Ref": "AWS::Region" }, ".amazonaws.com:/ /volumes && break; sleep 5; done\n",
-            "  - [ cloud-init-per, instance, docker_storage_setup, /usr/bin/docker-storage-setup ]\n",
-            "  - echo ECS_CLUSTER=", { "Ref": "RackCluster" }, " >> /etc/ecs/ecs.config\n",
-            "  - echo ECS_ENGINE_AUTH_TYPE=docker >> /etc/ecs/ecs.config\n",
-            "  - echo -e '/var/log/docker {\\n  rotate 7\\n  daily\\n  nocompress\\n  copytruncate\\n}' >> /etc/logrotate.d/docker\n",
-            "  - export INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)\n",
-            "  - export ASG_NAME=$(/usr/bin/aws autoscaling describe-auto-scaling-instances --instance-ids=$INSTANCE_ID --region ", {"Ref":"AWS::Region"}, " --output text --query 'AutoScalingInstances[0].AutoScalingGroupName')\n",
-            "  - export LIFECYCLE_HOOK=$(/usr/bin/aws autoscaling describe-lifecycle-hooks --auto-scaling-group-name $ASG_NAME --region ", {"Ref":"AWS::Region"}, " --output text --query \"LifecycleHooks[?contains(LifecycleHookName, '", { "Ref": "AWS::StackName" }, "-InstancesLifecycleLaunching') == \\`true\\`].LifecycleHookName | [0]\")\n",
-            "  - /usr/bin/aws autoscaling complete-lifecycle-action --region ", { "Ref": "AWS::Region" }, " --instance-id $INSTANCE_ID --lifecycle-hook-name $LIFECYCLE_HOOK --auto-scaling-group-name $ASG_NAME --lifecycle-action-result CONTINUE\n",
-            "  - /opt/aws/bin/cfn-signal --stack ", { "Ref": "AWS::StackName" }, " --region ", { "Ref": "AWS::Region" }, " --resource Instances\n"
+            "#!/bin/bash -xe\n",
+            "yum install -y aws-cfn-bootstrap aws-cli nfs-utils\n",
+            "iptables --insert FORWARD 1 --in-interface docker+ --destination 169.254.169.254/32 --jump DROP\n",
+            "mkdir /volumes\n",
+            "while true; do mount -t nfs -o nfsvers=4.1 $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).", { "Ref": "Volumes" }, ".efs.", { "Ref": "AWS::Region" }, ".amazonaws.com:/ /volumes && break; sleep 5; done\n",
+            "echo ECS_CLUSTER=", { "Ref": "RackCluster" }, " >> /etc/ecs/ecs.config\n",
+            "echo ECS_ENGINE_AUTH_TYPE=docker >> /etc/ecs/ecs.config\n",
+            "echo 'OPTIONS=\"${OPTIONS} --log-opt max-file=2 --log-opt max-size=50m --host=unix:///var/run/docker.sock --host=0.0.0.0:2376\"' >> /etc/sysconfig/docker\n",
+            "echo -e '/var/log/docker {\\n  rotate 7\\n  daily\\n  nocompress\\n  copytruncate\\n}' >> /etc/logrotate.d/docker\n",
+            "/opt/aws/bin/cfn-signal --stack ", { "Ref": "AWS::StackName" }, " --region ", { "Ref": "AWS::Region" }, " --resource Instances\n"
           ] ] }
         }
       }
@@ -284,12 +274,23 @@
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
+          "Statement": [ { "Effect": "Allow", "Principal": { "Service": [ "ecs-tasks.amazonaws.com" ] }, "Action": [ "sts:AssumeRole" ] } ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/AdministratorAccess"
+        ]
+      }
+    },
+    "RackServiceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
           "Statement": [ { "Effect": "Allow", "Principal": { "Service": [ "ecs.amazonaws.com" ] }, "Action": [ "sts:AssumeRole" ] } ],
           "Version": "2012-10-17"
         },
         "ManagedPolicyArns": [
-          "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole",
-          "arn:aws:iam::aws:policy/AdministratorAccess"
+          "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole"
         ]
       }
     },
@@ -301,7 +302,7 @@
         "DeploymentConfiguration": { "MinimumHealthyPercent": "50", "MaximumPercent": "200" },
         "DesiredCount": "2",
         "LoadBalancers": [ { "ContainerName": "rack", "ContainerPort": "3000", "TargetGroupArn": { "Ref": "BalancerTargetGroup" } } ],
-        "Role": { "Ref": "RackRole" },
+        "Role": { "Ref": "RackServiceRole" },
         "TaskDefinition": { "Ref": "RackTasks" }
       }
     },
@@ -334,6 +335,7 @@
           }
         ],
         "Family": { "Fn::Sub": "${AWS::StackName}-rack" },
+        "TaskRoleArn": { "Ref": "RackRole" },
         "Volumes": [ { "Name": "docker", "Host": { "SourcePath": "/var/run/docker.sock" } } ]
       }
     }
