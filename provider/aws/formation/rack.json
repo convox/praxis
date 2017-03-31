@@ -16,7 +16,7 @@
     }
   },
   "Outputs": {
-    "Endpoint": { "Value": { "Fn::Sub": "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/rack" } }
+    "Endpoint": { "Value": { "Fn::Sub": "https://${Frontend.DomainName}" } }
   },
   "Parameters": {
     "ApiKey": {
@@ -55,6 +55,7 @@
           { "IpProtocol": "tcp", "FromPort": "0", "ToPort": "65535", "CidrIp": { "Fn::GetAtt": [ "Network", "Outputs.Cidr" ] } },
           { "IpProtocol": "udp", "FromPort": "0", "ToPort": "65535", "CidrIp": { "Fn::GetAtt": [ "Network", "Outputs.Cidr" ] } }
         ],
+        "Tags": [ { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-instances" } } ],
         "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
       }
     },
@@ -146,6 +147,7 @@
         "SecurityGroupIngress": [
           { "IpProtocol": "tcp", "FromPort": "2049", "ToPort": "2049", "CidrIp": { "Fn::GetAtt": [ "Network", "Outputs.Cidr" ] } }
         ],
+        "Tags": [ { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-volumes" } } ],
         "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
       }
     },
@@ -165,65 +167,33 @@
         "SecurityGroups": [ { "Ref": "VolumesSecurityGroup" } ]
       }
     },
-    "Api": {
-      "Type": "AWS::ApiGateway::RestApi",
+    "Frontend": {
+      "Type" : "AWS::CloudFront::Distribution",
       "Properties": {
-        "Name": { "Ref": "AWS::StackName" }
-      }
-    },
-    "ApiDeployment": {
-      "Type": "AWS::ApiGateway::Deployment",
-      "DependsOn": [ "ApiProxy" ],
-      "Properties": {
-        "RestApiId": { "Ref": "Api" }
-      }
-    },
-    "ApiResource": {
-      "Type": "AWS::ApiGateway::Resource",
-      "Properties": {
-        "ParentId": { "Fn::GetAtt": [ "Api", "RootResourceId" ] },
-        "PathPart": "{proxy+}",
-        "RestApiId": { "Ref": "Api" }
-      }
-    },
-    "ApiProxy": {
-      "Type": "AWS::ApiGateway::Method",
-      "Properties": {
-        "AuthorizationType": "NONE",
-        "HttpMethod": "ANY",
-        "Integration": {
-          "IntegrationHttpMethod": "ANY",
-          "PassthroughBehavior": "WHEN_NO_MATCH",
-          "RequestParameters": { "integration.request.path.proxy": "method.request.path.proxy" },
-          "Type": "HTTP_PROXY",
-          "Uri": { "Fn::Sub": "http://${Balancer.DNSName}/{proxy}" }
-        },
-        "RequestParameters": { "method.request.path.proxy": "true" },
-        "ResourceId": { "Ref": "ApiResource" },
-        "RestApiId": { "Ref": "Api" }
-      }
-    },
-    "ApiRoot": {
-      "Type": "AWS::ApiGateway::Method",
-      "Properties": {
-        "AuthorizationType": "NONE",
-        "HttpMethod": "ANY",
-        "Integration": {
-          "IntegrationHttpMethod": "ANY",
-          "PassthroughBehavior": "WHEN_NO_MATCH",
-          "Type": "HTTP_PROXY",
-          "Uri": { "Fn::Sub": "http://${Balancer.DNSName}/" }
-        },
-        "ResourceId": { "Fn::GetAtt": [ "Api", "RootResourceId" ] },
-        "RestApiId": { "Ref": "Api" }
-      }
-    },
-    "ApiStage": {
-      "Type": "AWS::ApiGateway::Stage",
-      "Properties": {
-        "DeploymentId": { "Ref": "ApiDeployment" },
-        "RestApiId": { "Ref": "Api" },
-        "StageName": "rack"
+        "DistributionConfig": {
+          "Comment": { "Fn::Sub": "${AWS::StackName} frontend" },
+          "DefaultCacheBehavior": {
+            "AllowedMethods": [ "GET", "POST", "PUT", "DELETE" ],
+            "ForwardedValues": {
+              "Headers": [ "*" ],
+              "QueryString": "true"
+            },
+            "TargetOriginId": "rack",
+            "ViewerProtocolPolicy": "redirect-to-https"
+          },
+          "Enabled": "true",
+          "HttpVersion": "http2",
+          "Origins": [
+            {
+              "CustomOriginConfig": {
+                "HTTPSPort": "443",
+                "OriginProtocolPolicy": "https-only"
+              },
+              "DomainName": { "Fn::Sub": "${Balancer.DNSName}" },
+              "Id": "rack"
+            }
+          ]
+        }
       }
     },
     "Balancer": {
@@ -253,6 +223,7 @@
         "SecurityGroupIngress": [
           { "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80", "CidrIp": "0.0.0.0/0" }
         ],
+        "Tags": [ { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-balancer" } } ],
         "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
       }
     },
