@@ -16,7 +16,13 @@
     }
   },
   "Outputs": {
-    "Endpoint": { "Value": { "Fn::Sub": "https://${Balancer.DNSName}" } }
+    "Endpoint": { "Value": { "Fn::Join": [ "", [
+      "https://",
+      { "Fn::Select": [ 0, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
+      ".",
+      { "Fn::Select": [ 1, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
+      ".rack.convox.io"
+    ] ] } }
   },
   "Parameters": {
     "ApiKey": {
