@@ -217,8 +217,6 @@ func (c *Client) Request(method, path string, opts RequestOptions) (*http.Reques
 		req.SetBasicAuth(c.Endpoint.User.Username(), "")
 	}
 
-	fmt.Printf("req = %+v\n", req)
-
 	return req, nil
 }
 
