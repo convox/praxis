@@ -44,16 +44,7 @@
         "TemplateURL": { "Fn::Sub": "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/network.json" }
       }
     },
-    "LogGroup": {
-      "Type": "AWS::Logs::LogGroup"
-    },
-    "Registries": {
-      "Type": "AWS::SDB::Domain",
-      "Properties": {
-        "Description": { "Fn::Sub": "${AWS::StackName} registries" }
-      }
-    },
-    "InstancesSecurityGroup": {
+    "InstancesSecurity": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
         "GroupDescription": { "Fn::Sub": "${AWS::StackName} instances" },
@@ -96,7 +87,7 @@
         "InstanceMonitoring": true,
         "InstanceType": "t2.micro",
         "PlacementTenancy" : "default",
-        "SecurityGroups": [ { "Ref": "InstancesSecurityGroup" } ],
+        "SecurityGroups": [ { "Ref": "InstancesSecurity" } ],
         "UserData": { "Fn::Base64":
           { "Fn::Join": [ "", [
             "#!/bin/bash -xe\n",
@@ -146,7 +137,7 @@
         "FileSystemTags": [ { "Key": "Name", "Value": { "Ref": "AWS::StackName" } } ]
       }
     },
-    "VolumesSecurityGroup": {
+    "VolumesSecurity": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
         "GroupDescription": { "Fn::Sub": "${AWS::StackName} volumes" },
@@ -162,7 +153,7 @@
       "Properties": {
         "FileSystemId": { "Ref": "Volumes" },
         "SubnetId": { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] },
-        "SecurityGroups": [ { "Ref": "VolumesSecurityGroup" } ]
+        "SecurityGroups": [ { "Ref": "VolumesSecurity" } ]
       }
     },
     "VolumesTarget1": {
@@ -170,7 +161,7 @@
       "Properties": {
         "FileSystemId": { "Ref": "Volumes" },
         "SubnetId": { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] },
-        "SecurityGroups": [ { "Ref": "VolumesSecurityGroup" } ]
+        "SecurityGroups": [ { "Ref": "VolumesSecurity" } ]
       }
     },
     "BalancerCertificate": {
@@ -188,7 +179,7 @@
               { "Fn::Select": [ 1, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
               "rack.convox.io"
             ] ] },
-            "ValidationDomain": "convox.io"
+            "ValidationDomain": "rack.convox.io"
           }
         ]
       }
@@ -197,7 +188,7 @@
       "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
       "Properties": {
         "Scheme": "internet-facing",
-        "SecurityGroups": [ { "Ref": "BalancerSecurityGroup" } ],
+        "SecurityGroups": [ { "Ref": "BalancerSecurity" } ],
         "Subnets": [
           { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] },
           { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }
@@ -214,7 +205,7 @@
         "Protocol": "HTTPS"
       }
     },
-    "BalancerSecurityGroup": {
+    "BalancerSecurity": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
         "GroupDescription": { "Fn::Sub": "${AWS::StackName} balancer" },
@@ -238,6 +229,9 @@
     },
     "RackCluster": {
       "Type": "AWS::ECS::Cluster"
+    },
+    "RackLogs": {
+      "Type": "AWS::Logs::LogGroup"
     },
     "RackRole": {
       "Type": "AWS::IAM::Role",
@@ -293,7 +287,7 @@
               "LogDriver": "awslogs",
               "Options": {
                 "awslogs-region": { "Ref": "AWS::Region" },
-                "awslogs-group": { "Ref": "LogGroup" },
+                "awslogs-group": { "Ref": "RackLogs" },
                 "awslogs-stream-prefix": "rack"
               }
             },
@@ -306,6 +300,12 @@
         "Family": { "Fn::Sub": "${AWS::StackName}-rack" },
         "TaskRoleArn": { "Ref": "RackRole" },
         "Volumes": [ { "Name": "docker", "Host": { "SourcePath": "/var/run/docker.sock" } } ]
+      }
+    },
+    "RackRegistries": {
+      "Type": "AWS::SDB::Domain",
+      "Properties": {
+        "Description": { "Fn::Sub": "${AWS::StackName} registries" }
       }
     }
   }

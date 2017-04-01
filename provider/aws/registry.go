@@ -46,7 +46,7 @@ func registryFromAttributes(hostname string, attrs []*simpledb.Attribute) (*type
 }
 
 func (p *Provider) registryStore(registry *types.Registry) error {
-	domain, err := p.rackResource("Registries")
+	domain, err := p.rackResource("RackRegistries")
 	if err != nil {
 		return err
 	}
