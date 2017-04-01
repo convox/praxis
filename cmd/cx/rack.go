@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -70,7 +71,7 @@ func init() {
 				Name:        "uninstall",
 				Description: "uninstall a rack",
 				Action:      runRackUninstall,
-				Usage:       "<name>",
+				Usage:       "<provider> <name>",
 			},
 			cli.Command{
 				Name:        "update",
@@ -118,6 +119,11 @@ func runRackInstall(c *cli.Context) error {
 	ptype := c.Args()[0]
 	name := c.Args()[1]
 
+	key, err := types.Key(32)
+	if err != nil {
+		return err
+	}
+
 	switch ptype {
 	case "aws":
 		if err := fetchCredentialsAWS(); err != nil {
@@ -130,8 +136,9 @@ func runRackInstall(c *cli.Context) error {
 		return err
 	}
 
-	endpoint, err := p.Install(name, types.InstallOptions{
+	endpoint, err := p.SystemInstall(name, types.SystemInstallOptions{
 		Color:   true,
+		Key:     key,
 		Output:  os.Stdout,
 		Version: c.String("version"),
 	})
@@ -139,7 +146,14 @@ func runRackInstall(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("endpoint = %+v\n", endpoint)
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return err
+	}
+
+	u.User = url.UserPassword(key, "")
+
+	fmt.Printf("RACK_URL=%s\n", u.String())
 
 	return nil
 }
@@ -167,13 +181,30 @@ func runRackStart(c *cli.Context) error {
 }
 
 func runRackUninstall(c *cli.Context) error {
-	if len(c.Args()) != 1 {
+	if len(c.Args()) != 2 {
 		return stdcli.Usage(c)
 	}
 
-	name := c.Args()[0]
+	ptype := c.Args()[0]
+	name := c.Args()[1]
 
-	if _, err := aws("cloudformation", "delete-stack", "--stack-name", name); err != nil {
+	switch ptype {
+	case "aws":
+		if err := fetchCredentialsAWS(); err != nil {
+			return err
+		}
+	}
+
+	p, err := provider.FromType(ptype)
+	if err != nil {
+		return err
+	}
+
+	err = p.SystemUninstall(name, types.SystemInstallOptions{
+		Color:  true,
+		Output: os.Stdout,
+	})
+	if err != nil {
 		return err
 	}
 

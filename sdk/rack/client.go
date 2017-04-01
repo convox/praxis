@@ -18,10 +18,10 @@ import (
 )
 
 type Client struct {
-	Host    string
-	Key     string
-	Socket  string
-	Version string
+	Endpoint *url.URL
+	Key      string
+	Socket   string
+	Version  string
 }
 
 type Headers map[string]string
@@ -197,20 +197,25 @@ func (c *Client) Request(method, path string, opts RequestOptions) (*http.Reques
 		return nil, err
 	}
 
-	req, err := http.NewRequest(method, fmt.Sprintf("https://%s%s?%s", c.Host, path, qs), r)
+	endpoint := fmt.Sprintf("%s://%s%s%s?%s", c.Endpoint.Scheme, c.Endpoint.Host, c.Endpoint.Path, path, qs)
+
+	req, err := http.NewRequest(method, endpoint, r)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Accept", "*/*")
 	req.Header.Set("Content-Type", opts.ContentType())
-	req.Header.Add("Version", c.Version)
+	req.Header.Set("User-Agent", fmt.Sprintf("convox.go/%s", c.Version))
+	req.Header.Set("Version", c.Version)
 
 	for k, v := range opts.Headers {
 		req.Header.Set(k, v)
 	}
 
-	req.SetBasicAuth("convox", string(c.Key))
+	if c.Endpoint.User != nil {
+		req.SetBasicAuth(c.Endpoint.User.Username(), "")
+	}
 
 	return req, nil
 }

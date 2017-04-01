@@ -17,13 +17,13 @@ type Mock struct {
 
 type Rack provider.Provider
 
-func New(rackUrl string) (Rack, error) {
-	u, err := url.Parse(coalesce(rackUrl, "https://localhost:5443"))
+func New(endpoint string) (Rack, error) {
+	u, err := url.Parse(coalesce(endpoint, "https://localhost:5443"))
 	if err != nil {
 		return nil, err
 	}
 
-	return &Client{Host: u.Host}, nil
+	return &Client{Endpoint: u, Version: "dev"}, nil
 }
 
 func NewFromEnv() (Rack, error) {
