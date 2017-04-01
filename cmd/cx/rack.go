@@ -119,7 +119,7 @@ func runRackInstall(c *cli.Context) error {
 	ptype := c.Args()[0]
 	name := c.Args()[1]
 
-	key, err := types.Key(64)
+	key, err := types.Key(32)
 	if err != nil {
 		return err
 	}
