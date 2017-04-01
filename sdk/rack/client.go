@@ -198,7 +198,6 @@ func (c *Client) Request(method, path string, opts RequestOptions) (*http.Reques
 	}
 
 	endpoint := fmt.Sprintf("%s://%s%s%s?%s", c.Endpoint.Scheme, c.Endpoint.Host, c.Endpoint.Path, path, qs)
-	fmt.Printf("endpoint = %+v\n", endpoint)
 
 	req, err := http.NewRequest(method, endpoint, r)
 	if err != nil {
@@ -207,13 +206,12 @@ func (c *Client) Request(method, path string, opts RequestOptions) (*http.Reques
 
 	req.Header.Add("Accept", "*/*")
 	req.Header.Set("Content-Type", opts.ContentType())
-	req.Header.Set("Host", "0b3k8bks05.execute-api.us-east-1.amazonaws.com")
-	req.Header.Set("User-Agent", fmt.Sprintf("convox/%s", c.Version))
+	req.Header.Set("User-Agent", fmt.Sprintf("convox.go/%s", c.Version))
 	req.Header.Set("Version", c.Version)
 
-	// for k, v := range opts.Headers {
-	//   req.Header.Set(k, v)
-	// }
+	for k, v := range opts.Headers {
+		req.Header.Set(k, v)
+	}
 
 	if c.Endpoint.User != nil {
 		req.SetBasicAuth(c.Endpoint.User.Username(), "")
