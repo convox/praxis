@@ -16,7 +16,7 @@
     }
   },
   "Outputs": {
-    "Endpoint": { "Value": { "Fn::Sub": "https://${Frontend.DomainName}" } }
+    "Endpoint": { "Value": { "Fn::Sub": "https://${Balancer.DNSName}" } }
   },
   "Parameters": {
     "ApiKey": {
@@ -78,7 +78,7 @@
         ]
       }
     },
-    "InstancesLaunchConfiguration": {
+    "InstancesConfig": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "Properties": {
         "AssociatePublicIpAddress": "true",
@@ -114,7 +114,7 @@
         "DesiredCapacity": "2",
         "HealthCheckType": "EC2",
         "HealthCheckGracePeriod": "120",
-        "LaunchConfigurationName" : { "Ref": "InstancesLaunchConfiguration" },
+        "LaunchConfigurationName" : { "Ref": "InstancesConfig" },
         "MinSize" : "2",
         "MaxSize" : "1000",
         "MetricsCollection": [ { "Granularity": "1Minute" } ],
@@ -167,42 +167,21 @@
         "SecurityGroups": [ { "Ref": "VolumesSecurityGroup" } ]
       }
     },
-    "Frontend": {
-      "Type" : "AWS::CloudFront::Distribution",
-      "Properties": {
-        "DistributionConfig": {
-          "Comment": { "Fn::Sub": "${AWS::StackName} frontend" },
-          "DefaultCacheBehavior": {
-            "AllowedMethods": [ "GET", "POST", "PUT", "DELETE" ],
-            "ForwardedValues": {
-              "Headers": [ "*" ],
-              "QueryString": "true"
-            },
-            "TargetOriginId": "rack",
-            "ViewerProtocolPolicy": "redirect-to-https"
-          },
-          "Enabled": "true",
-          "HttpVersion": "http2",
-          "Origins": [
-            {
-              "CustomOriginConfig": {
-                "HTTPSPort": "443",
-                "OriginProtocolPolicy": "https-only"
-              },
-              "DomainName": { "Fn::Sub": "${Balancer.DNSName}" },
-              "Id": "rack"
-            }
-          ]
-        }
-      }
-    },
     "BalancerCertificate": {
       "Type": "AWS::CertificateManager::Certificate",
       "Properties": {
-        "DomainName": { "Fn::Sub": "${Balancer.LoadBalancerName}.${AWS::Region}.rack.convox.io" },
+        "DomainName": { "Fn::Join": [ ".", [
+          { "Fn::Select": [ 0, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
+          { "Fn::Select": [ 1, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
+          "rack.convox.io"
+        ] ] },
         "DomainValidationOptions": [
           {
-            "DomainName": { "Fn::Sub": "${Balancer.LoadBalancerName}.${AWS::Region}.rack.convox.io" },
+            "DomainName": { "Fn::Join": [ ".", [
+              { "Fn::Select": [ 0, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
+              { "Fn::Select": [ 1, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
+              "rack.convox.io"
+            ] ] },
             "ValidationDomain": "convox.io"
           }
         ]
