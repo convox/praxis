@@ -73,6 +73,8 @@ func (p *Provider) Init() error {
 		return err
 	}
 
+	go p.workers()
+
 	return nil
 }
 
@@ -106,60 +108,6 @@ func (p *Provider) checkFrontend() error {
 
 	if _, err := c.Get(fmt.Sprintf("http://%s:9477/endpoints", p.Frontend)); err != nil {
 		return fmt.Errorf("unable to register with frontend")
-	}
-
-	return nil
-}
-
-func (p *Provider) registerBalancers() {
-	tick := time.Tick(1 * time.Minute)
-
-	if err := p.registerBalancersTick(); err != nil {
-		fmt.Printf("err = %+v\n", err)
-	}
-
-	for range tick {
-		if err := p.registerBalancersTick(); err != nil {
-			fmt.Printf("err = %+v\n", err)
-		}
-	}
-}
-
-func (p *Provider) registerBalancersTick() error {
-	if p.Frontend == "none" {
-		return nil
-	}
-
-	apps, err := p.AppList()
-	if err != nil {
-		return err
-	}
-
-	for _, app := range apps {
-		if app.Release == "" {
-			continue
-		}
-
-		r, err := p.ReleaseGet(app.Name, app.Release)
-		if err != nil {
-			return err
-		}
-
-		b, err := p.BuildGet(app.Name, r.Build)
-		if err != nil {
-			return err
-		}
-
-		m, err := manifest.Load([]byte(b.Manifest))
-		if err != nil {
-			return err
-		}
-
-		for _, b := range m.Balancers {
-			if err := p.registerBalancerWithFrontend(app.Name, b); err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil
@@ -249,8 +197,6 @@ func (p *Provider) startBalancer(app string, balancer manifest.Balancer) error {
 		if err := p.registerBalancerWithFrontend(app, balancer); err != nil {
 			return err
 		}
-
-		go p.registerBalancers()
 	}
 
 	return nil

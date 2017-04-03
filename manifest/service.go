@@ -15,6 +15,7 @@ type Service struct {
 	Command     string
 	Environment []string
 	Image       string
+	Scale       ServiceScale
 	Test        string
 	Volumes     []string
 }
@@ -24,6 +25,11 @@ type Services []Service
 type ServiceBuild struct {
 	Args []string
 	Path string
+}
+
+type ServiceScale struct {
+	Min int
+	Max int
 }
 
 func (s Service) BuildHash() string {

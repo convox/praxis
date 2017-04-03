@@ -13,6 +13,7 @@ services:
       - PROVIDER=local
       - RACK=dev
       - VERSION
+    scale: 2
     test: make test
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
