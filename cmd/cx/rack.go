@@ -129,6 +129,19 @@ func runRackInstall(c *cli.Context) error {
 		if err := fetchCredentialsAWS(); err != nil {
 			return err
 		}
+	case "local":
+		u, err := user.Current()
+		if err != nil {
+			return err
+		}
+
+		if u.Uid == "0" {
+			return fmt.Errorf("must not run as root")
+
+		}
+
+		os.Setenv("PROVIDER_LOCAL_SKIP_FRONTEND_CHECK", "true")
+		os.Setenv("PROVIDER_ROOT", filepath.Join(u.HomeDir, ".convox", "local"))
 	}
 
 	p, err := provider.FromType(ptype)
@@ -193,6 +206,19 @@ func runRackUninstall(c *cli.Context) error {
 		if err := fetchCredentialsAWS(); err != nil {
 			return err
 		}
+	case "local":
+		u, err := user.Current()
+		if err != nil {
+			return err
+		}
+
+		if u.Uid == "0" {
+			return fmt.Errorf("must not run as root")
+
+		}
+
+		os.Setenv("PROVIDER_LOCAL_SKIP_FRONTEND_CHECK", "true")
+		os.Setenv("PROVIDER_ROOT", filepath.Join(u.HomeDir, ".convox", "local"))
 	}
 
 	p, err := provider.FromType(ptype)

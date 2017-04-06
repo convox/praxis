@@ -16,11 +16,3 @@ func (p *Provider) SystemGet() (*types.System, error) {
 
 	return system, nil
 }
-
-func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (string, error) {
-	return "", fmt.Errorf("unimplemented")
-}
-
-func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {
-	return fmt.Errorf("unimplemented")
-}
