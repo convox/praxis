@@ -31,10 +31,6 @@ func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
 		fmt.Sprintf("id=%s", fpid),
 	}
 
-	fmt.Printf("filters = %+v\n", filters)
-	fmt.Printf("p = %+v\n", p)
-	fmt.Printf("os.Environ() = %+v\n", os.Environ())
-
 	pss, err := processList(filters, true)
 	if err != nil {
 		return nil, err
@@ -53,10 +49,6 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 		fmt.Sprintf("label=convox.rack=%s", p.Name),
 		"label=convox.type=service",
 	}
-
-	fmt.Printf("filters = %+v\n", filters)
-	fmt.Printf("p = %+v\n", p)
-	fmt.Printf("os.Environ() = %+v\n", os.Environ())
 
 	if opts.Service != "" {
 		filters = append(filters, fmt.Sprintf("label=convox.service=%s", opts.Service))
