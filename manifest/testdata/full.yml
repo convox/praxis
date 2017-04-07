@@ -17,6 +17,7 @@ services:
     environment:
       - DEVELOPMENT=false
       - SECRET
+    scale: 3-10
   proxy:
     command: bash
     image: ubuntu:16.04

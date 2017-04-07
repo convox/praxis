@@ -55,6 +55,7 @@ func TestManifestLoad(t *testing.T) {
 					"DEVELOPMENT=false",
 					"SECRET",
 				},
+				Scale: manifest.ServiceScale{Min: 3, Max: 10},
 			},
 			manifest.Service{
 				Name:    "proxy",
@@ -63,6 +64,7 @@ func TestManifestLoad(t *testing.T) {
 				Environment: []string{
 					"SECRET",
 				},
+				Scale: manifest.ServiceScale{Min: 1},
 			},
 		},
 		Tables: manifest.Tables{

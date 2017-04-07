@@ -142,7 +142,6 @@ func (v *ServiceScale) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	case string:
 		parts := strings.Split(t, "-")
 
-		fmt.Printf("parts = %+v\n", parts)
 		switch len(parts) {
 		case 1:
 			i, err := strconv.Atoi(parts[0])
