@@ -27,6 +27,7 @@ var (
 	flagAuth     string
 	flagId       string
 	flagManifest string
+	flagPrefix   string
 	flagPush     string
 	flagUrl      string
 
@@ -51,6 +52,7 @@ func main() {
 	fs.StringVar(&flagAuth, "auth", "", "registries to authenticate with")
 	fs.StringVar(&flagId, "id", "", "build id")
 	fs.StringVar(&flagManifest, "manifest", "convox.yml", "path to manifest")
+	fs.StringVar(&flagPrefix, "prefix", "", "image prefix")
 	fs.StringVar(&flagPush, "push", "", "push after build")
 	fs.StringVar(&flagUrl, "url", "", "source url")
 
@@ -72,6 +74,10 @@ func main() {
 
 	if v := os.Getenv("BUILD_MANIFEST"); v != "" {
 		flagManifest = v
+	}
+
+	if v := os.Getenv("BUILD_PREFIX"); v != "" {
+		flagPrefix = v
 	}
 
 	if v := os.Getenv("BUILD_PUSH"); v != "" {
@@ -169,7 +175,7 @@ func build() error {
 		Stderr: w,
 	}
 
-	if err := m.Build(flagApp, flagId, opts); err != nil {
+	if err := m.Build(flagPrefix, flagId, opts); err != nil {
 		return err
 	}
 

@@ -11,9 +11,9 @@ services:
       - DEVELOPMENT=false
       - PASSWORD
       - PROVIDER=local
-      - RACK=dev
-      - VERSION
-    scale: 2
+      - PROVIDER_NAME=dev
+      - VERSION=latest
+    scale: 1
     test: make test
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

@@ -221,13 +221,15 @@ func rackCommand(version string, frontend string) (*exec.Cmd, error) {
 		return nil, err
 	}
 
-	exec.Command("docker", "rm", "-f", "rack").Run()
+	name := "convox"
+
+	exec.Command("docker", "rm", "-f", name).Run()
 
 	args := []string{"run"}
 	args = append(args, "-e", "PROVIDER=local")
 	args = append(args, "-e", fmt.Sprintf("PROVIDER_FRONTEND=%s", frontend))
 	args = append(args, "-e", fmt.Sprintf("VERSION=%s", version))
-	args = append(args, "-i", "--rm", "--name=rack")
+	args = append(args, "-i", "--rm", fmt.Sprintf("--name=%s", name))
 	args = append(args, "-p", "5443:3000")
 	args = append(args, "-v", fmt.Sprintf("%s:/var/convox", filepath.Join(home, ".convox", "local")))
 	args = append(args, "-v", "/var/run/docker.sock:/var/run/docker.sock")

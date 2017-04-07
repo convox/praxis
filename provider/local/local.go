@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -25,10 +26,11 @@ var (
 )
 
 // Logger is a package-wide logger
-var Logger = logger.New("ns=provider.aws")
+var Logger = logger.New("ns=provider.local")
 
 type Provider struct {
 	Frontend string
+	Name     string
 	Root     string
 	Test     bool
 
@@ -39,6 +41,7 @@ type Provider struct {
 func FromEnv() (*Provider, error) {
 	p := &Provider{
 		Frontend: coalesce(os.Getenv("PROVIDER_FRONTEND"), "10.42.84.0"),
+		Name:     coalesce(os.Getenv("PROVIDER_NAME"), "convox"),
 		Root:     coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
 	}
 
@@ -113,15 +116,15 @@ func (p *Provider) checkFrontend() error {
 	return nil
 }
 
-func (p *Provider) registerBalancerWithFrontend(app string, balancer manifest.Balancer) error {
+func (p *Provider) balancerRegister(app string, balancer manifest.Balancer) error {
 	if p.Frontend == "none" {
 		return nil
 	}
 
-	host := fmt.Sprintf("%s.%s.convox", balancer.Name, app)
+	host := fmt.Sprintf("%s.%s.%s", balancer.Name, app, p.Name)
 
 	for _, e := range balancer.Endpoints {
-		data, err := exec.Command("docker", "inspect", "-f", "{{json .HostConfig.PortBindings}}", fmt.Sprintf("balancer-%s-%s-%s", app, balancer.Name, e.Port)).CombinedOutput()
+		data, err := exec.Command("docker", "inspect", "-f", "{{json .HostConfig.PortBindings}}", fmt.Sprintf("%s-%s-%s-%s", p.Name, app, balancer.Name, e.Port)).CombinedOutput()
 		if err != nil {
 			continue
 		}
@@ -160,17 +163,35 @@ func (p *Provider) registerBalancerWithFrontend(app string, balancer manifest.Ba
 	return nil
 }
 
-func (p *Provider) startBalancer(app string, balancer manifest.Balancer) error {
+func (p *Provider) balancerRunning(app string, balancer manifest.Balancer) bool {
 	for _, e := range balancer.Endpoints {
-		name := fmt.Sprintf("balancer-%s-%s-%s", app, balancer.Name, e.Port)
+		data, err := exec.Command("docker", "inspect", fmt.Sprintf("%s-%s-%s-%s", p.Name, app, balancer.Name, e.Port), "--format", "{{.State.Running}}").CombinedOutput()
+		if err != nil {
+			return false
+		}
 
-		command := ""
+		if strings.HasPrefix(string(data), "false") {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (p *Provider) balancerStart(app string, balancer manifest.Balancer) error {
+	for _, e := range balancer.Endpoints {
+		name := fmt.Sprintf("%s-%s-%s-%s", p.Name, app, balancer.Name, e.Port)
+		fmt.Printf("name = %+v\n", name)
+
+		exec.Command("docker", "rm", "-f", name).Run()
+
+		command := []string{}
 
 		switch {
 		case e.Redirect != "":
-			command = fmt.Sprintf("proxy %s redirect %s", e.Protocol, e.Redirect)
+			command = []string{"balancer", e.Protocol, "redirect", e.Redirect}
 		case e.Target != "":
-			command = fmt.Sprintf("proxy %s target %s", e.Protocol, e.Target)
+			command = []string{"balancer", e.Protocol, "target", e.Target}
 		default:
 			return fmt.Errorf("invalid balancer endpoint: %s:%s", balancer.Name, e.Port)
 		}
@@ -182,19 +203,34 @@ func (p *Provider) startBalancer(app string, balancer manifest.Balancer) error {
 
 		rp := rand.Intn(40000) + 20000
 
-		opts := types.ProcessRunOptions{
-			Command: command,
-			Image:   sys.Image,
-			Name:    name,
-			Ports:   map[int]int{rp: 3000},
-			Stream:  types.Stream{Writer: os.Stdout},
-		}
+		args := []string{"run", "--detach", "--name", name}
 
-		if _, err := p.ProcessStart(app, opts); err != nil {
+		args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
+		args = append(args, "--label", fmt.Sprintf("convox.balancer=%s", balancer.Name))
+		args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
+		args = append(args, "--label", "convox.type=balancer")
+
+		args = append(args, "-e", fmt.Sprintf("APP=%s", app))
+		args = append(args, "-e", fmt.Sprintf("RACK=%s", p.Name))
+
+		hostname, err := os.Hostname()
+		if err != nil {
 			return err
 		}
 
-		if err := p.registerBalancerWithFrontend(app, balancer); err != nil {
+		args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s@%s:3000", os.Getenv("PASSWORD"), hostname))
+		args = append(args, "--link", hostname)
+
+		args = append(args, "-p", fmt.Sprintf("%d:3000", rp))
+
+		args = append(args, sys.Image)
+		args = append(args, command...)
+
+		if err := exec.Command("docker", args...).Run(); err != nil {
+			return err
+		}
+
+		if err := p.balancerRegister(app, balancer); err != nil {
 			return err
 		}
 	}
@@ -202,18 +238,7 @@ func (p *Provider) startBalancer(app string, balancer manifest.Balancer) error {
 	return nil
 }
 
-func (p *Provider) startService(m *manifest.Manifest, app, service, release string) error {
-	pss, err := p.ProcessList(app, types.ProcessListOptions{Service: service})
-	if err != nil {
-		return err
-	}
-
-	for _, ps := range pss {
-		if err := p.ProcessStop(app, ps.Id); err != nil {
-			return err
-		}
-	}
-
+func (p *Provider) serviceStart(m *manifest.Manifest, app, service, release string) error {
 	s, err := m.Services.Find(service)
 	if err != nil {
 		return err

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 
-	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -96,44 +95,44 @@ func runAppsInfo(c *cli.Context) error {
 	fmt.Printf("Release  %s\n", a.Release)
 	fmt.Printf("Status   %s\n", a.Status)
 
-	if a.Release == "" {
-		return nil
-	}
+	// if a.Release == "" {
+	//   return nil
+	// }
 
-	r, err := Rack.ReleaseGet(app, a.Release)
-	if err != nil {
-		return err
-	}
+	// r, err := Rack.ReleaseGet(app, a.Release)
+	// if err != nil {
+	//   return err
+	// }
 
-	b, err := Rack.BuildGet(app, r.Build)
-	if err != nil {
-		return err
-	}
+	// b, err := Rack.BuildGet(app, r.Build)
+	// if err != nil {
+	//   return err
+	// }
 
-	m, err := manifest.Load([]byte(b.Manifest))
-	if err != nil {
-		return err
-	}
+	// m, err := manifest.Load([]byte(b.Manifest))
+	// if err != nil {
+	//   return err
+	// }
 
-	for _, b := range m.Balancers {
-		fmt.Println()
-		fmt.Printf("### balancer:%s\n", b.Name)
+	// for _, b := range m.Balancers {
+	//   fmt.Println()
+	//   fmt.Printf("### balancer:%s\n", b.Name)
 
-		t := stdcli.NewTable("SOURCE", "", "TARGET")
-		t.SkipHeaders = true
+	//   t := stdcli.NewTable("SOURCE", "", "TARGET")
+	//   t.SkipHeaders = true
 
-		for _, e := range b.Endpoints {
-			source := fmt.Sprintf("%s://%s.%s.convox:%s", e.Protocol, b.Name, a.Name, e.Port)
+	//   for _, e := range b.Endpoints {
+	//     source := fmt.Sprintf("%s://%s.%s.convox:%s", e.Protocol, b.Name, a.Name, e.Port)
 
-			if e.Redirect != "" {
-				t.AddRow(source, "->", e.Redirect)
-			} else {
-				t.AddRow(source, "=>", e.Target)
-			}
-		}
+	//     if e.Redirect != "" {
+	//       t.AddRow(source, "->", e.Redirect)
+	//     } else {
+	//       t.AddRow(source, "=>", e.Target)
+	//     }
+	//   }
 
-		t.Print()
-	}
+	//   t.Print()
+	// }
 
 	// for _, s := range m.Services {
 	//   fmt.Println()

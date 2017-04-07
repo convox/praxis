@@ -34,6 +34,7 @@ func (p *Provider) AppDelete(app string) error {
 	}
 
 	for _, ps := range pss {
+		fmt.Printf("ps = %+v\n", ps)
 		if err := p.ProcessStop(app, ps.Id); err != nil {
 			return err
 		}

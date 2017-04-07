@@ -26,8 +26,14 @@ func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
 
 	filters := []string{
 		fmt.Sprintf("label=convox.app=%s", app),
+		fmt.Sprintf("label=convox.rack=%s", p.Name),
+		"label=convox.type=service",
 		fmt.Sprintf("id=%s", fpid),
 	}
+
+	fmt.Printf("filters = %+v\n", filters)
+	fmt.Printf("p = %+v\n", p)
+	fmt.Printf("os.Environ() = %+v\n", os.Environ())
 
 	pss, err := processList(filters, true)
 	if err != nil {
@@ -42,7 +48,15 @@ func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
 }
 
 func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error) {
-	filters := []string{fmt.Sprintf("label=convox.app=%s", app)}
+	filters := []string{
+		fmt.Sprintf("label=convox.app=%s", app),
+		fmt.Sprintf("label=convox.rack=%s", p.Name),
+		"label=convox.type=service",
+	}
+
+	fmt.Printf("filters = %+v\n", filters)
+	fmt.Printf("p = %+v\n", p)
+	fmt.Printf("os.Environ() = %+v\n", os.Environ())
 
 	if opts.Service != "" {
 		filters = append(filters, fmt.Sprintf("label=convox.service=%s", opts.Service))
@@ -123,7 +137,7 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 
 	args = append(args, oargs...)
 
-	fmt.Printf("args = %+v\n", args)
+	// fmt.Printf("args = %+v\n", args)
 
 	data, err := exec.Command("docker", args...).CombinedOutput()
 	if err != nil {
@@ -167,7 +181,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 			args = append(args, "-v", v)
 		}
 
-		image = fmt.Sprintf("%s/%s:%s", app, opts.Service, release.Build)
+		image = fmt.Sprintf("%s/%s/%s:%s", p.Name, app, opts.Service, release.Build)
 	}
 
 	if p.Frontend != "none" {
@@ -182,11 +196,6 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		args = append(args, "--link", l)
 	}
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, err
-	}
-
 	if opts.Name != "" {
 		args = append(args, "--name", opts.Name)
 	}
@@ -196,12 +205,21 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	}
 
 	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
+	args = append(args, "-e", fmt.Sprintf("RACK=%s", p.Name))
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
 	args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s@%s:3000", os.Getenv("PASSWORD"), hostname))
 	args = append(args, "--link", hostname)
 
 	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
+	args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
 	args = append(args, "--label", fmt.Sprintf("convox.release=%s", opts.Release))
 	args = append(args, "--label", fmt.Sprintf("convox.service=%s", opts.Service))
+	args = append(args, "--label", "convox.type=service")
 
 	for from, to := range opts.Volumes {
 		args = append(args, "-v", fmt.Sprintf("%s:%s", from, to))
@@ -214,8 +232,6 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		if err != nil {
 			return nil, err
 		}
-
-		// fmt.Printf("cp = %+v\n", cp)
 
 		args = append(args, cp...)
 	}
