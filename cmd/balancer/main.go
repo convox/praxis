@@ -37,7 +37,7 @@ func init() {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: proxy <protocol> <style> <target>\n")
+	fmt.Fprintf(os.Stderr, "usage: balancer <protocol> <style> <target>\n")
 	os.Exit(1)
 }
 

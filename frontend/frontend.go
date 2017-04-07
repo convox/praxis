@@ -1,6 +1,7 @@
 package frontend
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -10,24 +11,72 @@ import (
 )
 
 var (
-	Log = logger.New("ns=frontend")
+	Host      string
+	Interface string
+	Log       = logger.New("ns=frontend")
 )
 
-func Serve(iface, subnet string) error {
-	log := Log.At("serve").Namespace("interface=%s subnet=%q", iface, subnet)
+type Frontend struct {
+	API       *API
+	DNS       *DNS
+	Interface string
+	Subnet    string
 
-	ip, err := setupListener(iface, subnet)
+	domains   map[string]bool
+	endpoints map[string]Endpoint
+	hosts     map[string]string
+	logger    *logger.Logger
+}
+
+func New(iface, subnet string) *Frontend {
+	return &Frontend{
+		Interface: iface,
+		Subnet:    subnet,
+		domains:   map[string]bool{},
+		endpoints: map[string]Endpoint{},
+		hosts:     map[string]string{},
+		logger:    logger.New("ns=frontend"),
+	}
+}
+
+func (f *Frontend) Serve() error {
+	log := f.logger.At("serve").Namespace("interface=%s subnet=%q", f.Interface, f.Subnet)
+
+	ip, err := setupListener(f.Interface, f.Subnet)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	go startDns("convox", ip)
-	go startApi(ip, iface, subnet)
+	f.API = NewAPI(ip, f)
+	f.DNS = NewDNS(ip, f)
+
+	go f.API.Serve()
+	go f.DNS.Serve()
 
 	log.Success()
-
 	select {}
+}
+
+func (f *Frontend) nextHostIP() (string, error) {
+	for i := 1; i < 255; i++ {
+		ip := fmt.Sprintf("%s.%d", f.Subnet, i)
+
+		found := false
+
+		for _, hip := range f.hosts {
+			if ip == hip {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return ip, nil
+		}
+	}
+
+	return "", fmt.Errorf("ip space exhausted")
 }
 
 func execute(command string, args ...string) error {

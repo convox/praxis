@@ -29,6 +29,12 @@ func Load(data []byte) (*Manifest, error) {
 		return nil, err
 	}
 
+	for i, s := range m.Services {
+		if s.Scale.Min == 0 {
+			m.Services[i].Scale.Min = 1
+		}
+	}
+
 	return &m, nil
 }
 

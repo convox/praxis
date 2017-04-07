@@ -4,10 +4,10 @@ import (
 	"fmt"
 )
 
-func setupResolver(root, ip string) error {
-	data := []byte(fmt.Sprintf("nameserver %s\nport 53\n", ip))
+func (d *DNS) setupResolver(domain string) error {
+	data := []byte(fmt.Sprintf("nameserver %s\nport 53\n", d.Host))
 
-	if err := writeFile(fmt.Sprintf("/etc/resolver/%s", root), data); err != nil {
+	if err := writeFile(fmt.Sprintf("/etc/resolver/%s", domain), data); err != nil {
 		return err
 	}
 

@@ -4,16 +4,16 @@ import (
 	"fmt"
 )
 
-func setupResolver(root, ip string) error {
+func (d *DNS) setupResolver(domain string) error {
 	data := []byte("[main]\ndns=dnsmasq\n")
 
 	if err := writeFile("/etc/NetworkManager/conf.d/convox.conf", data); err != nil {
 		return err
 	}
 
-	data = []byte(fmt.Sprintf("server=/%s/%s\n", root, ip))
+	data = []byte(fmt.Sprintf("server=/%s/%s\n", domain, d.Host))
 
-	if err := writeFile(fmt.Sprintf("/etc/NetworkManager/dnsmasq.d/%s", root), data); err != nil {
+	if err := writeFile(fmt.Sprintf("/etc/NetworkManager/dnsmasq.d/%s", domain), data); err != nil {
 		return err
 	}
 

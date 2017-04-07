@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	yaml "gopkg.in/yaml.v2"
@@ -122,6 +123,55 @@ func (v *ServiceBuild) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		v.Path = t
 	default:
 		return fmt.Errorf("unknown type for service build: %T", t)
+	}
+
+	return nil
+}
+
+func (v *ServiceScale) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var w interface{}
+
+	if err := unmarshal(&w); err != nil {
+		return err
+	}
+
+	switch t := w.(type) {
+	case int:
+		v.Min = t
+		v.Max = t
+	case string:
+		parts := strings.Split(t, "-")
+
+		switch len(parts) {
+		case 1:
+			i, err := strconv.Atoi(parts[0])
+			if err != nil {
+				return err
+			}
+
+			v.Min = i
+
+			if !strings.HasSuffix(parts[0], "+") {
+				v.Max = i
+			}
+		case 2:
+			i, err := strconv.Atoi(parts[0])
+			if err != nil {
+				return err
+			}
+
+			j, err := strconv.Atoi(parts[1])
+			if err != nil {
+				return err
+			}
+
+			v.Min = i
+			v.Max = j
+		default:
+			return fmt.Errorf("invalid scale: %v", w)
+		}
+	default:
+		return fmt.Errorf("invalid scale: %v", w)
 	}
 
 	return nil
