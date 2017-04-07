@@ -3,9 +3,10 @@ package frontend
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,161 +18,157 @@ const (
 	endpointTTL     = 2 * time.Minute
 )
 
-var (
-	endpoints = map[string]map[int]Endpoint{}
-	hosts     = map[string]string{}
-	lock      sync.Mutex
-)
+type API struct {
+	Host string
 
-type Endpoint struct {
-	Host   string    `json:"host"`
-	Ip     string    `json:"ip"`
-	Port   int       `json:"port"`
-	Target string    `json:"target"`
-	Until  time.Time `json:"until"`
-
-	listener net.Listener
+	frontend *Frontend
+	lock     sync.Mutex
+	router   *mux.Router
 }
 
-func startApi(ip, iface, subnet string) error {
+func NewAPI(host string, frontend *Frontend) *API {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/endpoints", listEndpoints).Methods("GET")
-	r.HandleFunc("/endpoints/{host}", createEndpoint(iface, subnet)).Methods("POST")
-	r.HandleFunc("/endpoints/{host}", deleteEndpoint).Methods("DELETE")
+	api := &API{
+		Host:     host,
+		frontend: frontend,
+		router:   r,
+	}
 
-	go cleanupEndpoints()
+	r.HandleFunc("/endpoints", api.listEndpoints).Methods("GET")
+	r.HandleFunc("/endpoints/{host}", api.createEndpoint).Methods("POST")
+	r.HandleFunc("/endpoints/{host}", api.deleteEndpoint).Methods("DELETE")
 
-	return http.ListenAndServe(fmt.Sprintf("%s:9477", ip), r)
+	go api.Cleanup()
+
+	return api
 }
 
-func cleanupEndpoints() {
+func (a *API) Serve() error {
+	return http.ListenAndServe(fmt.Sprintf("%s:9477", a.Host), a.router)
+}
+
+func (a *API) Cleanup() {
+	log := Log.At("endpoint.cleanup")
 	tick := time.Tick(cleanupInterval)
 
 	for range tick {
-		log := Log.At("endpoint.cleanup")
+		for hash, e := range a.frontend.endpoints {
+			log := log.Namespace("host=%q port=%d", e.Host, e.Port)
 
-		for host, pe := range endpoints {
-			log = log.Namespace("host=%q", host)
-
-			for port, e := range pe {
-				log = log.Namespace("port=%d", port)
-
-				if e.Until.Before(time.Now()) {
-					if e.listener != nil {
-						e.listener.Close()
-					}
-
-					delete(endpoints[host], port)
-
-					if len(endpoints[host]) == 0 {
-						delete(endpoints, host)
-					}
-
-					log.Success()
+			if e.Until.Before(time.Now()) {
+				if err := e.Cleanup(); err != nil {
+					log.Error(err)
+					continue
 				}
 			}
+
+			delete(a.frontend.endpoints, hash)
+			log.Success()
 		}
 	}
 }
 
-func createEndpoint(iface, subnet string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		lock.Lock()
-		defer lock.Unlock()
+func (a *API) createEndpoint(w http.ResponseWriter, r *http.Request) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 
-		log := Log.At("endpoint.create").Start()
+	log := Log.At("endpoint.create").Start()
 
-		host := mux.Vars(r)["host"]
+	host := mux.Vars(r)["host"]
+	port := r.FormValue("port")
+	target := r.FormValue("target")
+	parts := strings.Split(host, ".")
+	domain := parts[len(parts)-1]
 
-		port := r.FormValue("port")
-		target := r.FormValue("target")
+	if host == "" {
+		http.Error(w, "host required", 500)
+		log.Logf("error=%q", "host required")
+		return
+	}
 
-		if host == "" {
-			http.Error(w, "host required", 500)
-			log.Logf("error=%q", "host required")
-			return
-		}
+	if port == "" {
+		http.Error(w, "port required", 500)
+		log.Logf("error=%q", "port required")
+		return
+	}
 
-		if port == "" {
-			http.Error(w, "port required", 500)
-			log.Logf("error=%q", "port required")
-			return
-		}
+	if target == "" {
+		http.Error(w, "target required", 500)
+		log.Logf("error=%q", "target required")
+		return
+	}
 
-		if target == "" {
-			http.Error(w, "target required", 500)
-			log.Logf("error=%q", "target required")
-			return
-		}
+	log = log.Namespace("host=%s port=%s target=%s", host, port, target)
 
-		log = log.Namespace("host=%s port=%s target=%s", host, port, target)
+	pi, err := strconv.Atoi(port)
+	if err != nil {
+		http.Error(w, "invalid port", 500)
+		log.Error(err)
+		return
+	}
 
-		pi, err := strconv.Atoi(port)
-		if err != nil {
-			http.Error(w, "invalid port", 500)
-			log.Error(err)
-			return
-		}
+	ip, err := a.ipForHost(a.frontend.Interface, a.frontend.Subnet, fmt.Sprintf("%s.", host))
+	if err != nil {
+		http.Error(w, "invalid port", 500)
+		log.Error(err)
+		return
+	}
 
-		ip, err := ipForHost(iface, subnet, fmt.Sprintf("%s.", host))
-		if err != nil {
-			http.Error(w, "invalid port", 500)
-			log.Error(err)
-			return
-		}
+	log = log.Namespace("ip=%s", ip)
 
-		log = log.Namespace("ip=%s", ip)
+	ep := Endpoint{
+		Host:   host,
+		Ip:     ip,
+		Port:   pi,
+		Target: target,
+		Until:  time.Now().Add(endpointTTL).UTC(),
+	}
 
-		ep := Endpoint{
-			Host:   host,
-			Ip:     ip,
-			Port:   pi,
-			Target: target,
-			Until:  time.Now().Add(endpointTTL).UTC(),
-		}
-
-		_, exists := endpoints[ip][pi]
-
-		if !exists {
-			ln, err := createProxy(ip, port, target)
-			if err != nil {
-				http.Error(w, err.Error(), 500)
-				log.Error(err)
-				return
-			}
-
-			ep.listener = ln
-		}
-
-		endpoints[ip][pi] = ep
-
-		data, err := json.MarshalIndent(ep, "", "  ")
-		if err != nil {
+	if _, exists := a.frontend.domains[domain]; !exists {
+		a.frontend.domains[domain] = true
+		if err := a.frontend.DNS.registerDomain(domain); err != nil {
 			http.Error(w, err.Error(), 500)
 			log.Error(err)
 			return
 		}
-
-		w.Write(data)
-
-		log.Success()
 	}
+
+	hash := fmt.Sprintf("%s:%d", ip, pi)
+
+	if _, exists := a.frontend.endpoints[hash]; !exists {
+		ep.proxy = NewProxy(ip, port, target, a.frontend)
+
+		go ep.proxy.Serve()
+	}
+
+	a.frontend.endpoints[hash] = ep
+
+	data, err := json.MarshalIndent(ep, "", "  ")
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		log.Error(err)
+		return
+	}
+
+	w.Write(data)
+
+	log.Success()
 }
 
-func deleteEndpoint(w http.ResponseWriter, r *http.Request) {
-	lock.Lock()
-	defer lock.Unlock()
+func (a *API) deleteEndpoint(w http.ResponseWriter, r *http.Request) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 }
 
-func listEndpoints(w http.ResponseWriter, r *http.Request) {
-	ep := []Endpoint{}
+func (a *API) listEndpoints(w http.ResponseWriter, r *http.Request) {
+	ep := Endpoints{}
 
-	for _, m := range endpoints {
-		for _, e := range m {
-			ep = append(ep, e)
-		}
+	for _, e := range a.frontend.endpoints {
+		ep = append(ep, e)
 	}
+
+	sort.Slice(ep, ep.Less)
 
 	data, err := json.MarshalIndent(ep, "", "  ")
 	if err != nil {
@@ -182,10 +179,10 @@ func listEndpoints(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func ipForHost(iface, subnet, host string) (string, error) {
-	if ip, ok := hosts[host]; ok {
+func (a *API) ipForHost(iface, subnet, host string) (string, error) {
+	if ip, ok := a.frontend.hosts[host]; ok {
 		return ip, nil
 	}
 
-	return createHost(iface, subnet, host)
+	return a.frontend.createHost(host)
 }

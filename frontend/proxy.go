@@ -8,34 +8,63 @@ import (
 	"sync"
 )
 
-func createProxy(ip, port, target string) (net.Listener, error) {
-	log := Log.At("proxy.create").Namespace("ip=%s port=%s target=%s", ip, port, target).Start()
+type Proxy struct {
+	Host   string
+	Port   string
+	Target string
 
-	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%s", ip, port))
-	if err != nil {
-		return nil, err
+	frontend *Frontend
+	listener net.Listener
+}
+
+func NewProxy(host, port, target string, frontend *Frontend) *Proxy {
+	return &Proxy{
+		Host:     host,
+		Port:     port,
+		Target:   target,
+		frontend: frontend,
+	}
+}
+
+func (p *Proxy) Close() error {
+	if err := p.listener.Close(); err != nil {
+		return err
 	}
 
-	go handleListener(ln)
+	return nil
+}
+
+func (p *Proxy) Serve() error {
+	log := Log.At("proxy.create").Namespace("host=%s port=%s target=%s", p.Host, p.Port, p.Target).Start()
+
+	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%s", p.Host, p.Port))
+	if err != nil {
+		return err
+	}
+
+	p.listener = ln
 
 	log.Success()
 
-	return ln, nil
+	if err := p.handleListener(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func handleListener(ln net.Listener) {
+func (p *Proxy) handleListener() error {
 	for {
-		cn, err := ln.Accept()
+		cn, err := p.listener.Accept()
 		if err != nil {
-			fmt.Printf("err = %+v\n", err)
-			continue
+			return err
 		}
 
-		go handleConnection(cn)
+		go p.handleConnection(cn)
 	}
 }
 
-func handleConnection(cn net.Conn) {
+func (p *Proxy) handleConnection(cn net.Conn) {
 	log := Log.At("proxy.connect").Start()
 
 	defer cn.Close()
@@ -56,7 +85,7 @@ func handleConnection(cn net.Conn) {
 		return
 	}
 
-	ep, ok := endpoints[ip][pi]
+	ep, ok := p.frontend.endpoints[fmt.Sprintf("%s:%d", ip, pi)]
 	if !ok {
 		cn.Write([]byte(fmt.Sprintf("no endpoint\n")))
 		return

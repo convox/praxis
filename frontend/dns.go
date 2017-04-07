@@ -6,20 +6,46 @@ import (
 	"github.com/miekg/dns"
 )
 
-func startDns(root, ip string) error {
-	dns.HandleFunc(fmt.Sprintf("%s.", root), resolveConvox)
-	dns.HandleFunc(".", resolvePassthrough)
+type DNS struct {
+	Host string
 
-	if err := setupResolver(root, ip); err != nil {
+	frontend *Frontend
+	mux      *dns.ServeMux
+	server   *dns.Server
+}
+
+func NewDNS(host string, frontend *Frontend) *DNS {
+	mux := dns.NewServeMux()
+
+	mux.HandleFunc(".", resolvePassthrough)
+
+	return &DNS{
+		Host:     host,
+		frontend: frontend,
+		mux:      mux,
+		server: &dns.Server{
+			Addr:    fmt.Sprintf("%s:53", host),
+			Handler: mux,
+			Net:     "udp",
+		},
+	}
+}
+
+func (d *DNS) Serve() error {
+	return d.server.ListenAndServe()
+}
+
+func (d *DNS) registerDomain(domain string) error {
+	d.mux.HandleFunc(fmt.Sprintf("%s.", domain), d.resolveConvox)
+
+	if err := d.setupResolver(domain); err != nil {
 		return err
 	}
 
-	server := &dns.Server{Addr: fmt.Sprintf("%s:53", ip), Net: "udp"}
-
-	return server.ListenAndServe()
+	return nil
 }
 
-func resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
+func (d *DNS) resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
 	log := Log.At("resolve.convox").Start()
 
 	m := &dns.Msg{}
@@ -34,7 +60,7 @@ func resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
 			switch q.Qtype {
 			case dns.TypeA:
 				log = log.Namespace("name=%s", q.Name)
-				if ip, ok := hosts[q.Name]; ok {
+				if ip, ok := d.frontend.hosts[q.Name]; ok {
 					if rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip)); err == nil {
 						rr.Header().Ttl = 5
 						m.Answer = append(m.Answer, rr)

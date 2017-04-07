@@ -104,7 +104,7 @@ func runRackFrontend(c *cli.Context) error {
 		return fmt.Errorf("must run as root")
 	}
 
-	if err := frontend.Serve(c.String("interface"), c.String("subnet")); err != nil {
+	if err := frontend.New(c.String("interface"), c.String("subnet")).Serve(); err != nil {
 		return err
 	}
 
