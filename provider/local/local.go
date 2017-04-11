@@ -57,11 +57,11 @@ func init() {
 }
 
 func (p *Provider) Init() error {
-	if os.Getenv("PROVIDER_LOCAL_SKIP_FRONTEND_CHECK") != "true" {
-		if err := p.checkFrontend(); err != nil {
-			return err
-		}
-	}
+	// if os.Getenv("PROVIDER_LOCAL_SKIP_FRONTEND_CHECK") != "true" {
+	//   if err := p.checkFrontend(); err != nil {
+	//     return err
+	//   }
+	// }
 
 	if err := os.MkdirAll(p.Root, 0700); err != nil {
 		return err
