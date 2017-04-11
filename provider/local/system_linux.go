@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 )
 
-func launcherPath(name string, opts launchOptions) string {
+func launcherPath(name string) string {
 	return filepath.Join("/lib/systemd/system", fmt.Sprintf("%s.service", name))
 }
 
-func launcherStart(name string, opts launchOptions) error {
+func launcherStart(name string) error {
 	return exec.Command("systemctl", "start", name).Run()
 }
 
-func launcherStop(name string, opts launchOptions) error {
+func launcherStop(name string) error {
 	return exec.Command("systemctl", "stop", name).Run()
 }
 
@@ -25,7 +25,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart={{ .Executable }} {{ range .Args }}{{ . }} {{ end }}
+ExecStart={{ .Command }} {{ range .Args }}{{ . }} {{ end }}
 KillMode=control-group
 Restart=always
 RestartSec=10s

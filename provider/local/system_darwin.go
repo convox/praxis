@@ -6,19 +6,15 @@ import (
 	"path/filepath"
 )
 
-func launcherPath(name string, opts launchOptions) string {
-	if opts.Sudo {
-		return filepath.Join("/Library/LaunchDaemons", fmt.Sprintf("%s.plist", name))
-	} else {
-		return filepath.Join("/Library/LaunchAgents", fmt.Sprintf("%s.plist", name))
-	}
+func launcherPath(name string) string {
+	return filepath.Join("/Library/LaunchAgents", fmt.Sprintf("%s.plist", name))
 }
 
-func launcherStart(name string, opts launchOptions) error {
-	return exec.Command("launchctl", "load", launcherPath(name, opts)).Run()
+func launcherStart(name string) error {
+	return exec.Command("launchctl", "load", launcherPath(name)).Run()
 }
 
-func launcherStop(name string, opts launchOptions) error {
+func launcherStop(name string) error {
 	return exec.Command("launchctl", "remove", name).Run()
 }
 
@@ -31,7 +27,7 @@ func launcherTemplate() string {
 			<string>{{ .Name }}</string>
 			<key>ProgramArguments</key>
 			<array>
-				<string>{{ .Executable }}</string>
+				<string>{{ .Command }}</string>
 				{{ range .Args }}
 					<string>{{ . }}</string>
 				{{ end }}
@@ -45,10 +41,6 @@ func launcherTemplate() string {
 			<true/>
 			<key>KeepAlive</key>
 			<true/>
-			{{ if .User }}
-				<key>UserName</key>
-				<string>{{ .User }}</string>
-			{{ end }}
 			{{ if .Logs }}
 				<key>StandardOutPath</key>
 				<string>{{ .Logs }}</string>

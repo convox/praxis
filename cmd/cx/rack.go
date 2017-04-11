@@ -8,14 +8,13 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/convox/praxis/frontend"
 	"github.com/convox/praxis/provider"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
-	homedir "github.com/mitchellh/go-homedir"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -234,12 +233,14 @@ func runRackUpdate(c *cli.Context) error {
 func rackCommand(version string, frontend string) (*exec.Cmd, error) {
 	name := "convox"
 
-	exec.Command("docker", "rm", "-f", name).Run()
+	config := "/var/convox"
 
-	h, err := homedir.Dir()
-	if err != nil {
-		return nil, err
+	switch runtime.GOOS {
+	case "darwin":
+		config = "/Users/Shared/convox"
 	}
+
+	exec.Command("docker", "rm", "-f", name).Run()
 
 	args := []string{"run"}
 	args = append(args, "-i", fmt.Sprintf("--name=%s", name))
@@ -247,7 +248,7 @@ func rackCommand(version string, frontend string) (*exec.Cmd, error) {
 	args = append(args, "-e", fmt.Sprintf("PROVIDER_FRONTEND=%s", frontend))
 	args = append(args, "-e", fmt.Sprintf("VERSION=%s", version))
 	args = append(args, "-p", "5443:3000")
-	args = append(args, "-v", fmt.Sprintf("%s:/var/convox", filepath.Join(h, ".convox", "local")))
+	args = append(args, "-v", fmt.Sprintf("%s:/var/convox", config))
 	args = append(args, "-v", "/var/run/docker.sock:/var/run/docker.sock")
 	args = append(args, fmt.Sprintf("convox/praxis:%s", version))
 
