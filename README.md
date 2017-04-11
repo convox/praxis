@@ -6,10 +6,9 @@
 
 #### Install a local Rack
 
-> `sudo` is required because the local rack creates a new virtual network
-> interface to resolve and route hostnames like `web.myapp.convox`
-
     $ sudo cx rack install local
+
+##### Rack installation requires `sudo` to resolve and route local hostnames like `web.myapp.convox`
 
 ## USAGE
 
