@@ -1,29 +1,30 @@
 ## INSTALLATION
 
+#### Download the CLI
+
     $ go get github.com/convox/praxis/cmd/cx
 
+#### Install a local Rack
+
+> `sudo` is required because the local rack creates a new virtual network
+> interface to resolve and route hostnames like `web.myapp.convox`
+
+    $ sudo cx rack install local
+
 ## USAGE
-
-#### Start the DNS proxy
-
-    $ sudo cx rack frontend
-
-#### Start a local Rack
-
-    $ cx rack start
 
 #### Create a convox.yml
 
     $ cd ~/myapp
     $ vi convox.yml
-    
+
 ###### Examples
 
   * [rails](https://gist.github.com/ddollar/4c2368dbb7058652cfe758affd2208b2)
   * [contrived](https://gist.github.com/ddollar/df189f18b44a233294dc6627c130d9e7)
   * [praxis](https://github.com/convox/praxis/blob/master/convox.yml)
 
-#### Start a local application
+#### Start an application in development mode
 
     $ cx apps create myapp
     $ cx start
