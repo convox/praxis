@@ -256,9 +256,15 @@ func (p *Provider) serviceStart(m *manifest.Manifest, app, service, release stri
 		return err
 	}
 
+	k, err := types.Key(6)
+	if err != nil {
+		return err
+	}
+
 	_, err = p.ProcessStart(app, types.ProcessRunOptions{
 		Command:     s.Command,
 		Environment: senv,
+		Name:        fmt.Sprintf("%s-%s-%s-%s", p.Name, app, service, k),
 		Release:     release,
 		Service:     service,
 	})
