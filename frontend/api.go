@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	cleanupInterval = 3 * time.Second
+	cleanupInterval = 30 * time.Second
 	endpointTTL     = 2 * time.Minute
 )
 
