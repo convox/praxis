@@ -7,7 +7,7 @@ import (
 )
 
 func launcherPath(name string) string {
-	return filepath.Join("/Library/LaunchAgents", fmt.Sprintf("%s.plist", name))
+	return filepath.Join("/Library/LaunchDaemons", fmt.Sprintf("%s.plist", name))
 }
 
 func launcherStart(name string) error {
