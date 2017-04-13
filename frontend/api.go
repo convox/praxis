@@ -15,7 +15,7 @@ import (
 
 const (
 	cleanupInterval = 30 * time.Second
-	endpointTTL     = 2 * time.Minute
+	endpointTTL     = 30 * time.Minute
 )
 
 type API struct {
