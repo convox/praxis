@@ -227,6 +227,10 @@ func runRackUninstall(c *cli.Context) error {
 }
 
 func runRackUpdate(c *cli.Context) error {
+	if err := Rack.SystemUpdate("latest", types.SystemUpdateOptions{Output: os.Stdout}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
