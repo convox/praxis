@@ -10,12 +10,6 @@ import (
 func (p *Provider) converge() error {
 	log := Logger.At("converge").Start()
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("r = %+v\n", r)
-		}
-	}()
-
 	apps, err := p.AppList()
 	if err != nil {
 		log.Error(err)

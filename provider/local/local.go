@@ -57,9 +57,11 @@ func init() {
 }
 
 func (p *Provider) Init() error {
-	if err := p.checkFrontend(); err != nil {
-		return err
-	}
+	// if os.Getenv("PROVIDER_LOCAL_SKIP_FRONTEND_CHECK") != "true" {
+	//   if err := p.checkFrontend(); err != nil {
+	//     return err
+	//   }
+	// }
 
 	if err := os.MkdirAll(p.Root, 0700); err != nil {
 		return err
@@ -254,9 +256,15 @@ func (p *Provider) serviceStart(m *manifest.Manifest, app, service, release stri
 		return err
 	}
 
+	k, err := types.Key(6)
+	if err != nil {
+		return err
+	}
+
 	_, err = p.ProcessStart(app, types.ProcessRunOptions{
 		Command:     s.Command,
 		Environment: senv,
+		Name:        fmt.Sprintf("%s-%s-%s-%s", p.Name, app, service, k),
 		Release:     release,
 		Service:     service,
 	})

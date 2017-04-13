@@ -15,7 +15,7 @@ import (
 
 const (
 	cleanupInterval = 30 * time.Second
-	endpointTTL     = 2 * time.Minute
+	endpointTTL     = 30 * time.Minute
 )
 
 type API struct {
@@ -61,10 +61,10 @@ func (a *API) Cleanup() {
 					log.Error(err)
 					continue
 				}
-			}
 
-			delete(a.frontend.endpoints, hash)
-			log.Success()
+				delete(a.frontend.endpoints, hash)
+				log.Success()
+			}
 		}
 	}
 }
@@ -80,6 +80,8 @@ func (a *API) createEndpoint(w http.ResponseWriter, r *http.Request) {
 	target := r.FormValue("target")
 	parts := strings.Split(host, ".")
 	domain := parts[len(parts)-1]
+
+	defer r.Body.Close()
 
 	if host == "" {
 		http.Error(w, "host required", 500)
@@ -117,32 +119,36 @@ func (a *API) createEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	log = log.Namespace("ip=%s", ip)
 
-	ep := Endpoint{
-		Host:   host,
-		Ip:     ip,
-		Port:   pi,
-		Target: target,
-		Until:  time.Now().Add(endpointTTL).UTC(),
+	hash := fmt.Sprintf("%s:%d", ip, pi)
+
+	ep, ok := a.frontend.endpoints[hash]
+	if !ok {
+		proxy := NewProxy(ip, port, target, a.frontend)
+
+		go proxy.Serve()
+
+		ep = Endpoint{
+			Host:   host,
+			Ip:     ip,
+			Port:   pi,
+			Target: target,
+			proxy:  proxy,
+		}
 	}
 
+	ep.Until = time.Now().Add(endpointTTL).UTC()
+
+	a.frontend.endpoints[hash] = ep
+
 	if _, exists := a.frontend.domains[domain]; !exists {
-		a.frontend.domains[domain] = true
 		if err := a.frontend.DNS.registerDomain(domain); err != nil {
 			http.Error(w, err.Error(), 500)
 			log.Error(err)
 			return
 		}
+
+		a.frontend.domains[domain] = true
 	}
-
-	hash := fmt.Sprintf("%s:%d", ip, pi)
-
-	if _, exists := a.frontend.endpoints[hash]; !exists {
-		ep.proxy = NewProxy(ip, port, target, a.frontend)
-
-		go ep.proxy.Serve()
-	}
-
-	a.frontend.endpoints[hash] = ep
 
 	data, err := json.MarshalIndent(ep, "", "  ")
 	if err != nil {

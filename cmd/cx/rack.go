@@ -8,14 +8,13 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/convox/praxis/frontend"
 	"github.com/convox/praxis/provider"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
-	homedir "github.com/mitchellh/go-homedir"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -49,6 +48,11 @@ func init() {
 				Usage:       "<provider> <name>",
 				Flags: []cli.Flag{
 					cli.StringFlag{
+						Name:  "name",
+						Usage: "rack name",
+						Value: "convox",
+					},
+					cli.StringFlag{
 						Name:  "version",
 						Usage: "rack version",
 						Value: "latest",
@@ -72,6 +76,13 @@ func init() {
 				Description: "uninstall a rack",
 				Action:      runRackUninstall,
 				Usage:       "<provider> <name>",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "name",
+						Usage: "rack name",
+						Value: "convox",
+					},
+				},
 			},
 			cli.Command{
 				Name:        "update",
@@ -112,12 +123,12 @@ func runRackFrontend(c *cli.Context) error {
 }
 
 func runRackInstall(c *cli.Context) error {
-	if len(c.Args()) != 2 {
+	if len(c.Args()) != 1 {
 		return stdcli.Usage(c)
 	}
 
 	ptype := c.Args()[0]
-	name := c.Args()[1]
+	name := c.String("name")
 
 	key, err := types.Key(32)
 	if err != nil {
@@ -153,7 +164,11 @@ func runRackInstall(c *cli.Context) error {
 
 	u.User = url.UserPassword(key, "")
 
-	fmt.Printf("RACK_URL=%s\n", u.String())
+	switch ptype {
+	case "local":
+	default:
+		fmt.Printf("RACK_URL=%s\n", u.String())
+	}
 
 	return nil
 }
@@ -181,12 +196,12 @@ func runRackStart(c *cli.Context) error {
 }
 
 func runRackUninstall(c *cli.Context) error {
-	if len(c.Args()) != 2 {
+	if len(c.Args()) != 1 {
 		return stdcli.Usage(c)
 	}
 
 	ptype := c.Args()[0]
-	name := c.Args()[1]
+	name := c.String("name")
 
 	switch ptype {
 	case "aws":
@@ -216,22 +231,24 @@ func runRackUpdate(c *cli.Context) error {
 }
 
 func rackCommand(version string, frontend string) (*exec.Cmd, error) {
-	home, err := homedir.Dir()
-	if err != nil {
-		return nil, err
-	}
-
 	name := "convox"
+
+	config := "/var/convox"
+
+	switch runtime.GOOS {
+	case "darwin":
+		config = "/Users/Shared/convox"
+	}
 
 	exec.Command("docker", "rm", "-f", name).Run()
 
 	args := []string{"run"}
+	args = append(args, "-i", fmt.Sprintf("--name=%s", name))
 	args = append(args, "-e", "PROVIDER=local")
 	args = append(args, "-e", fmt.Sprintf("PROVIDER_FRONTEND=%s", frontend))
 	args = append(args, "-e", fmt.Sprintf("VERSION=%s", version))
-	args = append(args, "-i", "--rm", fmt.Sprintf("--name=%s", name))
 	args = append(args, "-p", "5443:3000")
-	args = append(args, "-v", fmt.Sprintf("%s:/var/convox", filepath.Join(home, ".convox", "local")))
+	args = append(args, "-v", fmt.Sprintf("%s:/var/convox", config))
 	args = append(args, "-v", "/var/run/docker.sock:/var/run/docker.sock")
 	args = append(args, fmt.Sprintf("convox/praxis:%s", version))
 
