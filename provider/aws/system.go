@@ -69,6 +69,10 @@ func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions)
 	return nil
 }
 
+func (p *Provider) SystemUpdate(version string, opts types.SystemUpdateOptions) error {
+	return fmt.Errorf("unimplemented")
+}
+
 func (p *Provider) cloudformationProgress(name string, opts types.SystemInstallOptions) error {
 	w := opts.Output
 	if w == nil {

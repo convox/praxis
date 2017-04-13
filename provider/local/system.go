@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"text/template"
 
 	"github.com/convox/praxis/types"
@@ -44,6 +45,32 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {
 	launcherRemove("convox.frontend")
 	launcherRemove("convox.rack")
+
+	return nil
+}
+
+func (p *Provider) SystemUpdate(version string, opts types.SystemUpdateOptions) error {
+	w := opts.Output
+	if w == nil {
+		w = ioutil.Discard
+	}
+
+	w.Write([]byte(fmt.Sprintf("Pulling convox/praxis:%s... ", version)))
+
+	if err := exec.Command("docker", "pull", fmt.Sprintf("convox/praxis:%s", version)).Run(); err != nil {
+		w.Write([]byte("ERROR\n"))
+		return err
+	}
+
+	w.Write([]byte("OK\n"))
+
+	w.Write([]byte("Restarting... OK\n"))
+
+	if err := p.storageStore("version", version); err != nil {
+		return err
+	}
+
+	os.Exit(0)
 
 	return nil
 }

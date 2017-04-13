@@ -14,3 +14,7 @@ type SystemInstallOptions struct {
 	Output  io.Writer
 	Version string
 }
+
+type SystemUpdateOptions struct {
+	Output io.Writer
+}
