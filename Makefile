@@ -11,7 +11,7 @@ check:
 	bin/check
 
 cli:
-	go install -ldflags -s ./cmd/cx
+	go install ./cmd/cx
 
 ci: test
 	bin/ci
