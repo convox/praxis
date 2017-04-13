@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"strings"
+	"os"
+	"sort"
 
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
@@ -51,33 +52,37 @@ func runEnv(c *cli.Context) error {
 		return err
 	}
 
-	for k, v := range env {
-		fmt.Printf("%s=%s\n", k, v)
+	keys := []string{}
+
+	for k := range env {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		fmt.Printf("%s=%s\n", k, env[k])
 	}
 
 	return nil
 }
 
 func runEnvSet(c *cli.Context) error {
-	if len(c.Args()) < 1 {
-		return stdcli.Usage(c)
+	env := types.Environment{}
+
+	if !stdcli.IsTerminal(os.Stdin) {
+		env.Read(os.Stdin)
+	} else {
+		if len(c.Args()) < 1 {
+			return stdcli.Usage(c)
+		}
 	}
+
+	env.Pairs(c.Args())
 
 	app, err := appName(c, ".")
 	if err != nil {
 		return err
-	}
-
-	env := types.Environment{}
-
-	for _, v := range c.Args() {
-		parts := strings.SplitN(v, "=", 2)
-
-		if len(parts) != 2 {
-			return fmt.Errorf("invalid key/value pair: %s", v)
-		}
-
-		env[parts[0]] = parts[1]
 	}
 
 	if err := Rack.EnvironmentSet(app, env); err != nil {
