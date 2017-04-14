@@ -45,6 +45,12 @@ func TestManifestLoad(t *testing.T) {
 				Timeout: "5m",
 			},
 		},
+		Resources: manifest.Resources{
+			manifest.Resource{
+				Name: "database",
+				Type: "postgres",
+			},
+		},
 		Services: manifest.Services{
 			manifest.Service{
 				Name: "api",
@@ -55,7 +61,8 @@ func TestManifestLoad(t *testing.T) {
 					"DEVELOPMENT=false",
 					"SECRET",
 				},
-				Scale: manifest.ServiceScale{Min: 3, Max: 10},
+				Resources: []string{"database"},
+				Scale:     manifest.ServiceScale{Min: 3, Max: 10},
 			},
 			manifest.Service{
 				Name:    "proxy",
