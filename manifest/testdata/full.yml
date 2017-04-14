@@ -10,6 +10,9 @@ balancers:
 queues:
   traffic:
     timeout: 5m
+resources:
+  database:
+    type: postgres
 services:
   api:
     build:
@@ -17,6 +20,8 @@ services:
     environment:
       - DEVELOPMENT=false
       - SECRET
+    resources:
+      - database
     scale: 3-10
   proxy:
     command: bash

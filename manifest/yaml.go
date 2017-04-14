@@ -90,6 +90,19 @@ func (v *Queue) SetName(name string) error {
 	return nil
 }
 
+func (v Resources) MarshalYAML() (interface{}, error) {
+	return nil, fmt.Errorf("unimplemented")
+}
+
+func (v *Resources) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return unmarshalMapSlice(unmarshal, v)
+}
+
+func (v *Resource) SetName(name string) error {
+	v.Name = name
+	return nil
+}
+
 func (v Services) MarshalYAML() (interface{}, error) {
 	return nil, fmt.Errorf("unimplemented")
 }
