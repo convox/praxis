@@ -25,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/simpledb"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/convox/praxis/types"
 	"github.com/fsouza/go-dockerclient"
 )
@@ -102,6 +103,10 @@ func (p *Provider) SimpleDB() *simpledb.SimpleDB {
 	return simpledb.New(p.Session, p.Config)
 }
 
+func (p *Provider) STS() *sts.STS {
+	return sts.New(p.Session, p.Config)
+}
+
 func awsError(err error) string {
 	if ae, ok := err.(awserr.Error); ok {
 		return ae.Code()
@@ -143,18 +148,12 @@ func formationHelpers() template.FuncMap {
 }
 
 func (p *Provider) accountID() (string, error) {
-	res, err := p.IAM().GetUser(&iam.GetUserInput{})
+	res, err := p.STS().GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		return "", err
 	}
 
-	parts := strings.Split(*res.User.Arn, ":")
-
-	if len(parts) != 6 {
-		return "", fmt.Errorf("invalid user arn")
-	}
-
-	return parts[4], nil
+	return *res.Account, nil
 }
 
 func (p *Provider) appRegistry(app string) (*types.Registry, error) {
