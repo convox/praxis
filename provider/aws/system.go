@@ -15,7 +15,7 @@ import (
 
 func (p *Provider) SystemGet() (*types.System, error) {
 	system := &types.System{
-		Name:    p.Rack,
+		Name:    p.Name,
 		Image:   fmt.Sprintf("convox/praxis:%s", os.Getenv("VERSION")),
 		Version: os.Getenv("VERSION"),
 	}

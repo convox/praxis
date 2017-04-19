@@ -12,8 +12,7 @@ import (
 )
 
 func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error) {
-	_, err := p.AppGet(app)
-	if err != nil {
+	if _, err := p.AppGet(app); err != nil {
 		return nil, err
 	}
 

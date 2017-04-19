@@ -41,7 +41,7 @@ type Provider struct {
 func FromEnv() (*Provider, error) {
 	p := &Provider{
 		Frontend: coalesce(os.Getenv("PROVIDER_FRONTEND"), "10.42.84.0"),
-		Name:     coalesce(os.Getenv("PROVIDER_NAME"), "convox"),
+		Name:     coalesce(os.Getenv("NAME"), "convox"),
 		Root:     coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
 	}
 
@@ -183,7 +183,6 @@ func (p *Provider) balancerRunning(app string, balancer manifest.Balancer) bool 
 func (p *Provider) balancerStart(app string, balancer manifest.Balancer) error {
 	for _, e := range balancer.Endpoints {
 		name := fmt.Sprintf("%s-%s-%s-%s", p.Name, app, balancer.Name, e.Port)
-		fmt.Printf("name = %+v\n", name)
 
 		exec.Command("docker", "rm", "-f", name).Run()
 

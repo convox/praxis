@@ -25,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/simpledb"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/convox/praxis/types"
 	"github.com/fsouza/go-dockerclient"
 )
@@ -36,7 +37,7 @@ const (
 type Provider struct {
 	Config      *aws.Config
 	Development bool
-	Rack        string
+	Name        string
 	Region      string
 	Session     *session.Session
 }
@@ -56,7 +57,7 @@ func FromEnv() (*Provider, error) {
 	return &Provider{
 		Config:      &aws.Config{Region: aws.String(region)},
 		Development: os.Getenv("DEVELOPMENT") == "true",
-		Rack:        os.Getenv("RACK"),
+		Name:        os.Getenv("NAME"),
 		Region:      region,
 		Session:     session,
 	}, nil
@@ -102,6 +103,10 @@ func (p *Provider) SimpleDB() *simpledb.SimpleDB {
 	return simpledb.New(p.Session, p.Config)
 }
 
+func (p *Provider) STS() *sts.STS {
+	return sts.New(p.Session, p.Config)
+}
+
 func awsError(err error) string {
 	if ae, ok := err.(awserr.Error); ok {
 		return ae.Code()
@@ -143,18 +148,12 @@ func formationHelpers() template.FuncMap {
 }
 
 func (p *Provider) accountID() (string, error) {
-	res, err := p.IAM().GetUser(&iam.GetUserInput{})
+	res, err := p.STS().GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		return "", err
 	}
 
-	parts := strings.Split(*res.User.Arn, ":")
-
-	if len(parts) != 6 {
-		return "", fmt.Errorf("invalid user arn")
-	}
-
-	return parts[4], nil
+	return *res.Account, nil
 }
 
 func (p *Provider) appRegistry(app string) (*types.Registry, error) {
@@ -194,7 +193,7 @@ func (p *Provider) appRegistry(app string) (*types.Registry, error) {
 }
 
 func (p *Provider) appResource(app string, resource string) (string, error) {
-	return p.stackResource(fmt.Sprintf("%s-%s", p.Rack, app), resource)
+	return p.stackResource(fmt.Sprintf("%s-%s", p.Name, app), resource)
 }
 
 func (p *Provider) cloudwatchLogStream(app, pid string, w io.WriteCloser) {
@@ -341,7 +340,7 @@ func (p *Provider) dockerHostForInstance(instance string) (string, error) {
 }
 
 func (p *Provider) rackResource(resource string) (string, error) {
-	return p.stackResource(p.Rack, resource)
+	return p.stackResource(p.Name, resource)
 }
 
 func (p *Provider) stackOutput(name string, output string) (string, error) {
@@ -400,7 +399,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 				Name:              aws.String(opts.Service),
 			},
 		},
-		Family: aws.String(fmt.Sprintf("%s-%s", p.Rack, app)),
+		Family: aws.String(fmt.Sprintf("%s-%s", p.Name, app)),
 	}
 
 	if opts.Command != "" {
@@ -416,6 +415,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 
 	aenv := map[string]string{
 		"APP":      app,
+		"RACK":     p.Name,
 		"RACK_URL": "https://david-praxis.ngrok.io",
 	}
 
@@ -471,7 +471,7 @@ func (p *Provider) taskForPid(app, pid string) (*ecs.Task, error) {
 
 	req := &ecs.ListTasksInput{
 		Cluster: aws.String(cluster),
-		Family:  aws.String(fmt.Sprintf("%s-%s", p.Rack, app)),
+		Family:  aws.String(fmt.Sprintf("%s-%s", p.Name, app)),
 	}
 
 	var task *ecs.Task

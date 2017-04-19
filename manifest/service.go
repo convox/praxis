@@ -37,7 +37,7 @@ func (s Service) BuildHash() string {
 }
 
 func (s Service) Env(env types.Environment) (map[string]string, error) {
-	full := map[string]string{}
+	full := types.Environment{}
 
 	for _, e := range s.Environment {
 		parts := strings.SplitN(e, "=", 2)
@@ -64,7 +64,7 @@ func (s Service) Env(env types.Environment) (map[string]string, error) {
 	return full, nil
 }
 
-func (s *Service) Validate(env map[string]string) error {
+func (s *Service) Validate(env types.Environment) error {
 	if _, err := s.Env(env); err != nil {
 		return err
 	}
