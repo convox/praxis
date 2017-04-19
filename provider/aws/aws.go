@@ -413,10 +413,15 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		})
 	}
 
+	endpoint, err := p.stackOutput(p.Name, "Endpoint")
+	if err != nil {
+		return "", err
+	}
+
 	aenv := map[string]string{
 		"APP":      app,
 		"RACK":     p.Name,
-		"RACK_URL": "https://david-praxis.ngrok.io",
+		"RACK_URL": endpoint,
 	}
 
 	for k, v := range aenv {
