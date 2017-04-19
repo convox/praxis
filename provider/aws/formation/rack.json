@@ -279,6 +279,7 @@
               { "Name": "AWS_REGION", "Value": { "Ref": "AWS::Region" } },
               { "Name": "PASSWORD", "Value": { "Ref": "ApiKey" } },
               { "Name": "PROVIDER", "Value": "aws" },
+              { "Name": "RACK", "Value": { "Ref": "AWS::StackName"} },
               { "Name": "VERSION", "Value": { "Ref": "Version" } }
             ],
             "Essential": "true",
