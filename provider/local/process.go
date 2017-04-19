@@ -195,7 +195,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	}
 
 	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
-	args = append(args, "-e", fmt.Sprintf("RACK=%s", coalesce(opts.Environment["RACK"], p.Name)))
+	args = append(args, "-e", fmt.Sprintf("RACK=%s", p.Name))
 
 	hostname, err := os.Hostname()
 	if err != nil {

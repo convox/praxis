@@ -64,7 +64,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 			"BUILD_AUTH": base64.StdEncoding.EncodeToString(auth),
 			"BUILD_PUSH": fmt.Sprintf("%s/%s", ar.Hostname, repo),
 		},
-		Name:    fmt.Sprintf("%s-%s-build-%s", p.Rack, app, id),
+		Name:    fmt.Sprintf("%s-%s-build-%s", p.Name, app, id),
 		Image:   sys.Image,
 		Service: "build",
 		Volumes: map[string]string{

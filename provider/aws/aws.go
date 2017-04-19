@@ -37,7 +37,7 @@ const (
 type Provider struct {
 	Config      *aws.Config
 	Development bool
-	Rack        string
+	Name        string
 	Region      string
 	Session     *session.Session
 }
@@ -57,7 +57,7 @@ func FromEnv() (*Provider, error) {
 	return &Provider{
 		Config:      &aws.Config{Region: aws.String(region)},
 		Development: os.Getenv("DEVELOPMENT") == "true",
-		Rack:        os.Getenv("RACK"),
+		Name:        os.Getenv("NAME"),
 		Region:      region,
 		Session:     session,
 	}, nil
@@ -193,7 +193,7 @@ func (p *Provider) appRegistry(app string) (*types.Registry, error) {
 }
 
 func (p *Provider) appResource(app string, resource string) (string, error) {
-	return p.stackResource(fmt.Sprintf("%s-%s", p.Rack, app), resource)
+	return p.stackResource(fmt.Sprintf("%s-%s", p.Name, app), resource)
 }
 
 func (p *Provider) cloudwatchLogStream(app, pid string, w io.WriteCloser) {
@@ -340,7 +340,7 @@ func (p *Provider) dockerHostForInstance(instance string) (string, error) {
 }
 
 func (p *Provider) rackResource(resource string) (string, error) {
-	return p.stackResource(p.Rack, resource)
+	return p.stackResource(p.Name, resource)
 }
 
 func (p *Provider) stackOutput(name string, output string) (string, error) {
@@ -399,7 +399,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 				Name:              aws.String(opts.Service),
 			},
 		},
-		Family: aws.String(fmt.Sprintf("%s-%s", p.Rack, app)),
+		Family: aws.String(fmt.Sprintf("%s-%s", p.Name, app)),
 	}
 
 	if opts.Command != "" {
@@ -415,6 +415,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 
 	aenv := map[string]string{
 		"APP":      app,
+		"RACK":     p.Name,
 		"RACK_URL": "https://david-praxis.ngrok.io",
 	}
 
@@ -470,7 +471,7 @@ func (p *Provider) taskForPid(app, pid string) (*ecs.Task, error) {
 
 	req := &ecs.ListTasksInput{
 		Cluster: aws.String(cluster),
-		Family:  aws.String(fmt.Sprintf("%s-%s", p.Rack, app)),
+		Family:  aws.String(fmt.Sprintf("%s-%s", p.Name, app)),
 	}
 
 	var task *ecs.Task

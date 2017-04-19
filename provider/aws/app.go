@@ -19,10 +19,10 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("Release"), ParameterValue: aws.String("")},
 		},
-		StackName: aws.String(fmt.Sprintf("%s-%s", p.Rack, name)),
+		StackName: aws.String(fmt.Sprintf("%s-%s", p.Name, name)),
 		Tags: []*cloudformation.Tag{
 			{Key: aws.String("Name"), Value: aws.String(name)},
-			{Key: aws.String("Rack"), Value: aws.String(p.Rack)},
+			{Key: aws.String("Rack"), Value: aws.String(p.Name)},
 			{Key: aws.String("System"), Value: aws.String("convox")},
 			{Key: aws.String("Type"), Value: aws.String("app")},
 			{Key: aws.String("Version"), Value: aws.String("test")},
@@ -38,14 +38,14 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 
 func (p *Provider) AppDelete(name string) error {
 	_, err := p.CloudFormation().DeleteStack(&cloudformation.DeleteStackInput{
-		StackName: aws.String(fmt.Sprintf("%s-%s", p.Rack, name)),
+		StackName: aws.String(fmt.Sprintf("%s-%s", p.Name, name)),
 	})
 	return err
 }
 
 func (p *Provider) AppGet(name string) (*types.App, error) {
 	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(fmt.Sprintf("%s-%s", p.Rack, name)),
+		StackName: aws.String(fmt.Sprintf("%s-%s", p.Name, name)),
 	})
 	if awsError(err) == "ValidationError" {
 		return nil, fmt.Errorf("no such app: %s", name)
@@ -103,7 +103,7 @@ func (p *Provider) appFromStack(stack *cloudformation.Stack) *types.App {
 		tags[*t.Key] = *t.Value
 	}
 
-	if tags["System"] != "convox" || tags["Rack"] != p.Rack {
+	if tags["System"] != "convox" || tags["Rack"] != p.Name {
 		return nil
 	}
 

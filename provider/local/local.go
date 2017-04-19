@@ -41,7 +41,7 @@ type Provider struct {
 func FromEnv() (*Provider, error) {
 	p := &Provider{
 		Frontend: coalesce(os.Getenv("PROVIDER_FRONTEND"), "10.42.84.0"),
-		Name:     coalesce(os.Getenv("PROVIDER_NAME"), "convox"),
+		Name:     coalesce(os.Getenv("NAME"), "convox"),
 		Root:     coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
 	}
 
