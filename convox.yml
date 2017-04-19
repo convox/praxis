@@ -12,6 +12,7 @@ services:
       - PASSWORD
       - PROVIDER=local
       - PROVIDER_NAME=dev
+      - RACK=convox
       - VERSION=latest
     scale: 1
     test: make test

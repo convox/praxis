@@ -183,7 +183,6 @@ func (p *Provider) balancerRunning(app string, balancer manifest.Balancer) bool 
 func (p *Provider) balancerStart(app string, balancer manifest.Balancer) error {
 	for _, e := range balancer.Endpoints {
 		name := fmt.Sprintf("%s-%s-%s-%s", p.Name, app, balancer.Name, e.Port)
-		fmt.Printf("name = %+v\n", name)
 
 		exec.Command("docker", "rm", "-f", name).Run()
 
