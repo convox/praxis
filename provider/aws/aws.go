@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -418,10 +419,17 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		return "", err
 	}
 
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return "", err
+	}
+
+	u.User = url.UserPassword(os.Getenv("PASSWORD"), "")
+
 	aenv := map[string]string{
 		"APP":      app,
 		"RACK":     p.Name,
-		"RACK_URL": endpoint,
+		"RACK_URL": u.String(),
 	}
 
 	for k, v := range aenv {

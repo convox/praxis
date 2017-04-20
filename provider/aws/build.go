@@ -60,9 +60,10 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{
-			"BUILD_APP":  app,
-			"BUILD_AUTH": base64.StdEncoding.EncodeToString(auth),
-			"BUILD_PUSH": fmt.Sprintf("%s/%s", ar.Hostname, repo),
+			"BUILD_APP":    app,
+			"BUILD_AUTH":   base64.StdEncoding.EncodeToString(auth),
+			"BUILD_PUSH":   fmt.Sprintf("%s/%s", ar.Hostname, repo),
+			"BUILD_PREFIX": fmt.Sprintf("%s-%s", p.Name, app),
 		},
 		Name:    fmt.Sprintf("%s-%s-build-%s", p.Name, app, id),
 		Image:   sys.Image,
