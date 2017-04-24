@@ -87,7 +87,7 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 		exec.Command("docker", "rm", "-f", opts.Name).Run()
 	}
 
-	args := []string{"run"}
+	args := []string{"run", "--rm"}
 
 	oargs, err := p.argsFromOpts(app, opts)
 	if err != nil {
@@ -120,7 +120,7 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 		exec.Command("docker", "rm", "-f", opts.Name).Run()
 	}
 
-	args := []string{"run", "--detach"}
+	args := []string{"run", "--rm", "--detach"}
 
 	oargs, err := p.argsFromOpts(app, opts)
 	if err != nil {

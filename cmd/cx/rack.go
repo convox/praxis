@@ -7,12 +7,15 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
 	"runtime"
 	"strings"
+	"syscall"
 
 	"github.com/convox/praxis/frontend"
 	"github.com/convox/praxis/provider"
+	"github.com/convox/praxis/provider/local"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
 	cli "gopkg.in/urfave/cli.v1"
@@ -197,7 +200,30 @@ func runRackStart(c *cli.Context) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	return cmd.Run()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+
+	<-sig
+	fmt.Println("stopping local rack")
+
+	cs, err := local.ContainersByLabels(map[string]string{
+		"convox.rack": "convox",
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, id := range cs {
+		if err := exec.Command("docker", "kill", id).Run(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func runRackUninstall(c *cli.Context) error {

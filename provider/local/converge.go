@@ -20,6 +20,7 @@ func (p *Provider) converge(app string) error {
 
 	a, err := p.AppGet(app)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -84,7 +85,7 @@ func containerBinding(id string, bind string) (string, error) {
 	return b[0].HostPort, nil
 }
 
-func containersByLabels(labels map[string]string) ([]string, error) {
+func ContainersByLabels(labels map[string]string) ([]string, error) {
 	args := []string{"ps", "--format", "{{.ID}}"}
 
 	for k, v := range labels {
@@ -108,7 +109,7 @@ func containersByLabels(labels map[string]string) ([]string, error) {
 }
 
 func (p *Provider) containersKillOutdated(kind, app, release string) error {
-	acs, err := containersByLabels(map[string]string{
+	acs, err := ContainersByLabels(map[string]string{
 		"convox.type": kind,
 		"convox.rack": p.Name,
 		"convox.app":  app,
@@ -117,7 +118,7 @@ func (p *Provider) containersKillOutdated(kind, app, release string) error {
 		return err
 	}
 
-	cs, err := containersByLabels(map[string]string{
+	cs, err := ContainersByLabels(map[string]string{
 		"convox.type":    kind,
 		"convox.rack":    p.Name,
 		"convox.app":     app,
@@ -197,7 +198,7 @@ func (p *Provider) balancerRegister(app string, balancer manifest.Balancer) erro
 }
 
 func (p *Provider) balancerRunning(app, release, balancer string) bool {
-	cs, err := containersByLabels(map[string]string{
+	cs, err := ContainersByLabels(map[string]string{
 		"convox.type":     "balancer",
 		"convox.rack":     p.Name,
 		"convox.app":      app,
@@ -243,7 +244,7 @@ func (p *Provider) balancerStart(app, release string, balancer manifest.Balancer
 			return err
 		}
 
-		args := []string{"run", "--detach"}
+		args := []string{"run", "--rm", "--detach"}
 
 		args = append(args, "--name", name)
 		args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
@@ -284,7 +285,7 @@ func (p *Provider) servicesConverge(app, release string, services manifest.Servi
 }
 
 func (p *Provider) serviceRunning(app, release, service string) bool {
-	cs, err := containersByLabels(map[string]string{
+	cs, err := ContainersByLabels(map[string]string{
 		"convox.type":    "service",
 		"convox.rack":    p.Name,
 		"convox.app":     app,
@@ -320,7 +321,7 @@ func (p *Provider) serviceStart(app, release string, service manifest.Service) e
 	_, err = p.ProcessStart(app, types.ProcessRunOptions{
 		Command:     service.Command,
 		Environment: senv,
-		Name:        fmt.Sprintf("%s-%s-%s-%s", p.Name, app, service.Name, k),
+		Name:        fmt.Sprintf("%s-%s-%s-%s-local", p.Name, app, service.Name, k),
 		Release:     release,
 		Service:     service.Name,
 	})

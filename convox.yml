@@ -10,7 +10,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=
       - DEVELOPMENT=false
       - NAME=dev
-      - PASSWORD
+      - PASSWORD=
       - PROVIDER=local
       - VERSION=latest
     scale: 1
