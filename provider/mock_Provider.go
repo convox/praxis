@@ -797,6 +797,20 @@ func (_m *MockProvider) SystemUninstall(name string, opts types.SystemInstallOpt
 	return r0
 }
 
+// SystemUpdate provides a mock function with given fields: version, opts
+func (_m *MockProvider) SystemUpdate(version string, opts types.SystemUpdateOptions) error {
+	ret := _m.Called(version, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, types.SystemUpdateOptions) error); ok {
+		r0 = rf(version, opts)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // TableCreate provides a mock function with given fields: app, name, opts
 func (_m *MockProvider) TableCreate(app string, name string, opts types.TableCreateOptions) error {
 	ret := _m.Called(app, name, opts)

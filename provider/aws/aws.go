@@ -142,7 +142,6 @@ func formationTemplate(name string, data interface{}) ([]byte, error) {
 func formationHelpers() template.FuncMap {
 	return template.FuncMap{
 		"resource": func(s string) string {
-			fmt.Printf("s = %+v\n", s)
 			return s
 		},
 	}

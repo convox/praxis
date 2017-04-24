@@ -79,6 +79,7 @@ type Provider interface {
 	SystemGet() (*types.System, error)
 	SystemInstall(name string, opts types.SystemInstallOptions) (string, error)
 	SystemUninstall(name string, opts types.SystemInstallOptions) error
+	SystemUpdate(version string, opts types.SystemUpdateOptions) error
 
 	// SystemLogs() (io.ReadCloser, error)
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)

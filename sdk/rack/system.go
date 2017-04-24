@@ -18,3 +18,7 @@ func (c *Client) SystemInstall(name string, opts types.SystemInstallOptions) (st
 func (c *Client) SystemUninstall(name string, opts types.SystemInstallOptions) error {
 	return fmt.Errorf("unimplemented")
 }
+
+func (c *Client) SystemUpdate(name string, opts types.SystemUpdateOptions) error {
+	return fmt.Errorf("unimplemented")
+}

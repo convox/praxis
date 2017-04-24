@@ -12,7 +12,8 @@ import (
 )
 
 func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error) {
-	if _, err := p.AppGet(app); err != nil {
+	a, err := p.AppGet(app)
+	if err != nil {
 		return nil, err
 	}
 
@@ -53,6 +54,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		},
 		Name:    fmt.Sprintf("%s-build-%s", app, id),
 		Image:   sys.Image,
+		Release: a.Release,
 		Service: "build",
 		Volumes: map[string]string{
 			"/var/run/docker.sock": "/var/run/docker.sock",

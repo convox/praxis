@@ -136,6 +136,7 @@ func (a *API) createEndpoint(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	ep.Target = target
 	ep.Until = time.Now().Add(endpointTTL).UTC()
 
 	a.frontend.endpoints[hash] = ep
