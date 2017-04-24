@@ -13,6 +13,9 @@ func init() {
 		Name:        "deploy",
 		Description: "deploy the application",
 		Action:      runDeploy,
+		Flags: []cli.Flag{
+			appFlag,
+		},
 	})
 }
 

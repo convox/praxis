@@ -25,8 +25,8 @@
     ] ] } }
   },
   "Parameters": {
-    "ApiKey": {
-      "Description": "API key",
+    "Password": {
+      "Description": "Master password",
       "MinLength": "1",
       "NoEcho": true,
       "Type": "String"
@@ -280,7 +280,7 @@
             "Environment": [
               { "Name": "AWS_REGION", "Value": { "Ref": "AWS::Region" } },
               { "Name": "NAME", "Value": { "Ref": "AWS::StackName"} },
-              { "Name": "PASSWORD", "Value": { "Ref": "ApiKey" } },
+              { "Name": "PASSWORD", "Value": { "Ref": "Password" } },
               { "Name": "PROVIDER", "Value": "aws" },
               { "Name": "VERSION", "Value": { "Ref": "Version" } }
             ],

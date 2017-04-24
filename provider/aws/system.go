@@ -30,10 +30,16 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 	_, err := p.CloudFormation().CreateStack(&cloudformation.CreateStackInput{
 		Capabilities: []*string{aws.String("CAPABILITY_IAM")},
 		Parameters: []*cloudformation.Parameter{
-			&cloudformation.Parameter{ParameterKey: aws.String("ApiKey"), ParameterValue: aws.String(opts.Key)},
+			&cloudformation.Parameter{ParameterKey: aws.String("Password"), ParameterValue: aws.String(opts.Password)},
 			&cloudformation.Parameter{ParameterKey: aws.String("Version"), ParameterValue: aws.String(version)},
 		},
-		StackName:   aws.String(name),
+		StackName: aws.String(name),
+		Tags: []*cloudformation.Tag{
+			{Key: aws.String("Name"), Value: aws.String(name)},
+			{Key: aws.String("System"), Value: aws.String("convox")},
+			{Key: aws.String("Type"), Value: aws.String("rack")},
+			{Key: aws.String("Version"), Value: aws.String(version)},
+		},
 		TemplateURL: aws.String(template),
 	})
 	if err != nil {

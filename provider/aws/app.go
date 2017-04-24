@@ -25,7 +25,7 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 			{Key: aws.String("Rack"), Value: aws.String(p.Name)},
 			{Key: aws.String("System"), Value: aws.String("convox")},
 			{Key: aws.String("Type"), Value: aws.String("app")},
-			{Key: aws.String("Version"), Value: aws.String("test")},
+			{Key: aws.String("Version"), Value: aws.String(p.Version)},
 		},
 		TemplateBody: aws.String(string(data)),
 	})

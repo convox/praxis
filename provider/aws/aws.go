@@ -41,6 +41,7 @@ type Provider struct {
 	Name        string
 	Region      string
 	Session     *session.Session
+	Version     string
 }
 
 func init() {
@@ -61,6 +62,7 @@ func FromEnv() (*Provider, error) {
 		Name:        os.Getenv("NAME"),
 		Region:      region,
 		Session:     session,
+		Version:     os.Getenv("VERSION"),
 	}, nil
 }
 
@@ -133,10 +135,22 @@ func formationTemplate(name string, data interface{}) ([]byte, error) {
 	var v interface{}
 
 	if err := json.Unmarshal(buf.Bytes(), &v); err != nil {
+		switch t := err.(type) {
+		case *json.SyntaxError:
+			return nil, jsonSyntaxError(t, buf.Bytes())
+		}
 		return nil, err
 	}
 
 	return json.MarshalIndent(v, "", "  ")
+}
+
+func jsonSyntaxError(err *json.SyntaxError, data []byte) error {
+	start := bytes.LastIndex(data[:err.Offset], []byte("\n")) + 1
+	line := bytes.Count(data[:start], []byte("\n"))
+	pos := int(err.Offset) - start - 1
+
+	return fmt.Errorf("json syntax error: line %d pos %d: %s", line, pos, err.Error())
 }
 
 func formationHelpers() template.FuncMap {
