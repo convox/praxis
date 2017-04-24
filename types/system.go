@@ -9,10 +9,10 @@ type System struct {
 }
 
 type SystemInstallOptions struct {
-	Color   bool
-	Key     string
-	Output  io.Writer
-	Version string
+	Color    bool
+	Output   io.Writer
+	Password string
+	Version  string
 }
 
 type SystemUpdateOptions struct {

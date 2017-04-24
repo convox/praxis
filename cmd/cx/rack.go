@@ -130,7 +130,7 @@ func runRackInstall(c *cli.Context) error {
 	ptype := c.Args()[0]
 	name := c.String("name")
 
-	key, err := types.Key(32)
+	password, err := types.Key(32)
 	if err != nil {
 		return err
 	}
@@ -148,10 +148,10 @@ func runRackInstall(c *cli.Context) error {
 	}
 
 	endpoint, err := p.SystemInstall(name, types.SystemInstallOptions{
-		Color:   true,
-		Key:     key,
-		Output:  os.Stdout,
-		Version: c.String("version"),
+		Color:    true,
+		Output:   os.Stdout,
+		Password: password,
+		Version:  c.String("version"),
 	})
 	if err != nil {
 		return err
@@ -162,7 +162,7 @@ func runRackInstall(c *cli.Context) error {
 		return err
 	}
 
-	u.User = url.UserPassword(key, "")
+	u.User = url.UserPassword(password, "")
 
 	switch ptype {
 	case "local":

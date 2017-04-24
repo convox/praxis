@@ -18,7 +18,7 @@ func (p *Provider) ObjectFetch(app, key string) (io.ReadCloser, error) {
 
 	res, err := p.S3().GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
+		Key:    aws.String(fmt.Sprintf("objects/%s", key)),
 	})
 	if awsError(err) == "NoSuchKey" {
 		return nil, fmt.Errorf("no such key: %s", key)
@@ -42,7 +42,7 @@ func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectSt
 
 	mreq := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
+		Key:    aws.String(fmt.Sprintf("objects/%s", key)),
 	}
 
 	if opts.Public {
@@ -72,7 +72,7 @@ func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectSt
 			Body:          bytes.NewReader(buf[0:n]),
 			Bucket:        aws.String(bucket),
 			ContentLength: aws.Int64(int64(n)),
-			Key:           aws.String(key),
+			Key:           aws.String(fmt.Sprintf("objects/%s", key)),
 			PartNumber:    aws.Int64(int64(i)),
 			UploadId:      mres.UploadId,
 		})
@@ -90,7 +90,7 @@ func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectSt
 
 	_, err = p.S3().CompleteMultipartUpload(&s3.CompleteMultipartUploadInput{
 		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
+		Key:    aws.String(fmt.Sprintf("objects/%s", key)),
 		MultipartUpload: &s3.CompletedMultipartUpload{
 			Parts: parts,
 		},
