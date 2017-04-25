@@ -76,6 +76,10 @@ func (p *Provider) BuildGet(app, id string) (*types.Build, error) {
 		return nil, err
 	}
 
+	if id == "" {
+		return nil, fmt.Errorf("blank id")
+	}
+
 	req := &simpledb.GetAttributesInput{
 		ConsistentRead: aws.Bool(true),
 		DomainName:     aws.String(domain),
