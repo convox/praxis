@@ -122,6 +122,10 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 		exec.Command("docker", "rm", "-f", opts.Name).Run()
 	}
 
+	if opts.Name == "" {
+		opts.Name = fmt.Sprintf("%s.%s.process.%s", p.Name, app, opts.Service)
+	}
+
 	args := []string{"run", "--rm", "--detach"}
 
 	oargs, err := p.argsFromOpts(app, opts)
@@ -204,7 +208,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		return nil, err
 	}
 
-	args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s@%s:3000", os.Getenv("PASSWORD"), hostname))
+	args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s:3000", hostname))
 	args = append(args, "--link", hostname)
 
 	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))

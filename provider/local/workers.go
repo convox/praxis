@@ -7,7 +7,7 @@ import (
 )
 
 func (p *Provider) workers() {
-	converge := time.Tick(15 * time.Second)
+	converge := time.Tick(5 * time.Second)
 
 	for {
 		select {
@@ -27,7 +27,8 @@ func (p *Provider) workerConverge() error {
 
 	for _, a := range apps {
 		if err := p.converge(a.Name); err != nil {
-			return err
+			fmt.Fprintf(os.Stderr, "error converging %s: %s\n", a.Name, err)
+			continue
 		}
 	}
 

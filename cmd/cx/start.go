@@ -225,9 +225,9 @@ func watchPath(m *manifest.Manifest, app, service string, bs manifest.BuildSourc
 			for _, ps := range pss {
 				switch {
 				case len(adds) > 3:
-					w.Writef("sync: %d files\n", len(adds))
+					w.Writef("sync: %d files to %s\n", len(adds), ps.Service)
 				case len(adds) > 0:
-					w.Writef("sync: %s\n", strings.Join(changes.Files(adds), ", "))
+					w.Writef("sync: %s to %s\n", strings.Join(changes.Files(adds), ", "), ps.Service)
 				}
 
 				if err := handleAdds(app, ps.Id, bs.Remote, adds); err != nil {
@@ -236,9 +236,9 @@ func watchPath(m *manifest.Manifest, app, service string, bs manifest.BuildSourc
 
 				switch {
 				case len(removes) > 3:
-					w.Writef("remove: %d files\n", len(removes))
+					w.Writef("remove: %d files to %s\n", len(removes), ps.Service)
 				case len(removes) > 0:
-					w.Writef("remove: %s\n", strings.Join(changes.Files(removes), ", "))
+					w.Writef("remove: %s to %s\n", strings.Join(changes.Files(removes), ", "), ps.Service)
 				}
 
 				if len(removes) > 0 {

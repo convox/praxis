@@ -29,6 +29,7 @@ type Provider struct {
 	Name     string
 	Root     string
 	Test     bool
+	Version  string
 
 	db *bolt.DB
 }
@@ -39,6 +40,7 @@ func FromEnv() (*Provider, error) {
 		Frontend: coalesce(os.Getenv("PROVIDER_FRONTEND"), "10.42.84.0"),
 		Name:     coalesce(os.Getenv("NAME"), "convox"),
 		Root:     coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
+		Version:  coalesce(os.Getenv("VERSION"), "latest"),
 	}
 
 	if err := p.Init(); err != nil {

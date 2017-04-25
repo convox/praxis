@@ -48,12 +48,14 @@ func (p *Provider) converge(app string) error {
 
 	if err := p.balancersConverge(app, r.Id, m.Balancers); err != nil {
 		log.Error(err)
-		return err
+	}
+
+	if err := p.endpointsConverge(app, r.Id, m.Services); err != nil {
+		log.Error(err)
 	}
 
 	if err := p.servicesConverge(app, r.Id, m.Services); err != nil {
 		log.Error(err)
-		return err
 	}
 
 	log.Success()
@@ -162,10 +164,10 @@ func (p *Provider) balancerRegister(app string, balancer manifest.Balancer) erro
 		return nil
 	}
 
-	host := fmt.Sprintf("%s.%s.%s", balancer.Name, app, p.Name)
+	host := fmt.Sprintf("%s-%s.%s", app, balancer.Name, p.Name)
 
 	for _, e := range balancer.Endpoints {
-		name := fmt.Sprintf("%s-%s-%s-%s", p.Name, app, balancer.Name, e.Port)
+		name := fmt.Sprintf("%s.%s.balancer.%s.%s", p.Name, app, balancer.Name, e.Port)
 
 		port, err := containerBinding(name, "3000/tcp")
 		if err != nil {
@@ -217,7 +219,7 @@ func (p *Provider) balancerRunning(app, release, balancer string) bool {
 
 func (p *Provider) balancerStart(app, release string, balancer manifest.Balancer) error {
 	for _, e := range balancer.Endpoints {
-		name := fmt.Sprintf("%s-%s-%s-%s", p.Name, app, balancer.Name, e.Port)
+		name := fmt.Sprintf("%s.%s.balancer.%s.%s", p.Name, app, balancer.Name, e.Port)
 
 		exec.Command("docker", "rm", "-f", name).Run()
 
@@ -254,7 +256,7 @@ func (p *Provider) balancerStart(app, release string, balancer manifest.Balancer
 		args = append(args, "--label", "convox.type=balancer")
 		args = append(args, "-e", fmt.Sprintf("APP=%s", app))
 		args = append(args, "-e", fmt.Sprintf("RACK=%s", p.Name))
-		args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s@%s:3000", os.Getenv("PASSWORD"), hostname))
+		args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s:3000", hostname))
 		args = append(args, "--link", hostname)
 		args = append(args, "-p", fmt.Sprintf("%d:3000", rp))
 		args = append(args, sys.Image)
@@ -263,6 +265,127 @@ func (p *Provider) balancerStart(app, release string, balancer manifest.Balancer
 		if err := exec.Command("docker", args...).Run(); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (p *Provider) endpointsConverge(app, release string, services manifest.Services) error {
+	if err := p.containersKillOutdated("endpoint", app, release); err != nil {
+		return err
+	}
+
+	for _, s := range services {
+		if s.Port == 0 {
+			continue
+		}
+
+		if !p.endpointRunning(app, release, s.Name) {
+			if err := p.endpointStart(app, release, s); err != nil {
+				return err
+			}
+		}
+
+		if err := p.endpointRegister(app, s); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *Provider) endpointRegister(app string, s manifest.Service) error {
+	if p.Frontend == "none" {
+		return nil
+	}
+
+	host := fmt.Sprintf("%s-%s.%s", app, s.Name, p.Name)
+	name := fmt.Sprintf("%s.%s.endpoint.%s.%d", p.Name, app, s.Name, s.Port)
+
+	port, err := containerBinding(name, "3000/tcp")
+	if err != nil {
+		return err
+	}
+	if port == "" {
+		return fmt.Errorf("balancer not bound to 3000/tcp: %s", name)
+	}
+
+	uv := url.Values{}
+	uv.Add("port", "443")
+	uv.Add("target", fmt.Sprintf("localhost:%s", port))
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:9477/endpoints/%s", p.Frontend, host), bytes.NewReader([]byte(uv.Encode())))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+
+	return nil
+}
+
+func (p *Provider) endpointRunning(app, release, service string) bool {
+	cs, err := containersByLabels(map[string]string{
+		"convox.type":    "endpoint",
+		"convox.rack":    p.Name,
+		"convox.app":     app,
+		"convox.release": release,
+		"convox.service": service,
+	})
+	if err != nil {
+		return false
+	}
+	if len(cs) == 0 {
+		return false
+	}
+
+	return true
+}
+
+func (p *Provider) endpointStart(app, release string, s manifest.Service) error {
+	name := fmt.Sprintf("%s.%s.endpoint.%s.%d", p.Name, app, s.Name, s.Port)
+
+	exec.Command("docker", "rm", "-f", name).Run()
+
+	command := []string{"balancer", "https", "target", fmt.Sprintf("http://%s:%d", s.Name, s.Port)}
+
+	sys, err := p.SystemGet()
+	if err != nil {
+		return err
+	}
+
+	rp := rand.Intn(40000) + 20000
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
+	args := []string{"run", "--rm", "--detach"}
+
+	args = append(args, "--name", name)
+	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
+	args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
+	args = append(args, "--label", fmt.Sprintf("convox.release=%s", release))
+	args = append(args, "--label", fmt.Sprintf("convox.service=%s", s.Name))
+	args = append(args, "--label", "convox.type=endpoint")
+	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
+	args = append(args, "-e", fmt.Sprintf("RACK=%s", p.Name))
+	args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s:3000", hostname))
+	args = append(args, "--link", hostname)
+	args = append(args, "-p", fmt.Sprintf("%d:3000", rp))
+	args = append(args, sys.Image)
+	args = append(args, command...)
+
+	if err := exec.Command("docker", args...).Run(); err != nil {
+		return err
 	}
 
 	return nil
@@ -321,7 +444,7 @@ func (p *Provider) serviceStart(app, release string, service manifest.Service) e
 	_, err = p.ProcessStart(app, types.ProcessRunOptions{
 		Command:     service.Command,
 		Environment: senv,
-		Name:        fmt.Sprintf("%s-%s-%s-%s", p.Name, app, service.Name, k),
+		Name:        fmt.Sprintf("%s.%s.service.%s.%s", p.Name, app, service.Name, k),
 		Release:     release,
 		Service:     service.Name,
 		Type:        "service",
