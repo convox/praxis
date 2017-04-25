@@ -116,6 +116,29 @@ func (_m *MockProvider) AppLogs(app string) (io.ReadCloser, error) {
 	return r0, r1
 }
 
+// AppRegistry provides a mock function with given fields: app
+func (_m *MockProvider) AppRegistry(app string) (*types.Registry, error) {
+	ret := _m.Called(app)
+
+	var r0 *types.Registry
+	if rf, ok := ret.Get(0).(func(string) *types.Registry); ok {
+		r0 = rf(app)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Registry)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(app)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // BuildCreate provides a mock function with given fields: app, url, opts
 func (_m *MockProvider) BuildCreate(app string, url string, opts types.BuildCreateOptions) (*types.Build, error) {
 	ret := _m.Called(app, url, opts)
@@ -349,6 +372,27 @@ func (_m *MockProvider) KeyEncrypt(app string, key string, data []byte) ([]byte,
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string, []byte) error); ok {
 		r1 = rf(app, key, data)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ObjectExists provides a mock function with given fields: app, key
+func (_m *MockProvider) ObjectExists(app string, key string) (bool, error) {
+	ret := _m.Called(app, key)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(string, string) bool); ok {
+		r0 = rf(app, key)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, key)
 	} else {
 		r1 = ret.Error(1)
 	}
