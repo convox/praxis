@@ -3,7 +3,6 @@ package aws
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"sort"
 	"time"
 
@@ -22,8 +21,8 @@ func (p *Provider) SystemGet() (*types.System, error) {
 	system := &types.System{
 		Domain:  domain,
 		Name:    p.Name,
-		Image:   fmt.Sprintf("convox/praxis:%s", os.Getenv("VERSION")),
-		Version: os.Getenv("VERSION"),
+		Image:   fmt.Sprintf("convox/praxis:%s", p.Version),
+		Version: p.Version,
 	}
 
 	return system, nil
