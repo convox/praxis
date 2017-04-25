@@ -1,3 +1,7 @@
+# convox/praxis
+
+**WARNING: This project is currently an *alpha* release and is not recommended for production or the faint of heart.**
+
 ## INSTALLATION
 
 #### Download the CLI
