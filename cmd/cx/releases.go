@@ -25,6 +25,9 @@ func init() {
 				Description: "release info",
 				Usage:       "<id>",
 				Action:      runReleasesInfo,
+				Flags: []cli.Flag{
+					appFlag,
+				},
 			},
 			cli.Command{
 				Name:        "logs",

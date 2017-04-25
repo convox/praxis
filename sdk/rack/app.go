@@ -40,3 +40,8 @@ func (c *Client) AppLogs(app string) (io.ReadCloser, error) {
 
 	return res.Body, nil
 }
+
+func (c *Client) AppRegistry(app string) (registry *types.Registry, err error) {
+	err = c.Get(fmt.Sprintf("/apps/%s/registry", app), RequestOptions{}, &registry)
+	return
+}

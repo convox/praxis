@@ -2,7 +2,6 @@ package controllers_test
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net/url"
 	"testing"
@@ -66,7 +65,6 @@ func TestBuildGet(t *testing.T) {
 	data, err := ioutil.ReadAll(res.Body)
 
 	if assert.NoError(t, err) {
-		fmt.Printf("string(data) = %+v\n", string(data))
 		assert.Equal(t, 200, res.StatusCode)
 		assert.Equal(t,
 			`{"id":"BTEST","app":"app","manifest":"","process":"","release":"","status":"created","created":"0001-01-01T00:00:00Z","started":"0001-01-01T00:00:00Z","ended":"0001-01-01T00:00:00Z"}`,
@@ -111,8 +109,6 @@ func TestBuildUpdate(t *testing.T) {
 
 	data, err := ioutil.ReadAll(res.Body)
 	assert.NoError(t, err)
-
-	fmt.Printf("string(data) = %+v\n", string(data))
 
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Equal(t,

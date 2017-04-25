@@ -16,13 +16,37 @@
     }
   },
   "Outputs": {
+    "Cluster": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Cluster" } },
+      "Value": { "Ref": "RackCluster" }
+    },
     "Endpoint": { "Value": { "Fn::Join": [ "", [
       "https://rack.",
       { "Fn::Select": [ 0, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
       ".",
       { "Fn::Select": [ 1, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
       ".rack.convox.io"
-    ] ] } }
+    ] ] } },
+    "ServiceRole": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:ServiceRole" } },
+      "Value": { "Ref": "RackServiceRole" }
+    },
+    "Subnet0": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Subnet0" } },
+      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] }
+    },
+    "Subnet1": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Subnet1" } },
+      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }
+    },
+    "Version": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Version" } },
+      "Value": { "Ref": "Version" }
+    },
+    "Vpc": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Vpc" } },
+      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
+    }
   },
   "Parameters": {
     "Password": {
@@ -226,6 +250,10 @@
         "HealthCheckPath": "/",
         "Port": "3000",
         "Protocol": "HTTPS",
+        "TargetGroupAttributes": [
+          { "Key": "deregistration_delay.timeout_seconds", "Value": "2" },
+          { "Key": "stickiness.enabled", "Value": "true" }
+        ],
         "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
       }
     },
@@ -234,6 +262,12 @@
     },
     "RackLogs": {
       "Type": "AWS::Logs::LogGroup"
+    },
+    "RackRegistries": {
+      "Type": "AWS::SDB::Domain",
+      "Properties": {
+        "Description": { "Fn::Sub": "${AWS::StackName} registries" }
+      }
     },
     "RackRole": {
       "Type": "AWS::IAM::Role",
@@ -277,6 +311,7 @@
         "ContainerDefinitions": [
           {
             "Command": [ "bin/rack" ],
+            "Cpu": "128",
             "Environment": [
               { "Name": "AWS_REGION", "Value": { "Ref": "AWS::Region" } },
               { "Name": "NAME", "Value": { "Ref": "AWS::StackName"} },
@@ -303,12 +338,6 @@
         "Family": { "Fn::Sub": "${AWS::StackName}-rack" },
         "TaskRoleArn": { "Ref": "RackRole" },
         "Volumes": [ { "Name": "docker", "Host": { "SourcePath": "/var/run/docker.sock" } } ]
-      }
-    },
-    "RackRegistries": {
-      "Type": "AWS::SDB::Domain",
-      "Properties": {
-        "Description": { "Fn::Sub": "${AWS::StackName} registries" }
       }
     }
   }

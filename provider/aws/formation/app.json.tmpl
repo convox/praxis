@@ -1,21 +1,27 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Outputs": {
+    {{ range .Manifest.Balancers }}
+      "Balancer{{ resource .Name }}": {
+        "Value": { "Fn::GetAtt": [ "Balancer{{ resource .Name }}", "DNSName" ] }
+      },
+    {{ end }}
+    "Release": {
+      "Value": "{{ .Release.Id }}"
+    }
   },
   "Parameters": {
-    "Release": {
-      "Description": "Current release",
+    "Rack": {
       "Type": "String"
+    },
+    "Role": {
+      "Type": "String",
+      "Default": ""
     }
   },
   "Resources": {
-    {{ range .Balancers }}
-      {{ template "balancer" . }}
-    {{ end }}
-
-    {{ range .Services }}
-      {{ template "service" . }}
-    {{ end }}
+    {{ template "balancers" . }}
+    {{ template "services" . }}
 
     "Bucket": {
       "Type": "AWS::S3::Bucket",
@@ -27,7 +33,7 @@
         "Description": { "Fn::Sub": "${AWS::StackName} builds" }
       }
     },
-    "LogGroup": {
+    "Logs": {
       "Type": "AWS::Logs::LogGroup"
     },
     "Releases": {
@@ -37,26 +43,117 @@
       }
     },
     "Repository": {
-      "Type": "AWS::ECR::Repository",
-      "DeletionPolicy": "Retain"
+      "Type": "AWS::ECR::Repository"
     }
   }
 }
 
-{{ define "balancer" }}
-  "Balancer{{ resource .Name }}": {
-    "Type": "AWS::CloudFormation::Stack",
-    "Properties": {
-      "TemplateURL": { "Fn::Sub": "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/app/balancer.json" }
-    }
-  },
+{{ define "balancers" }}
+  {{ range $b := .Manifest.Balancers }}
+    "Balancer{{ resource .Name }}": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Scheme": "internet-facing",
+        "SecurityGroups": [ { "Ref": "Balancer{{ resource .Name }}Security" } ],
+        "Subnets": [
+          { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Subnet0" } },
+          { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Subnet1" } }
+        ]
+      }
+    },
+    "Balancer{{ resource .Name }}Security": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": { "Fn::Sub": "${AWS::StackName} balancer" },
+        "SecurityGroupIngress": [
+          {{ range .Endpoints }}
+            { "IpProtocol": "tcp", "FromPort": "{{ .Port }}", "ToPort": "{{ .Port }}", "CidrIp": "0.0.0.0/0" },
+          {{ end }}
+          { "Ref": "AWS::NoValue" }
+        ],
+        "Tags": [ { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-balancer" } } ],
+        "VpcId": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Vpc" } }
+      }
+    },
+    {{ range .Endpoints }}
+      "Balancer{{ resource $b.Name }}{{ .Port }}Listener": {
+        "Type": "AWS::ElasticLoadBalancingV2::Listener",
+        "Properties": {
+          "DefaultActions": [ { "Type": "forward", "TargetGroupArn": { "Ref": "Balancer{{ resource $b.Name }}{{ .Port }}TargetGroup" } } ],
+          "LoadBalancerArn": { "Ref" : "Balancer{{ resource $b.Name }}" },
+          "Port": "{{ .Port }}",
+          "Protocol": "HTTP"
+        }
+      },
+      "Balancer{{ resource $b.Name }}{{ .Port }}TargetGroup": {
+        "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+        "Properties": {
+          "HealthCheckIntervalSeconds": 60,
+          "UnhealthyThresholdCount": 10,
+          "HealthCheckPath": "/",
+          "Port": "{{ .TargetPort }}",
+          "Protocol": "{{ .TargetScheme }}",
+          "TargetGroupAttributes": [
+            { "Key": "deregistration_delay.timeout_seconds", "Value": "5" },
+            { "Key": "stickiness.enabled", "Value": "true" }
+          ],
+          "VpcId": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Vpc" } }
+        }
+      },
+    {{ end }}
+  {{ end }}
 {{ end }}
 
-{{ define "service" }}
-  "Service{{ resource .Name }}": {
-    "Type": "AWS::CloudFormation::Stack",
-    "Properties": {
-      "TemplateURL": { "Fn::Sub": "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/app/service.json" }
-    }
-  },
+{{ define "services" }}
+  {{ range .Manifest.Services }}
+    "Service{{ resource .Name }}": {
+      "Type": "AWS::ECS::Service",
+      {{ with target $.Manifest .Name }}
+        "DependsOn": "Balancer{{ resource .Balancer }}{{ .Endpoint }}Listener",
+      {{ end }}
+      "Properties": {
+        "Cluster": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Cluster" } },
+        "DeploymentConfiguration": { "MinimumHealthyPercent": "50", "MaximumPercent": "200" },
+        "DesiredCount": "2",
+        {{ with target $.Manifest .Name }}
+          "LoadBalancers": [ { "ContainerName": "rack", "ContainerPort": "{{ .Port }}", "TargetGroupArn": { "Ref": "Balancer{{ resource .Balancer }}{{ .Endpoint }}TargetGroup" } } ],
+          "Role": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:ServiceRole" } },
+        {{ end }}
+        "TaskDefinition": { "Ref": "Service{{ resource .Name }}Tasks" }
+      }
+    },
+    "Service{{ resource .Name }}Tasks": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "ContainerDefinitions": [ {
+          {{ if .Command }}
+            "Command": [ "sh", "-c", "{{ .Command }}" ],
+          {{ end }}
+          "Cpu": "128",
+          "Environment": [
+            {{ range $k, $v := $.Env }}
+              { "Name": "{{$k}}", "Value": "{{$v}}" },
+            {{ end }}
+            { "Ref": "AWS::NoValue" }
+          ],
+          "Essential": "true",
+          "Image": { "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:{{ .Name }}.{{ $.Release.Build }}" },
+          "LogConfiguration": {
+            "LogDriver": "awslogs",
+            "Options": {
+              "awslogs-region": { "Ref": "AWS::Region" },
+              "awslogs-group": { "Ref": "Logs" },
+              "awslogs-stream-prefix": "{{ $.App.Name }}"
+            }
+          },
+          "Memory": "128",
+          "Name": "{{ .Name }}",
+          "PortMappings": [ { "ContainerPort": "3000", "Protocol": "tcp" } ]
+        } ],
+        "Family": { "Fn::Sub": "${AWS::StackName}-rack" },
+        "TaskRoleArn": { "Ref": "Role" },
+        "Volumes": [ { "Name": "docker", "Host": { "SourcePath": "/var/run/docker.sock" } } ]
+      }
+    },
+  {{ end }}
 {{ end }}

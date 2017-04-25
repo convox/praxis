@@ -37,8 +37,6 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 }
 
 func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
-	fmt.Printf("opts = %+v\n", opts)
-
 	cluster, err := p.rackResource("RackCluster")
 	if err != nil {
 		return "", err

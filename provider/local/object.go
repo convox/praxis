@@ -9,6 +9,16 @@ import (
 	"github.com/convox/praxis/types"
 )
 
+func (p *Provider) ObjectExists(app, key string) (bool, error) {
+	if _, err := p.AppGet(app); err != nil {
+		return false, err
+	}
+
+	token := fmt.Sprintf("apps/%s/objects/%s", app, key)
+
+	return p.storageExists(token), nil
+}
+
 func (p *Provider) ObjectFetch(app, key string) (io.ReadCloser, error) {
 	if _, err := p.AppGet(app); err != nil {
 		return nil, err

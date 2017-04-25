@@ -2,8 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -49,7 +47,6 @@ func init() {
 func main() {
 	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	fs.StringVar(&flagApp, "app", "", "app name")
-	fs.StringVar(&flagAuth, "auth", "", "registries to authenticate with")
 	fs.StringVar(&flagId, "id", "", "build id")
 	fs.StringVar(&flagManifest, "manifest", "convox.yml", "path to manifest")
 	fs.StringVar(&flagPrefix, "prefix", "", "image prefix")
@@ -62,10 +59,6 @@ func main() {
 
 	if v := os.Getenv("BUILD_APP"); v != "" {
 		flagApp = v
-	}
-
-	if v := os.Getenv("BUILD_AUTH"); v != "" {
-		flagAuth = v
 	}
 
 	if v := os.Getenv("BUILD_ID"); v != "" {
@@ -102,22 +95,23 @@ func main() {
 }
 
 func auth() error {
-	if flagAuth == "" {
-		return nil
-	}
-
-	var registries types.Registries
-
-	dec, err := base64.StdEncoding.DecodeString(flagAuth)
+	registries, err := Rack.RegistryList()
 	if err != nil {
 		return err
 	}
 
-	if err := json.Unmarshal(dec, &registries); err != nil {
+	ar, err := Rack.AppRegistry(flagApp)
+	if err != nil {
 		return err
 	}
 
+	registries = append(registries, *ar)
+
 	for _, r := range registries {
+		if r.Username == "" && r.Password == "" {
+			continue
+		}
+
 		if err := exec.Command("docker", "login", "-u", r.Username, "-p", r.Password, r.Hostname).Run(); err != nil {
 			return fmt.Errorf("unable to authenticate with registry: %s: %s", r.Hostname, err)
 		}
