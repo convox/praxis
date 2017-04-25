@@ -15,6 +15,7 @@ type Service struct {
 	Command     string
 	Environment []string
 	Image       string
+	Port        int
 	Resources   []string
 	Scale       ServiceScale
 	Test        string

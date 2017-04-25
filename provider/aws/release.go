@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -62,7 +63,13 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		return nil, err
 	}
 
+	domain, err := p.rackOutput("Domain")
+	if err != nil {
+		return nil, err
+	}
+
 	updates := map[string]string{
+		"Domain":  strings.ToLower(domain),
 		"Release": r.Id,
 	}
 
@@ -86,12 +93,20 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 				ParameterKey:   p.ParameterKey,
 				ParameterValue: aws.String(u),
 			})
+			delete(updates, *p.ParameterKey)
 		} else {
 			params = append(params, &cloudformation.Parameter{
 				ParameterKey:     p.ParameterKey,
 				UsePreviousValue: aws.Bool(true),
 			})
 		}
+	}
+
+	for k, v := range updates {
+		params = append(params, &cloudformation.Parameter{
+			ParameterKey:   aws.String(k),
+			ParameterValue: aws.String(v),
+		})
 	}
 
 	np, err := formationParameters(data)

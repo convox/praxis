@@ -1,24 +1,27 @@
 package stdcli
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Info struct {
 	Rows []InfoRow
 }
 
 type InfoRow struct {
-	Name  string
-	Value string
+	Name   string
+	Values []string
 }
 
 func NewInfo() *Info {
 	return &Info{Rows: []InfoRow{}}
 }
 
-func (i *Info) Add(name, value string) {
+func (i *Info) Add(name string, values ...string) {
 	i.Rows = append(i.Rows, InfoRow{
-		Name:  name,
-		Value: value,
+		Name:   name,
+		Values: values,
 	})
 }
 
@@ -32,6 +35,6 @@ func (i *Info) Print() {
 	}
 
 	for _, r := range i.Rows {
-		Writef(fmt.Sprintf("<header>%%-%ds</header>  %%s\n", longest), r.Name, r.Value)
+		Writef(fmt.Sprintf("<header>%%-%ds</header>  %%s\n", longest), r.Name, strings.Join(r.Values, "\n"+strings.Repeat(" ", longest+2)))
 	}
 }

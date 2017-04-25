@@ -69,5 +69,14 @@ func (p *Provider) EnvironmentUnset(app string, key string) error {
 
 	delete(env, key)
 
-	return p.EnvironmentSet(app, env)
+	data, err := json.Marshal(env)
+	if err != nil {
+		return err
+	}
+
+	if _, err := p.ObjectStore(app, "convox/environment", bytes.NewReader(data), types.ObjectStoreOptions{}); err != nil {
+		return err
+	}
+
+	return nil
 }

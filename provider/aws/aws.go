@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"math/rand"
 	"net/url"
@@ -162,6 +163,12 @@ type target struct {
 
 func formationHelpers() template.FuncMap {
 	return template.FuncMap{
+		"lower": func(s string) string {
+			return strings.ToLower(s)
+		},
+		"priority": func(app, service string) uint32 {
+			return crc32.ChecksumIEEE([]byte(fmt.Sprintf("%s-%s", app, service))) % 100000
+		},
 		"resource": func(s string) string {
 			return upperName(s)
 		},
@@ -193,6 +200,10 @@ func (p *Provider) accountID() (string, error) {
 	}
 
 	return *res.Account, nil
+}
+
+func (p *Provider) appOutput(app string, resource string) (string, error) {
+	return p.stackOutput(fmt.Sprintf("%s-%s", p.Name, app), resource)
 }
 
 func (p *Provider) appResource(app string, resource string) (string, error) {
@@ -340,6 +351,10 @@ func (p *Provider) dockerHostForInstance(instance string) (string, error) {
 	}
 
 	return host, nil
+}
+
+func (p *Provider) rackOutput(output string) (string, error) {
+	return p.stackOutput(p.Name, output)
 }
 
 func (p *Provider) rackResource(resource string) (string, error) {

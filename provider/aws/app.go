@@ -70,6 +70,15 @@ func (p *Provider) AppGet(name string) (*types.App, error) {
 		return nil, fmt.Errorf("no such app: %s", name)
 	}
 
+	rs, err := p.ReleaseList(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rs) > 0 {
+		app.Release = rs[0].Id
+	}
+
 	return app, nil
 }
 
@@ -175,6 +184,8 @@ func appStatusFromStackStatus(status string) string {
 		return "rollback"
 	case "UPDATE_COMPLETE":
 		return "running"
+	case "UPDATE_IN_PROGRESS":
+		return "updating"
 	default:
 		return status
 	}
