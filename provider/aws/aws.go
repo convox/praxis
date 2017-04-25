@@ -2,7 +2,6 @@ package aws
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/simpledb"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
 	"github.com/fsouza/go-dockerclient"
 )
@@ -149,14 +149,39 @@ func jsonSyntaxError(err *json.SyntaxError, data []byte) error {
 	start := bytes.LastIndex(data[:err.Offset], []byte("\n")) + 1
 	line := bytes.Count(data[:start], []byte("\n"))
 	pos := int(err.Offset) - start - 1
+	ltext := strings.Split(string(data), "\n")[line]
 
-	return fmt.Errorf("json syntax error: line %d pos %d: %s", line, pos, err.Error())
+	return fmt.Errorf("json syntax error: line %d pos %d: %s: %s", line, pos, err.Error(), ltext)
+}
+
+type target struct {
+	Balancer string
+	Endpoint string
+	Port     string
 }
 
 func formationHelpers() template.FuncMap {
 	return template.FuncMap{
 		"resource": func(s string) string {
-			return s
+			return upperName(s)
+		},
+		"target": func(m *manifest.Manifest, service string) (*target, error) {
+			for _, b := range m.Balancers {
+				for _, e := range b.Endpoints {
+					if e.Target == "" {
+						continue
+					}
+
+					u, err := url.Parse(e.Target)
+					if err != nil {
+						return nil, err
+					}
+
+					return &target{Balancer: b.Name, Endpoint: e.Port, Port: u.Port()}, nil
+				}
+			}
+
+			return nil, fmt.Errorf("no target found")
 		},
 	}
 }
@@ -168,42 +193,6 @@ func (p *Provider) accountID() (string, error) {
 	}
 
 	return *res.Account, nil
-}
-
-func (p *Provider) appRegistry(app string) (*types.Registry, error) {
-	account, err := p.accountID()
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := p.ECR().GetAuthorizationToken(&ecr.GetAuthorizationTokenInput{
-		RegistryIds: []*string{aws.String(account)},
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	if len(res.AuthorizationData) != 1 {
-		return nil, fmt.Errorf("no authorization data")
-	}
-
-	token, err := base64.StdEncoding.DecodeString(*res.AuthorizationData[0].AuthorizationToken)
-	if err != nil {
-		return nil, err
-	}
-
-	parts := strings.SplitN(string(token), ":", 2)
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid auth data")
-	}
-
-	registry := &types.Registry{
-		Hostname: fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", account, p.Region),
-		Username: parts[0],
-		Password: parts[1],
-	}
-
-	return registry, nil
 }
 
 func (p *Provider) appResource(app string, resource string) (string, error) {
@@ -231,7 +220,7 @@ func (p *Provider) cloudwatchLogStream(app, pid string, w io.WriteCloser) {
 	name := *task.Containers[0].Name
 	stream := fmt.Sprintf("convox/%s/%s", name, uuid)
 
-	group, err := p.appResource(app, "LogGroup")
+	group, err := p.appResource(app, "Logs")
 	if err != nil {
 		w.Write([]byte(fmt.Sprintf("error: %s\n", err)))
 		return
@@ -390,7 +379,7 @@ func (p *Provider) stackResource(name string, resource string) (string, error) {
 }
 
 func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (string, error) {
-	logs, err := p.appResource(app, "LogGroup")
+	logs, err := p.appResource(app, "Logs")
 	if err != nil {
 		return "", err
 	}
@@ -536,4 +525,31 @@ func (p *Provider) taskForPid(app, pid string) (*ecs.Task, error) {
 	}
 
 	return nil, fmt.Errorf("could not find task for pid: %s", pid)
+}
+
+func upperName(name string) string {
+	// myapp -> Myapp; my-app -> MyApp
+	us := strings.ToUpper(name[0:1]) + name[1:]
+
+	for {
+		i := strings.Index(us, "-")
+
+		if i == -1 {
+			break
+		}
+
+		s := us[0:i]
+
+		if len(us) > i+1 {
+			s += strings.ToUpper(us[i+1 : i+2])
+		}
+
+		if len(us) > i+2 {
+			s += us[i+2:]
+		}
+
+		us = s
+	}
+
+	return us
 }

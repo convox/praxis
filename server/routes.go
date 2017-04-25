@@ -25,6 +25,7 @@ func Routes(server *api.Server) {
 	auth.Route("app.get", "GET", "/apps/{name}", controllers.AppGet)
 	auth.Route("app.list", "GET", "/apps", controllers.AppList)
 	auth.Route("app.logs", "GET", "/apps/{app}/logs", controllers.AppLogs)
+	auth.Route("app.registry", "GET", "/apps/{app}/registry", controllers.AppRegistry)
 
 	auth.Route("build.create", "POST", "/apps/{app}/builds", controllers.BuildCreate)
 	auth.Route("build.get", "GET", "/apps/{app}/builds/{id}", controllers.BuildGet)
@@ -42,6 +43,7 @@ func Routes(server *api.Server) {
 	auth.Route("key.decrypt", "POST", "/apps/{app}/keys/{key}/decrypt", controllers.KeyDecrypt)
 	auth.Route("key.encrypt", "POST", "/apps/{app}/keys/{key}/encrypt", controllers.KeyEncrypt)
 
+	auth.Route("object.exists", "HEAD", "/apps/{app}/objects/{key:.*}", controllers.ObjectExists)
 	auth.Route("object.fetch", "GET", "/apps/{app}/objects/{key:.*}", controllers.ObjectFetch)
 	auth.Route("object.store", "POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)
 

@@ -82,6 +82,22 @@ func (o *RequestOptions) ContentType() string {
 	return "application/octet-stream"
 }
 
+func (c *Client) Head(path string, opts RequestOptions, out interface{}) error {
+	req, err := c.Request("HEAD", path, opts)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.handleRequest(req)
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+
+	return unmarshalReader(res.Body, out)
+}
+
 func (c *Client) GetStream(path string, opts RequestOptions) (*http.Response, error) {
 	req, err := c.Request("GET", path, opts)
 	if err != nil {

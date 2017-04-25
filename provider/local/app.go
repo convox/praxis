@@ -96,6 +96,16 @@ func (p *Provider) AppLogs(app string) (io.ReadCloser, error) {
 	return r, nil
 }
 
+func (p *Provider) AppRegistry(app string) (*types.Registry, error) {
+	registry := &types.Registry{
+		Hostname: p.Name,
+		Username: "",
+		Password: "",
+	}
+
+	return registry, nil
+}
+
 func (p *Provider) processLogs(app string, ps types.Process, w io.Writer) {
 	r, err := p.ProcessLogs(app, ps.Id)
 	if err != nil {

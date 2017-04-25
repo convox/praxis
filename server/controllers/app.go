@@ -69,3 +69,14 @@ func AppLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	return nil
 }
+
+func AppRegistry(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+
+	registry, err := Provider.AppRegistry(app)
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(registry)
+}

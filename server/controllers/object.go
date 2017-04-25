@@ -9,6 +9,18 @@ import (
 	"github.com/convox/praxis/types"
 )
 
+func ObjectExists(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+	key := c.Var("key")
+
+	exists, err := Provider.ObjectExists(app, key)
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(exists)
+}
+
 func ObjectFetch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	key := c.Var("key")

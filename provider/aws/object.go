@@ -6,9 +6,30 @@ import (
 	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/convox/praxis/types"
 )
+
+func (p *Provider) ObjectExists(app, key string) (bool, error) {
+	bucket, err := p.appResource(app, "Bucket")
+	if err != nil {
+		return false, err
+	}
+
+	_, err = p.S3().HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+	if err, ok := err.(awserr.Error); ok && err.Code() == "NotFound" {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
 
 func (p *Provider) ObjectFetch(app, key string) (io.ReadCloser, error) {
 	bucket, err := p.appResource(app, "Bucket")
@@ -18,7 +39,7 @@ func (p *Provider) ObjectFetch(app, key string) (io.ReadCloser, error) {
 
 	res, err := p.S3().GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(bucket),
-		Key:    aws.String(fmt.Sprintf("objects/%s", key)),
+		Key:    aws.String(key),
 	})
 	if awsError(err) == "NoSuchKey" {
 		return nil, fmt.Errorf("no such key: %s", key)
@@ -42,7 +63,7 @@ func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectSt
 
 	mreq := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(bucket),
-		Key:    aws.String(fmt.Sprintf("objects/%s", key)),
+		Key:    aws.String(key),
 	}
 
 	if opts.Public {
@@ -72,7 +93,7 @@ func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectSt
 			Body:          bytes.NewReader(buf[0:n]),
 			Bucket:        aws.String(bucket),
 			ContentLength: aws.Int64(int64(n)),
-			Key:           aws.String(fmt.Sprintf("objects/%s", key)),
+			Key:           aws.String(key),
 			PartNumber:    aws.Int64(int64(i)),
 			UploadId:      mres.UploadId,
 		})
@@ -90,7 +111,7 @@ func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectSt
 
 	_, err = p.S3().CompleteMultipartUpload(&s3.CompleteMultipartUploadInput{
 		Bucket: aws.String(bucket),
-		Key:    aws.String(fmt.Sprintf("objects/%s", key)),
+		Key:    aws.String(key),
 		MultipartUpload: &s3.CompletedMultipartUpload{
 			Parts: parts,
 		},

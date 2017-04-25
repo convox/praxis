@@ -9,6 +9,11 @@ import (
 	"github.com/convox/praxis/types"
 )
 
+func (c *Client) ObjectExists(app, key string) (exists bool, err error) {
+	err = c.Head(fmt.Sprintf("/apps/%s/objects/%s", app, key), RequestOptions{}, &exists)
+	return
+}
+
 func (c *Client) ObjectFetch(app string, key string) (io.ReadCloser, error) {
 	res, err := c.GetStream(fmt.Sprintf("/apps/%s/objects/%s", app, key), RequestOptions{})
 	if err != nil {

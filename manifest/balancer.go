@@ -1,5 +1,11 @@
 package manifest
 
+import (
+	"fmt"
+	"net/url"
+	"strings"
+)
+
 type Balancer struct {
 	Name string
 
@@ -17,3 +23,29 @@ type BalancerEndpoint struct {
 }
 
 type BalancerEndpoints []BalancerEndpoint
+
+func (e *BalancerEndpoint) TargetPort() (string, error) {
+	if e.Target == "" {
+		return "", fmt.Errorf("no target")
+	}
+
+	u, err := url.Parse(e.Target)
+	if err != nil {
+		return "", err
+	}
+
+	return u.Port(), nil
+}
+
+func (e *BalancerEndpoint) TargetScheme() (string, error) {
+	if e.Target == "" {
+		return "", fmt.Errorf("no target")
+	}
+
+	u, err := url.Parse(e.Target)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.ToUpper(u.Scheme), nil
+}

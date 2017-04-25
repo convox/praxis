@@ -17,6 +17,7 @@ type Provider interface {
 	AppGet(name string) (*types.App, error)
 	AppList() (types.Apps, error)
 	AppLogs(app string) (io.ReadCloser, error)
+	AppRegistry(app string) (*types.Registry, error)
 
 	BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error)
 	// BuildExport(app, id string, w io.Writer) error
@@ -49,7 +50,7 @@ type Provider interface {
 	KeyEncrypt(app, key string, data []byte) ([]byte, error)
 
 	// ObjectDelete(key string) error
-	// ObjectExists(key string) bool
+	ObjectExists(app, key string) (bool, error)
 	ObjectFetch(app, key string) (io.ReadCloser, error)
 	// ObjectList(prefix string) ([]string, error)
 	ObjectStore(app, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error)

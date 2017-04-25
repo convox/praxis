@@ -1,11 +1,14 @@
 package aws
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/convox/praxis/types"
 )
 
@@ -17,7 +20,7 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 
 	_, err = p.CloudFormation().CreateStack(&cloudformation.CreateStackInput{
 		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("Release"), ParameterValue: aws.String("")},
+			{ParameterKey: aws.String("Rack"), ParameterValue: aws.String(p.Name)},
 		},
 		StackName: aws.String(fmt.Sprintf("%s-%s", p.Name, name)),
 		Tags: []*cloudformation.Tag{
@@ -29,6 +32,9 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 		},
 		TemplateBody: aws.String(string(data)),
 	})
+	if awsError(err) == "AlreadyExistsException" {
+		return nil, fmt.Errorf("app already exists: %s", name)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +97,42 @@ func (p *Provider) AppLogs(name string) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("unimplemented")
 }
 
+func (p *Provider) AppRegistry(app string) (*types.Registry, error) {
+	account, err := p.accountID()
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := p.ECR().GetAuthorizationToken(&ecr.GetAuthorizationTokenInput{
+		RegistryIds: []*string{aws.String(account)},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	if len(res.AuthorizationData) != 1 {
+		return nil, fmt.Errorf("no authorization data")
+	}
+
+	token, err := base64.StdEncoding.DecodeString(*res.AuthorizationData[0].AuthorizationToken)
+	if err != nil {
+		return nil, err
+	}
+
+	parts := strings.SplitN(string(token), ":", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid auth data")
+	}
+
+	registry := &types.Registry{
+		Hostname: fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", account, p.Region),
+		Username: parts[0],
+		Password: parts[1],
+	}
+
+	return registry, nil
+}
+
 func (p *Provider) appFromStack(stack *cloudformation.Stack) *types.App {
 	params := map[string]string{}
 	tags := map[string]string{}
@@ -131,6 +173,8 @@ func appStatusFromStackStatus(status string) string {
 		return "error"
 	case "ROLLBACK_IN_PROGRESS":
 		return "rollback"
+	case "UPDATE_COMPLETE":
+		return "running"
 	default:
 		return status
 	}

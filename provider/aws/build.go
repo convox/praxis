@@ -1,8 +1,6 @@
 package aws
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -30,12 +28,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, err
 	}
 
-	registries, err := p.RegistryList()
-	if err != nil {
-		return nil, err
-	}
-
-	ar, err := p.appRegistry(app)
+	ar, err := p.AppRegistry(app)
 	if err != nil {
 		return nil, err
 	}
@@ -45,25 +38,17 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, err
 	}
 
-	auth, err := json.Marshal(append(registries, *ar))
-	if err != nil {
-		return nil, err
-	}
-
 	sys, err := p.SystemGet()
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("sys = %+v\n", sys)
-
 	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{
 			"BUILD_APP":    app,
-			"BUILD_AUTH":   base64.StdEncoding.EncodeToString(auth),
-			"BUILD_PUSH":   fmt.Sprintf("%s/%s", ar.Hostname, repo),
 			"BUILD_PREFIX": fmt.Sprintf("%s-%s", p.Name, app),
+			"BUILD_PUSH":   fmt.Sprintf("%s/%s", ar.Hostname, repo),
 		},
 		Name:    fmt.Sprintf("%s-%s-build-%s", p.Name, app, id),
 		Image:   sys.Image,
@@ -89,6 +74,10 @@ func (p *Provider) BuildGet(app, id string) (*types.Build, error) {
 	domain, err := p.appResource(app, "Builds")
 	if err != nil {
 		return nil, err
+	}
+
+	if id == "" {
+		return nil, fmt.Errorf("blank id")
 	}
 
 	req := &simpledb.GetAttributesInput{
@@ -137,8 +126,6 @@ func (p *Provider) BuildLogs(app, id string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("build = %+v\n", build)
 
 	switch build.Status {
 	case "running":
