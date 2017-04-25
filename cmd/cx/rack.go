@@ -100,7 +100,12 @@ func runRack(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("rack = %+v\n", rack)
+	info := stdcli.NewInfo()
+
+	info.Add("Name", rack.Name)
+	info.Add("Version", rack.Version)
+
+	info.Print()
 
 	return nil
 }
