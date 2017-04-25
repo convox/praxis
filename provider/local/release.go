@@ -163,44 +163,9 @@ func (p *Provider) releasePromote(app, release string) error {
 		return err
 	}
 
-	// log := fmt.Sprintf("apps/%s/releases/%s/log", app, release)
-
 	if err := p.converge(app); err != nil {
 		return err
 	}
-
-	// pss, err := p.ProcessList(app, types.ProcessListOptions{})
-	// if err != nil {
-	//   return err
-	// }
-
-	// for _, ps := range pss {
-	//   p.storageLogWrite(log, []byte(fmt.Sprintf("stopping process: %s\n", ps.Id)))
-
-	//   if err := p.ProcessStop(app, ps.Id); err != nil {
-	//     return err
-	//   }
-	// }
-
-	// for _, s := range m.Services {
-	//   p.storageLogWrite(log, []byte(fmt.Sprintf("starting service: %s\n", s.Name)))
-
-	//   if err := p.serviceStart(m, app, s.Name, r.Id); err != nil {
-	//     return err
-	//   }
-	// }
-
-	// for _, b := range m.Balancers {
-	//   p.storageLogWrite(log, []byte(fmt.Sprintf("starting balancer: %s\n", b.Name)))
-
-	//   for _, e := range b.Endpoints {
-	//     p.storageLogWrite(log, []byte(fmt.Sprintf("  %s://%s.%s.%s:%s\n", e.Protocol, b.Name, a.Name, p.Name, e.Port)))
-	//   }
-
-	//   if err := p.balancerStart(app, b); err != nil {
-	//     return err
-	//   }
-	// }
 
 	for _, t := range m.Tables {
 		if err := p.TableCreate(app, t.Name, types.TableCreateOptions{Indexes: t.Indexes}); err != nil {

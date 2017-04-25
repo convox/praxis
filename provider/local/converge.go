@@ -321,9 +321,10 @@ func (p *Provider) serviceStart(app, release string, service manifest.Service) e
 	_, err = p.ProcessStart(app, types.ProcessRunOptions{
 		Command:     service.Command,
 		Environment: senv,
-		Name:        fmt.Sprintf("%s-%s-%s-%s-local", p.Name, app, service.Name, k),
+		Name:        fmt.Sprintf("%s-%s-%s-%s", p.Name, app, service.Name, k),
 		Release:     release,
 		Service:     service.Name,
+		Type:        "service",
 	})
 	if err != nil {
 		return err

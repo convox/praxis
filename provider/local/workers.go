@@ -7,7 +7,7 @@ import (
 )
 
 func (p *Provider) workers() {
-	converge := time.Tick(5 * time.Second)
+	converge := time.Tick(15 * time.Second)
 
 	for {
 		select {

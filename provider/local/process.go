@@ -27,7 +27,6 @@ func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
 	filters := []string{
 		fmt.Sprintf("label=convox.app=%s", app),
 		fmt.Sprintf("label=convox.rack=%s", p.Name),
-		"label=convox.type=service",
 		fmt.Sprintf("id=%s", fpid),
 	}
 
@@ -47,7 +46,10 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 	filters := []string{
 		fmt.Sprintf("label=convox.app=%s", app),
 		fmt.Sprintf("label=convox.rack=%s", p.Name),
-		"label=convox.type=service",
+	}
+
+	if opts.Type != "" {
+		filters = append(filters, fmt.Sprintf("label=convox.type=%s", opts.Type))
 	}
 
 	if opts.Service != "" {
@@ -209,7 +211,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
 	args = append(args, "--label", fmt.Sprintf("convox.release=%s", opts.Release))
 	args = append(args, "--label", fmt.Sprintf("convox.service=%s", opts.Service))
-	args = append(args, "--label", "convox.type=service")
+	args = append(args, "--label", fmt.Sprintf("convox.type=%s", coalesce(opts.Type, "process")))
 
 	for from, to := range opts.Volumes {
 		args = append(args, "-v", fmt.Sprintf("%s:%s", from, to))
@@ -289,6 +291,7 @@ func processList(filters []string, all bool) (types.Processes, error) {
 			Release: labels["convox.release"],
 			Service: labels["convox.service"],
 			Started: started,
+			Type:    labels["convox.type"],
 		})
 	}
 
