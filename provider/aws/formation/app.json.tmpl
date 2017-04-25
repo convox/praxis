@@ -1,16 +1,15 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Outputs": {
-    {{ range .Manifest.Balancers }}
-      "Balancer{{ resource .Name }}": {
-        "Value": { "Fn::GetAtt": [ "Balancer{{ resource .Name }}", "DNSName" ] }
-      },
-    {{ end }}
     "Release": {
       "Value": "{{ .Release.Id }}"
     }
   },
   "Parameters": {
+    "Domain": {
+      "Type": "String",
+      "Default": ""
+    },
     "Rack": {
       "Type": "String"
     },
@@ -43,56 +42,53 @@
       }
     },
     "Repository": {
-      "Type": "AWS::ECR::Repository"
+      "Type": "AWS::ECR::Repository",
+      "DeletionPolicy": "Retain"
     }
   }
 }
 
 {{ define "balancers" }}
-  {{ range $b := .Manifest.Balancers }}
-    "Balancer{{ resource .Name }}": {
-      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+{{ end }}
+
+{{ define "services" }}
+  {{ range .Manifest.Services }}
+    "Service{{ resource .Name }}": {
+      "Type": "AWS::ECS::Service",
       "Properties": {
-        "Scheme": "internet-facing",
-        "SecurityGroups": [ { "Ref": "Balancer{{ resource .Name }}Security" } ],
-        "Subnets": [
-          { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Subnet0" } },
-          { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Subnet1" } }
-        ]
+        "Cluster": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Cluster" } },
+        "DeploymentConfiguration": { "MinimumHealthyPercent": "50", "MaximumPercent": "200" },
+        "DesiredCount": "2",
+        {{ if .Port }}
+          "LoadBalancers": [ {
+            "ContainerName": "{{ .Name }}",
+            "ContainerPort": "{{ .Port }}",
+            "TargetGroupArn": { "Ref": "Service{{ resource .Name }}TargetGroup" }
+          } ],
+          "Role": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:ServiceRole" } },
+        {{ end }}
+        "TaskDefinition": { "Ref": "Service{{ resource .Name }}Tasks" }
       }
     },
-    "Balancer{{ resource .Name }}Security": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "Properties": {
-        "GroupDescription": { "Fn::Sub": "${AWS::StackName} balancer" },
-        "SecurityGroupIngress": [
-          {{ range .Endpoints }}
-            { "IpProtocol": "tcp", "FromPort": "{{ .Port }}", "ToPort": "{{ .Port }}", "CidrIp": "0.0.0.0/0" },
-          {{ end }}
-          { "Ref": "AWS::NoValue" }
-        ],
-        "Tags": [ { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-balancer" } } ],
-        "VpcId": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Vpc" } }
-      }
-    },
-    {{ range .Endpoints }}
-      "Balancer{{ resource $b.Name }}{{ .Port }}Listener": {
-        "Type": "AWS::ElasticLoadBalancingV2::Listener",
+    {{ if .Port }}
+      "Service{{ resource .Name }}ListenerRule": {
+        "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
         "Properties": {
-          "DefaultActions": [ { "Type": "forward", "TargetGroupArn": { "Ref": "Balancer{{ resource $b.Name }}{{ .Port }}TargetGroup" } } ],
-          "LoadBalancerArn": { "Ref" : "Balancer{{ resource $b.Name }}" },
-          "Port": "{{ .Port }}",
-          "Protocol": "HTTP"
+          "Actions": [ { "Type": "forward", "TargetGroupArn": { "Ref": "Service{{ resource .Name }}TargetGroup" } } ],
+          "Conditions": [ { "Field": "host-header", "Values": [ { "Fn::Sub": "{{ lower $.App.Name }}-{{ lower .Name }}.${Domain}" } ] } ],
+          "ListenerArn": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:BalancerListener" } },
+          "Priority": "{{ priority $.App.Name .Name }}"
         }
       },
-      "Balancer{{ resource $b.Name }}{{ .Port }}TargetGroup": {
+      "Service{{ resource .Name }}TargetGroup": {
         "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
         "Properties": {
-          "HealthCheckIntervalSeconds": 60,
-          "UnhealthyThresholdCount": 10,
+          "HealthCheckIntervalSeconds": 10,
+          "HealthCheckTimeoutSeconds": 5,
+          "UnhealthyThresholdCount": 2,
           "HealthCheckPath": "/",
-          "Port": "{{ .TargetPort }}",
-          "Protocol": "{{ .TargetScheme }}",
+          "Port": "{{ .Port }}",
+          "Protocol": "HTTP",
           "TargetGroupAttributes": [
             { "Key": "deregistration_delay.timeout_seconds", "Value": "5" },
             { "Key": "stickiness.enabled", "Value": "true" }
@@ -101,29 +97,11 @@
         }
       },
     {{ end }}
-  {{ end }}
-{{ end }}
-
-{{ define "services" }}
-  {{ range .Manifest.Services }}
-    "Service{{ resource .Name }}": {
-      "Type": "AWS::ECS::Service",
-      {{ with target $.Manifest .Name }}
-        "DependsOn": "Balancer{{ resource .Balancer }}{{ .Endpoint }}Listener",
-      {{ end }}
-      "Properties": {
-        "Cluster": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Cluster" } },
-        "DeploymentConfiguration": { "MinimumHealthyPercent": "50", "MaximumPercent": "200" },
-        "DesiredCount": "2",
-        {{ with target $.Manifest .Name }}
-          "LoadBalancers": [ { "ContainerName": "rack", "ContainerPort": "{{ .Port }}", "TargetGroupArn": { "Ref": "Balancer{{ resource .Balancer }}{{ .Endpoint }}TargetGroup" } } ],
-          "Role": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:ServiceRole" } },
-        {{ end }}
-        "TaskDefinition": { "Ref": "Service{{ resource .Name }}Tasks" }
-      }
-    },
     "Service{{ resource .Name }}Tasks": {
       "Type": "AWS::ECS::TaskDefinition",
+      {{ if .Port }}
+        "DependsOn": "Service{{ resource .Name }}ListenerRule",
+      {{ end }}
       "Properties": {
         "ContainerDefinitions": [ {
           {{ if .Command }}
@@ -148,7 +126,9 @@
           },
           "Memory": "128",
           "Name": "{{ .Name }}",
-          "PortMappings": [ { "ContainerPort": "3000", "Protocol": "tcp" } ]
+          {{ with .Port }}
+            "PortMappings": [ { "ContainerPort": "{{ . }}", "Protocol": "tcp" } ]
+          {{ end }}
         } ],
         "Family": { "Fn::Sub": "${AWS::StackName}-rack" },
         "TaskRoleArn": { "Ref": "Role" },

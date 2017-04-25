@@ -3,6 +3,7 @@ package types
 import "io"
 
 type System struct {
+	Domain  string `json:"domain"`
 	Name    string `json:"name"`
 	Image   string `json:"image"`
 	Version string `json:"version"`

@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"sort"
 
+	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -91,55 +93,49 @@ func runAppsInfo(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("### app:%s\n", a.Name)
-	fmt.Printf("Release  %s\n", a.Release)
-	fmt.Printf("Status   %s\n", a.Status)
+	info := stdcli.NewInfo()
 
-	// if a.Release == "" {
-	//   return nil
-	// }
+	info.Add("Name", a.Name)
+	info.Add("Release", a.Release)
+	info.Add("Status", a.Status)
 
-	// r, err := Rack.ReleaseGet(app, a.Release)
-	// if err != nil {
-	//   return err
-	// }
+	if a.Release != "" {
+		r, err := Rack.ReleaseGet(app, a.Release)
+		if err != nil {
+			return err
+		}
 
-	// b, err := Rack.BuildGet(app, r.Build)
-	// if err != nil {
-	//   return err
-	// }
+		if r.Build != "" {
+			sys, err := Rack.SystemGet()
+			if err != nil {
+				return err
+			}
 
-	// m, err := manifest.Load([]byte(b.Manifest))
-	// if err != nil {
-	//   return err
-	// }
+			b, err := Rack.BuildGet(app, r.Build)
+			if err != nil {
+				return err
+			}
 
-	// for _, b := range m.Balancers {
-	//   fmt.Println()
-	//   fmt.Printf("### balancer:%s\n", b.Name)
+			m, err := manifest.Load([]byte(b.Manifest))
+			if err != nil {
+				return err
+			}
 
-	//   t := stdcli.NewTable("SOURCE", "", "TARGET")
-	//   t.SkipHeaders = true
+			endpoints := []string{}
 
-	//   for _, e := range b.Endpoints {
-	//     source := fmt.Sprintf("%s://%s.%s.convox:%s", e.Protocol, b.Name, a.Name, e.Port)
+			for _, s := range m.Services {
+				if s.Port > 0 {
+					endpoints = append(endpoints, fmt.Sprintf("https://%s-%s.%s", app, s.Name, sys.Domain))
+				}
+			}
 
-	//     if e.Redirect != "" {
-	//       t.AddRow(source, "->", e.Redirect)
-	//     } else {
-	//       t.AddRow(source, "=>", e.Target)
-	//     }
-	//   }
+			sort.Strings(endpoints)
 
-	//   t.Print()
-	// }
+			info.Add("Endpoints", endpoints...)
+		}
+	}
 
-	// for _, s := range m.Services {
-	//   fmt.Println()
-	//   fmt.Printf("### service:%s\n", s.Name)
-	//   fmt.Printf("Command  %s\n", s.Command)
-	//   fmt.Printf("Test     %s\n", s.Test)
-	// }
+	info.Print()
 
 	return nil
 }

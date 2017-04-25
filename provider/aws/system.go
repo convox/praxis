@@ -14,7 +14,13 @@ import (
 )
 
 func (p *Provider) SystemGet() (*types.System, error) {
+	domain, err := p.rackOutput("Domain")
+	if err != nil {
+		return nil, err
+	}
+
 	system := &types.System{
+		Domain:  domain,
 		Name:    p.Name,
 		Image:   fmt.Sprintf("convox/praxis:%s", os.Getenv("VERSION")),
 		Version: os.Getenv("VERSION"),
