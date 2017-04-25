@@ -85,7 +85,7 @@ func containerBinding(id string, bind string) (string, error) {
 	return b[0].HostPort, nil
 }
 
-func ContainersByLabels(labels map[string]string) ([]string, error) {
+func containersByLabels(labels map[string]string) ([]string, error) {
 	args := []string{"ps", "--format", "{{.ID}}"}
 
 	for k, v := range labels {
@@ -109,7 +109,7 @@ func ContainersByLabels(labels map[string]string) ([]string, error) {
 }
 
 func (p *Provider) containersKillOutdated(kind, app, release string) error {
-	acs, err := ContainersByLabels(map[string]string{
+	acs, err := containersByLabels(map[string]string{
 		"convox.type": kind,
 		"convox.rack": p.Name,
 		"convox.app":  app,
@@ -118,7 +118,7 @@ func (p *Provider) containersKillOutdated(kind, app, release string) error {
 		return err
 	}
 
-	cs, err := ContainersByLabels(map[string]string{
+	cs, err := containersByLabels(map[string]string{
 		"convox.type":    kind,
 		"convox.rack":    p.Name,
 		"convox.app":     app,
@@ -198,7 +198,7 @@ func (p *Provider) balancerRegister(app string, balancer manifest.Balancer) erro
 }
 
 func (p *Provider) balancerRunning(app, release, balancer string) bool {
-	cs, err := ContainersByLabels(map[string]string{
+	cs, err := containersByLabels(map[string]string{
 		"convox.type":     "balancer",
 		"convox.rack":     p.Name,
 		"convox.app":      app,
@@ -285,7 +285,7 @@ func (p *Provider) servicesConverge(app, release string, services manifest.Servi
 }
 
 func (p *Provider) serviceRunning(app, release, service string) bool {
-	cs, err := ContainersByLabels(map[string]string{
+	cs, err := containersByLabels(map[string]string{
 		"convox.type":    "service",
 		"convox.rack":    p.Name,
 		"convox.app":     app,

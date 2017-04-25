@@ -7,15 +7,12 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"os/signal"
 	"os/user"
 	"runtime"
 	"strings"
-	"syscall"
 
 	"github.com/convox/praxis/frontend"
 	"github.com/convox/praxis/provider"
-	"github.com/convox/praxis/provider/local"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
 	cli "gopkg.in/urfave/cli.v1"
@@ -200,30 +197,7 @@ func runRackStart(c *cli.Context) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-
-	<-sig
-	fmt.Println("stopping local rack")
-
-	cs, err := local.ContainersByLabels(map[string]string{
-		"convox.rack": "convox",
-	})
-	if err != nil {
-		return err
-	}
-
-	for _, id := range cs {
-		if err := exec.Command("docker", "kill", id).Run(); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return cmd.Run()
 }
 
 func runRackUninstall(c *cli.Context) error {
@@ -277,7 +251,7 @@ func rackCommand(version string, frontend string) (*exec.Cmd, error) {
 
 	exec.Command("docker", "rm", "-f", name).Run()
 
-	args := []string{"run"}
+	args := []string{"run", "--rm"}
 	args = append(args, "-i", fmt.Sprintf("--name=%s", name))
 	args = append(args, "-e", "PROVIDER=local")
 	args = append(args, "-e", fmt.Sprintf("PROVIDER_FRONTEND=%s", frontend))

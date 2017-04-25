@@ -5,7 +5,10 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"os/exec"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -73,7 +76,33 @@ func (p *Provider) Init() error {
 
 	go p.workers()
 
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sig
+		p.shutdown()
+	}()
+
 	return nil
+}
+
+// shutdown cleans up any running resources and exit
+func (p *Provider) shutdown() {
+	cs, err := containersByLabels(map[string]string{
+		"convox.rack": p.Name,
+	})
+	if err != nil {
+		fmt.Printf("shutdown error %s", err)
+		return
+	}
+
+	for _, id := range cs {
+		if err := exec.Command("docker", "kill", id).Run(); err != nil {
+			fmt.Printf("shutdown error %s", err)
+		}
+	}
+
+	os.Exit(1)
 }
 
 func (p *Provider) createRootBucket(name string) (*bolt.Bucket, error) {
