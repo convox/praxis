@@ -54,5 +54,5 @@ func TestAppList(t *testing.T) {
 	data, err := ioutil.ReadAll(res.Body)
 	assert.NoError(t, err)
 
-	assert.Equal(t, `[{"Name":"foo","Release":"","Status":""},{"Name":"bar","Release":"","Status":""}]`, string(data))
+	assert.Equal(t, `[{"Name":"bar","Release":"","Status":""},{"Name":"foo","Release":"","Status":""}]`, string(data))
 }
