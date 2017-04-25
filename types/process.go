@@ -8,12 +8,12 @@ import (
 type Process struct {
 	Id string `json:"id"`
 
-	App     string `json:"app"`
-	Command string `json:"command"`
-	Release string `json:"release"`
-	Service string `json:"service"`
-
+	App     string    `json:"app"`
+	Command string    `json:"command"`
+	Release string    `json:"release"`
+	Service string    `json:"service"`
 	Started time.Time `json:"started"`
+	Type    string    `json:"type"`
 }
 
 type Processes []Process
@@ -25,6 +25,7 @@ type ProcessExecOptions struct {
 
 type ProcessListOptions struct {
 	Service string
+	Type    string
 }
 
 type ProcessRunOptions struct {
@@ -38,6 +39,7 @@ type ProcessRunOptions struct {
 	Release     string
 	Service     string
 	Stream      io.ReadWriter
+	Type        string
 	Volumes     map[string]string
 	Width       int
 }

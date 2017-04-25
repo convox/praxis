@@ -20,6 +20,7 @@ func (p *Provider) converge(app string) error {
 
 	a, err := p.AppGet(app)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -243,7 +244,7 @@ func (p *Provider) balancerStart(app, release string, balancer manifest.Balancer
 			return err
 		}
 
-		args := []string{"run", "--detach"}
+		args := []string{"run", "--rm", "--detach"}
 
 		args = append(args, "--name", name)
 		args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
@@ -323,6 +324,7 @@ func (p *Provider) serviceStart(app, release string, service manifest.Service) e
 		Name:        fmt.Sprintf("%s-%s-%s-%s", p.Name, app, service.Name, k),
 		Release:     release,
 		Service:     service.Name,
+		Type:        "service",
 	})
 	if err != nil {
 		return err
