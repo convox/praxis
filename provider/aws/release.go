@@ -36,6 +36,10 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		return nil, err
 	}
 
+	if r.Build == "" {
+		return r, nil
+	}
+
 	b, err := p.BuildGet(app, r.Build)
 	if err != nil {
 		return nil, err

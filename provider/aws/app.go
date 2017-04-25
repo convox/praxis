@@ -32,6 +32,9 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 		},
 		TemplateBody: aws.String(string(data)),
 	})
+	if awsError(err) == "AlreadyExistsException" {
+		return nil, fmt.Errorf("app already exists: %s", name)
+	}
 	if err != nil {
 		return nil, err
 	}
