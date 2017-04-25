@@ -77,6 +77,10 @@ type Provider interface {
 	ReleaseList(app string) (types.Releases, error)
 	ReleaseLogs(app, id string) (io.ReadCloser, error)
 
+	ResourceCreate(name, kind string, params map[string]string) (*types.Resource, error)
+	ResourceGet(name string) (*types.Resource, error)
+	ResourceList() (types.Resources, error)
+
 	SystemGet() (*types.System, error)
 	SystemInstall(name string, opts types.SystemInstallOptions) (string, error)
 	SystemUninstall(name string, opts types.SystemInstallOptions) error

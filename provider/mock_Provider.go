@@ -783,6 +783,75 @@ func (_m *MockProvider) ReleaseLogs(app string, id string) (io.ReadCloser, error
 	return r0, r1
 }
 
+// ResourceCreate provides a mock function with given fields: name, kind, params
+func (_m *MockProvider) ResourceCreate(name string, kind string, params map[string]string) (*types.Resource, error) {
+	ret := _m.Called(name, kind, params)
+
+	var r0 *types.Resource
+	if rf, ok := ret.Get(0).(func(string, string, map[string]string) *types.Resource); ok {
+		r0 = rf(name, kind, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Resource)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, map[string]string) error); ok {
+		r1 = rf(name, kind, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ResourceGet provides a mock function with given fields: name
+func (_m *MockProvider) ResourceGet(name string) (*types.Resource, error) {
+	ret := _m.Called(name)
+
+	var r0 *types.Resource
+	if rf, ok := ret.Get(0).(func(string) *types.Resource); ok {
+		r0 = rf(name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Resource)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ResourceList provides a mock function with given fields:
+func (_m *MockProvider) ResourceList() (types.Resources, error) {
+	ret := _m.Called()
+
+	var r0 types.Resources
+	if rf, ok := ret.Get(0).(func() types.Resources); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Resources)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SystemGet provides a mock function with given fields:
 func (_m *MockProvider) SystemGet() (*types.System, error) {
 	ret := _m.Called()
