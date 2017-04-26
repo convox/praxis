@@ -19,6 +19,7 @@ func (c *Client) ProcessList(app string, opts types.ProcessListOptions) (ps type
 	ro := RequestOptions{
 		Query: Query{
 			"service": opts.Service,
+			"type":    opts.Type,
 		},
 	}
 

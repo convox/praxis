@@ -29,39 +29,45 @@ type BuildSource struct {
 }
 
 func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
-	builds := map[string][]Service{}
+	builds := map[string]ServiceBuild{}
+	pulls := map[string]bool{}
 	pushes := map[string]string{}
-	tags := map[string]string{}
+	tags := map[string][]string{}
 
 	for _, s := range m.Services {
 		hash := s.BuildHash()
 		to := fmt.Sprintf("%s/%s:%s", prefix, s.Name, tag)
 
-		builds[hash] = append(builds[hash], s)
-		tags[hash] = to
+		if s.Image != "" {
+			pulls[s.Image] = true
+			tags[s.Image] = append(tags[s.Image], to)
+		} else {
+			builds[hash] = s.Build
+			tags[hash] = append(tags[hash], to)
+		}
 
 		if opts.Push != "" {
 			pushes[to] = fmt.Sprintf("%s:%s.%s", opts.Push, s.Name, tag)
 		}
 	}
 
-	for hash, services := range builds {
-		for _, service := range services {
-			if service.Image != "" {
-				if err := service.pull(hash, opts); err != nil {
-					return err
-				}
-			} else {
-				if err := service.build(hash, opts); err != nil {
-					return err
-				}
-			}
+	for hash, b := range builds {
+		if err := build(b, hash, opts); err != nil {
+			return err
 		}
 	}
 
-	for from, to := range tags {
-		if err := opts.docker("tag", from, to); err != nil {
+	for image := range pulls {
+		if err := pull(image, opts); err != nil {
 			return err
+		}
+	}
+
+	for from, tos := range tags {
+		for _, to := range tos {
+			if err := opts.docker("tag", from, to); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -239,8 +245,8 @@ func replaceEnv(s string, env map[string]string) string {
 	return s
 }
 
-func (s Service) build(tag string, opts BuildOptions) error {
-	if s.Build.Path == "" {
+func build(b ServiceBuild, tag string, opts BuildOptions) error {
+	if b.Path == "" {
 		return fmt.Errorf("must have path to build")
 	}
 
@@ -252,30 +258,22 @@ func (s Service) build(tag string, opts BuildOptions) error {
 
 	args = append(args, "-t", tag)
 
-	path, err := filepath.Abs(filepath.Join(opts.Root, s.Build.Path))
+	path, err := filepath.Abs(filepath.Join(opts.Root, b.Path))
 	if err != nil {
 		return err
 	}
 
 	args = append(args, path)
 
-	message(opts.Stdout, "building: %s", s.Build.Path)
+	message(opts.Stdout, "building: %s", b.Path)
 
 	return opts.docker(args...)
 }
 
-func (s Service) pull(tag string, opts BuildOptions) error {
-	if s.Image == "" {
-		return fmt.Errorf("must have image to pull")
-	}
+func pull(image string, opts BuildOptions) error {
+	message(opts.Stdout, "pulling: %s", image)
 
-	message(opts.Stdout, "pulling: %s", s.Image)
-
-	if err := opts.docker("pull", s.Image); err != nil {
-		return err
-	}
-
-	if err := opts.docker("tag", s.Image, tag); err != nil {
+	if err := opts.docker("pull", image); err != nil {
 		return err
 	}
 
