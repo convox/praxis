@@ -276,7 +276,7 @@ func (p *Provider) endpointsConverge(app, release string, services manifest.Serv
 	}
 
 	for _, s := range services {
-		if s.Port == 0 {
+		if s.Port.Port == 0 {
 			continue
 		}
 
@@ -299,8 +299,12 @@ func (p *Provider) endpointRegister(app string, s manifest.Service) error {
 		return nil
 	}
 
+	if s.Port.Port == 0 {
+		return fmt.Errorf("no endpoint")
+	}
+
 	host := fmt.Sprintf("%s-%s.%s", app, s.Name, p.Name)
-	name := fmt.Sprintf("%s.%s.endpoint.%s.%d", p.Name, app, s.Name, s.Port)
+	name := fmt.Sprintf("%s.%s.endpoint.%s.%d", p.Name, app, s.Name, s.Port.Port)
 
 	port, err := containerBinding(name, "3000/tcp")
 	if err != nil {
@@ -350,11 +354,15 @@ func (p *Provider) endpointRunning(app, release, service string) bool {
 }
 
 func (p *Provider) endpointStart(app, release string, s manifest.Service) error {
-	name := fmt.Sprintf("%s.%s.endpoint.%s.%d", p.Name, app, s.Name, s.Port)
+	if s.Port.Port == 0 {
+		return fmt.Errorf("no endpoint")
+	}
+
+	name := fmt.Sprintf("%s.%s.endpoint.%s.%d", p.Name, app, s.Name, s.Port.Port)
 
 	exec.Command("docker", "rm", "-f", name).Run()
 
-	command := []string{"balancer", "https", "target", fmt.Sprintf("http://%s:%d", s.Name, s.Port)}
+	command := []string{"balancer", "https", "target", fmt.Sprintf("%s://%s:%d", s.Port.Scheme, s.Name, s.Port.Port)}
 
 	sys, err := p.SystemGet()
 	if err != nil {

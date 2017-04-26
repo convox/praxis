@@ -124,7 +124,7 @@ func runAppsInfo(c *cli.Context) error {
 			endpoints := []string{}
 
 			for _, s := range m.Services {
-				if s.Port > 0 {
+				if s.Port.Port > 0 {
 					endpoints = append(endpoints, fmt.Sprintf("https://%s-%s.%s", app, s.Name, sys.Domain))
 				}
 			}
