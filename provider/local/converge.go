@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
@@ -54,6 +55,10 @@ func (p *Provider) converge(app string) error {
 		log.Error(err)
 	}
 
+	if err := p.resourcesConverge(app, r.Id, m.Resources); err != nil {
+		log.Error(err)
+	}
+
 	if err := p.servicesConverge(app, r.Id, m.Services); err != nil {
 		log.Error(err)
 	}
@@ -85,6 +90,24 @@ func containerBinding(id string, bind string) (string, error) {
 	}
 
 	return b[0].HostPort, nil
+}
+
+func resourcePort(kind string) (string, error) {
+	switch kind {
+	case "postgres":
+		return "5432", nil
+	}
+
+	return "", fmt.Errorf("unknown resource type: %s", kind)
+}
+
+func resourceURL(app, kind, name string) (string, error) {
+	switch kind {
+	case "postgres":
+		return fmt.Sprintf("postgres://postgres:password@%s-%s.resource.convox:5432/app?sslmode=disable", app, name), nil
+	}
+
+	return "", fmt.Errorf("unknown resource type: %s", kind)
 }
 
 func containersByLabels(labels map[string]string) ([]string, error) {
@@ -257,7 +280,7 @@ func (p *Provider) balancerStart(app, release string, balancer manifest.Balancer
 			return err
 		}
 
-		args := []string{"run", "--rm", "--detach"}
+		args := []string{"run", "--detach"}
 
 		args = append(args, "--name", name)
 		args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
@@ -387,7 +410,7 @@ func (p *Provider) endpointStart(app, release string, s manifest.Service) error 
 		return err
 	}
 
-	args := []string{"run", "--rm", "--detach"}
+	args := []string{"run", "--detach"}
 
 	args = append(args, "--name", name)
 	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
@@ -402,6 +425,117 @@ func (p *Provider) endpointStart(app, release string, s manifest.Service) error 
 	args = append(args, "-p", fmt.Sprintf("%d:3000", rp))
 	args = append(args, sys.Image)
 	args = append(args, command...)
+
+	if err := exec.Command("docker", args...).Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Provider) resourcesConverge(app, release string, resources manifest.Resources) error {
+	if err := p.containersKillOutdated("resource", app, release); err != nil {
+		return err
+	}
+
+	for _, r := range resources {
+		if !p.resourceRunning(app, release, r.Name) {
+			if err := p.resourceStart(app, release, r); err != nil {
+				return err
+			}
+		}
+
+		if err := p.resourceRegister(app, r); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *Provider) resourceRegister(app string, r manifest.Resource) error {
+	if p.Frontend == "none" {
+		return nil
+	}
+
+	host := fmt.Sprintf("%s-%s.resource.%s", app, r.Name, p.Name)
+	name := fmt.Sprintf("%s.%s.resource.%s", p.Name, app, r.Name)
+
+	ip, err := resourcePort(r.Type)
+	if err != nil {
+		return err
+	}
+
+	port, err := containerBinding(name, fmt.Sprintf("%s/tcp", ip))
+	if err != nil {
+		return err
+	}
+	if port == "" {
+		return fmt.Errorf("balancer not bound to %s/tcp: %s", ip, name)
+	}
+
+	uv := url.Values{}
+	uv.Add("port", ip)
+	uv.Add("target", fmt.Sprintf("localhost:%s", port))
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:9477/endpoints/%s", p.Frontend, host), bytes.NewReader([]byte(uv.Encode())))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+
+	return nil
+}
+
+func (p *Provider) resourceRunning(app, release, resource string) bool {
+	cs, err := containersByLabels(map[string]string{
+		"convox.type":     "resource",
+		"convox.rack":     p.Name,
+		"convox.app":      app,
+		"convox.release":  release,
+		"convox.resource": resource,
+	})
+	if err != nil {
+		return false
+	}
+	if len(cs) == 0 {
+		return false
+	}
+
+	return true
+}
+
+func (p *Provider) resourceStart(app, release string, r manifest.Resource) error {
+	name := fmt.Sprintf("%s.%s.resource.%s", p.Name, app, r.Name)
+
+	exec.Command("docker", "rm", "-f", name).Run()
+
+	ip, err := resourcePort(r.Type)
+	if err != nil {
+		return err
+	}
+
+	rp := rand.Intn(40000) + 20000
+
+	args := []string{"run", "--detach"}
+
+	args = append(args, "--name", name)
+	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
+	args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
+	args = append(args, "--label", fmt.Sprintf("convox.release=%s", release))
+	args = append(args, "--label", fmt.Sprintf("convox.resource=%s", r.Name))
+	args = append(args, "--label", fmt.Sprintf("convox.type=%s", r.Type))
+	args = append(args, "--label", "convox.type=resource")
+	args = append(args, "-p", fmt.Sprintf("%d:%s", rp, ip))
+	args = append(args, fmt.Sprintf("convox/%s", r.Type))
 
 	if err := exec.Command("docker", args...).Run(); err != nil {
 		return err
@@ -450,9 +584,32 @@ func (p *Provider) serviceStart(app, release string, service manifest.Service) e
 		return err
 	}
 
+	b, err := p.BuildGet(app, r.Build)
+	if err != nil {
+		return err
+	}
+
+	m, err := manifest.Load([]byte(b.Manifest))
+	if err != nil {
+		return err
+	}
+
 	senv, err := service.Env(r.Env)
 	if err != nil {
 		return err
+	}
+
+	for _, rs := range service.Resources {
+		for _, mr := range m.Resources {
+			if mr.Name == rs {
+				u, err := resourceURL(app, mr.Type, rs)
+				if err != nil {
+					return err
+				}
+
+				senv[fmt.Sprintf("%s_URL", strings.ToUpper(rs))] = u
+			}
+		}
 	}
 
 	k, err := types.Key(6)
@@ -469,39 +626,6 @@ func (p *Provider) serviceStart(app, release string, service manifest.Service) e
 		Type:        "service",
 	})
 	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (p *Provider) resourceRunning(kind, name string) bool {
-	cs, err := containersByLabels(map[string]string{
-		"convox.type":     "resource",
-		"convox.rack":     p.Name,
-		"convox.resource": kind,
-	})
-	if err != nil {
-		return false
-	}
-	if len(cs) == 0 {
-		return false
-	}
-
-	return true
-}
-
-func (p *Provider) resourceStart(kind, name string) error {
-
-	args := []string{"run", "--rm", "--detach"}
-
-	args = append(args, "--name", name)
-	args = append(args, "--label", fmt.Sprintf("convox.resource=%s", kind))
-	args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
-	args = append(args, "--label", "convox.type=resource")
-	args = append(args, fmt.Sprintf("convox/%s", kind))
-
-	if err := exec.Command("docker", args...).Run(); err != nil {
 		return err
 	}
 
