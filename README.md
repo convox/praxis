@@ -96,7 +96,7 @@ Praxis utilizes the best underlying infrastructure at each provider to implement
 
     $ sudo cx rack install local
 
-##### Rack installation requires `sudo` to resolve and route local hostnames like `myapp-web.convox`
+##### Local Rack installation requires `sudo` to resolve and route local hostnames such as `myapp-web.convox`
 
 #### AWS
 
