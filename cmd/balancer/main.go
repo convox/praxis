@@ -155,10 +155,12 @@ func handleTarget(protocol, target string) error {
 }
 
 func handleConnection(cn net.Conn, app string, scheme, host string, port int) error {
-	ps, err := Rack.ProcessList(app, types.ProcessListOptions{Service: host})
+	ps, err := Rack.ProcessList(app, types.ProcessListOptions{Service: host, Type: "service"})
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("ps = %+v\n", ps)
 
 	if len(ps) < 1 {
 		return fmt.Errorf("no processes for service: %s", host)

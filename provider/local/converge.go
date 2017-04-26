@@ -181,12 +181,14 @@ func (p *Provider) balancersConverge(app, release string, balancers manifest.Bal
 	for _, b := range balancers {
 		if !p.balancerRunning(app, release, b.Name) {
 			if err := p.balancerStart(app, release, b); err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "error: %s\n", err)
+				continue
 			}
 		}
 
 		if err := p.balancerRegister(app, b); err != nil {
-			return err
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			continue
 		}
 	}
 
@@ -316,12 +318,14 @@ func (p *Provider) endpointsConverge(app, release string, services manifest.Serv
 
 		if !p.endpointRunning(app, release, s.Name) {
 			if err := p.endpointStart(app, release, s); err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "error: %s\n", err)
+				continue
 			}
 		}
 
 		if err := p.endpointRegister(app, s); err != nil {
-			return err
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			continue
 		}
 	}
 
@@ -441,7 +445,8 @@ func (p *Provider) resourcesConverge(app, release string, resources manifest.Res
 	for _, r := range resources {
 		if !p.resourceRunning(app, release, r.Name) {
 			if err := p.resourceStart(app, release, r); err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "error: %s\n", err)
+				continue
 			}
 		}
 
@@ -552,7 +557,8 @@ func (p *Provider) servicesConverge(app, release string, services manifest.Servi
 	for _, s := range services {
 		if !p.serviceRunning(app, release, s.Name) {
 			if err := p.serviceStart(app, release, s); err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "error: %s\n", err)
+				continue
 			}
 		}
 	}

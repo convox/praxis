@@ -26,6 +26,7 @@ func ProcessGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 func ProcessList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	service := c.Query("service")
+	typ := c.Query("type")
 
 	_, err := Provider.AppGet(app)
 	if err != nil {
@@ -34,6 +35,7 @@ func ProcessList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	opts := types.ProcessListOptions{
 		Service: service,
+		Type:    typ,
 	}
 
 	ps, err := Provider.ProcessList(app, opts)
