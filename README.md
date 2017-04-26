@@ -98,7 +98,7 @@ Praxis utilizes the best underlying infrastructure at each provider to implement
 
     $ cx rack install aws
 
-## DEPLOY AN APP
+## DEPLOY
 
 #### Create a convox.yml
 
