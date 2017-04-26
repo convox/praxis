@@ -6,7 +6,7 @@ A framework for modern application infrastructure.
 
 ## ABOUT
 
-Praxis allows you to specify the entire infrastructure for your application in raw primitives.
+Praxis allows you to specify the entire infrastructure for your application.
 
 ```yaml
 caches:
@@ -22,6 +22,12 @@ services:
   web:
     build: .
     port: 3000
+    scale: 2-10
+timers:
+  cleanup:
+    schedule: 0 3 * * *
+    command: bin/cleanup
+    service: web
 ```
 
 ### API
