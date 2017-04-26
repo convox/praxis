@@ -32,9 +32,12 @@ mocks:
 	make -C provider mocks
 
 release:
+	make -C cmd/cx release VERSION=$(VERSION)
 	make -C provider release VERSION=$(VERSION)
 	docker build -t convox/praxis:$(VERSION) .
 	docker push convox/praxis:$(VERSION)
+	git tag $(VERSION)
+	git push origin refs/tags/$(VERSION)
 	@echo "release: $(VERSION)"
 
 stats:

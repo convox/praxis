@@ -1,3 +1,4 @@
 .env
 .git
-./rack
+cmd/cx/pkg
+rack

@@ -4,17 +4,31 @@
 
 ## INSTALLATION
 
-#### Download the CLI
+### CLI
 
-    $ go get github.com/convox/praxis/cmd/cx
+#### MacOS
 
-#### Install a local Rack
+    $ curl https://s3.amazonaws.com/praxis-releases/cli/macos/cx -o /usr/local/bin/cx
+    $ chmod +x /usr/local/bin/cx
+
+#### Linux
+
+    $ curl https://s3.amazonaws.com/praxis-releases/cli/linux/cx -o /usr/local/bin/cx
+    $ chmod +x /usr/local/bin/cx
+
+### Rack
+
+#### Local
 
     $ sudo cx rack install local
 
 ##### Rack installation requires `sudo` to resolve and route local hostnames like `web.myapp.convox`
 
-## USAGE
+#### AWS
+
+    $ cx rack install aws
+
+## DEPLOY AN APP
 
 #### Create a convox.yml
 
@@ -24,21 +38,18 @@
 ###### Examples
 
   * [rails](https://gist.github.com/ddollar/4c2368dbb7058652cfe758affd2208b2)
-  * [contrived](https://gist.github.com/ddollar/df189f18b44a233294dc6627c130d9e7)
-  * [praxis](https://github.com/convox/praxis/blob/master/convox.yml)
 
-#### Start an application in development mode
+#### Create an application
 
     $ cx apps create myapp
-    $ cx start
 
 #### Set environment variables
 
     $ cx env set FOO=bar
 
-#### See running processes
+#### Deploy the applications
 
-    $ cx ps
+    $ convox deploy
 
 ## COPYRIGHT
 

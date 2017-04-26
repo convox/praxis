@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/convox/api"
 )
@@ -45,6 +46,8 @@ func AppList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	if err != nil {
 		return err
 	}
+
+	sort.Slice(apps, func(i, j int) bool { return apps[i].Name < apps[j].Name })
 
 	return c.RenderJSON(apps)
 }
