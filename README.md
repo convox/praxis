@@ -42,6 +42,10 @@ GET /apps/myapp/queues/mail
 POST /apps/myapp/keys/master/encrypt
 ```
 
+#### SDK
+
+* [Go](https://github.com/convox/praxis/tree/master/sdk/rack)
+
 ### Providers
 
 A Praxis Rack can installed into one of many available infrastructure providers to expose the Praxis API.
