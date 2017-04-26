@@ -1,6 +1,76 @@
 # convox/praxis
 
+A framework for modern application infrastructure.
+
 **WARNING: This project is currently an *alpha* release and is not recommended for production or the faint of heart.**
+
+## ABOUT
+
+Praxis allows you to specify the entire infrastructure for your application in raw primitives.
+
+```yaml
+caches:
+  sessions:
+    expire: 1d
+keys:
+  master:
+    roll: 30d
+queues:
+  mail:
+    timeout: 1m
+services:
+  web:
+    build: .
+    port: 3000
+```
+
+### API
+
+Praxis makes these primitives available to your application with a simple API.
+
+```
+# list applications
+GET /apps
+
+# put an item on a queue
+POST /apps/myapp/queues/mail
+
+# get an item from a queue
+GET /apps/myapp/queues/mail
+
+# encrypt some data
+POST /apps/myapp/keys/master/encrypt
+```
+
+### Providers
+
+A Praxis Rack can installed into one of many available infrastructure providers to expose the Praxis API.
+
+#### Local
+
+Runs on your laptop (or any single node). Great for development and CI.
+
+#### AWS
+
+A fault-tolerant, highly scalable architecture built on modern AWS services such as ECS, ALB, and Lambda.
+
+### Implementation
+
+Praxis utilizes the best underlying infrastructure at each provider to implement a primitive. Some examples:
+
+#### Cache
+
+| Provider     | Implementation           |
+|--------------|--------------------------|
+| **Local**    | *convox/redis* container |
+| **AWS**      | ElastiCache              |
+
+#### Queue
+
+| Provider     | Implementation  |
+|--------------|-----------------|
+| **Local**    | in-memory FIFO  |
+| **AWS**      | SQS             |
 
 ## INSTALLATION
 
