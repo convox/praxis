@@ -88,13 +88,24 @@ func containerBinding(id string, bind string) (string, error) {
 }
 
 func containersByLabels(labels map[string]string) ([]string, error) {
-	args := []string{"ps", "--format", "{{.ID}}"}
+	args := []string{}
 
 	for k, v := range labels {
 		args = append(args, "--filter", fmt.Sprintf("label=%s=%s", k, v))
 	}
 
-	data, err := exec.Command("docker", args...).CombinedOutput()
+	return containerPSFilter(args...)
+}
+
+func containersByName(name string) ([]string, error) {
+	return containerPSFilter("--filter", fmt.Sprintf("name=%s", name))
+}
+
+func containerPSFilter(args ...string) ([]string, error) {
+	as := []string{"ps", "--format", "{{.ID}}"}
+	as = append(as, args...)
+
+	data, err := exec.Command("docker", as...).CombinedOutput()
 	if err != nil {
 		return nil, err
 	}
@@ -458,6 +469,39 @@ func (p *Provider) serviceStart(app, release string, service manifest.Service) e
 		Type:        "service",
 	})
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Provider) resourceRunning(kind, name string) bool {
+	cs, err := containersByLabels(map[string]string{
+		"convox.type":     "resource",
+		"convox.rack":     p.Name,
+		"convox.resource": kind,
+	})
+	if err != nil {
+		return false
+	}
+	if len(cs) == 0 {
+		return false
+	}
+
+	return true
+}
+
+func (p *Provider) resourceStart(kind, name string) error {
+
+	args := []string{"run", "--rm", "--detach"}
+
+	args = append(args, "--name", name)
+	args = append(args, "--label", fmt.Sprintf("convox.resource=%s", kind))
+	args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
+	args = append(args, "--label", "convox.type=resource")
+	args = append(args, fmt.Sprintf("convox/%s", kind))
+
+	if err := exec.Command("docker", args...).Run(); err != nil {
 		return err
 	}
 
