@@ -92,24 +92,6 @@ func containerBinding(id string, bind string) (string, error) {
 	return b[0].HostPort, nil
 }
 
-func resourcePort(kind string) (string, error) {
-	switch kind {
-	case "postgres":
-		return "5432", nil
-	}
-
-	return "", fmt.Errorf("unknown resource type: %s", kind)
-}
-
-func resourceURL(app, kind, name string) (string, error) {
-	switch kind {
-	case "postgres":
-		return fmt.Sprintf("postgres://postgres:password@%s-%s.resource.convox:5432/app?sslmode=disable", app, name), nil
-	}
-
-	return "", fmt.Errorf("unknown resource type: %s", kind)
-}
-
 func containersByLabels(labels map[string]string) ([]string, error) {
 	args := []string{}
 
@@ -171,6 +153,24 @@ func (p *Provider) containersKillOutdated(kind, app, release string) error {
 	}
 
 	return nil
+}
+
+func resourcePort(kind string) (string, error) {
+	switch kind {
+	case "postgres":
+		return "5432", nil
+	}
+
+	return "", fmt.Errorf("unknown resource type: %s", kind)
+}
+
+func resourceURL(app, kind, name string) (string, error) {
+	switch kind {
+	case "postgres":
+		return fmt.Sprintf("postgres://postgres:password@%s-%s.resource.convox:5432/app?sslmode=disable", app, name), nil
+	}
+
+	return "", fmt.Errorf("unknown resource type: %s", kind)
 }
 
 func (p *Provider) balancersConverge(app, release string, balancers manifest.Balancers) error {
