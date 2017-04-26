@@ -48,7 +48,7 @@ POST /apps/myapp/keys/master/encrypt
 
 ### Providers
 
-A Praxis Rack can installed into one of many available infrastructure providers to expose the Praxis API.
+A Praxis Rack can be installed into one of many available infrastructure providers to expose the Praxis API.
 
 #### Local
 
@@ -96,7 +96,7 @@ Praxis utilizes the best underlying infrastructure at each provider to implement
 
     $ sudo cx rack install local
 
-##### Rack installation requires `sudo` to resolve and route local hostnames like `web.myapp.convox`
+##### Rack installation requires `sudo` to resolve and route local hostnames like `myapp-web.convox`
 
 #### AWS
 
