@@ -1,4 +1,4 @@
-# convox/praxis
+# Convox Praxis
 
 A framework for modern application infrastructure.
 
