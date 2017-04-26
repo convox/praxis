@@ -15,7 +15,7 @@ type Service struct {
 	Command     string
 	Environment []string
 	Image       string
-	Port        int
+	Port        ServicePort
 	Resources   []string
 	Scale       ServiceScale
 	Test        string
@@ -27,6 +27,11 @@ type Services []Service
 type ServiceBuild struct {
 	Args []string
 	Path string
+}
+
+type ServicePort struct {
+	Port   int
+	Scheme string
 }
 
 type ServiceScale struct {

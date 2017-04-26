@@ -141,6 +141,39 @@ func (v *ServiceBuild) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+func (v *ServicePort) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+
+	parts := strings.Split(s, ":")
+
+	switch len(parts) {
+	case 1:
+		p, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return err
+		}
+
+		v.Scheme = "http"
+		v.Port = p
+	case 2:
+		p, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return err
+		}
+
+		v.Scheme = parts[0]
+		v.Port = p
+	default:
+		return fmt.Errorf("invalid port: %s", s)
+	}
+
+	return nil
+}
+
 func (v *ServiceScale) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var w interface{}
 
