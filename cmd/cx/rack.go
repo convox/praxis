@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -17,7 +16,6 @@ import (
 	"github.com/convox/praxis/provider"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
-	homedir "github.com/mitchellh/go-homedir"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -184,12 +182,7 @@ func runRackInstall(c *cli.Context) error {
 func runRackStart(c *cli.Context) error {
 	version := "latest"
 
-	home, err := homedir.Dir()
-	if err != nil {
-		return err
-	}
-
-	vf := filepath.Join(home, ".convox", "version")
+	vf := "/Users/Shared/convox/version"
 
 	if _, err := os.Stat(vf); !os.IsNotExist(err) {
 		data, err := ioutil.ReadFile(vf)

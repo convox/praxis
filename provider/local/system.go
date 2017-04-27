@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"text/template"
 
 	"github.com/convox/praxis/types"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 var (
@@ -59,27 +56,13 @@ func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
 	}
 
 	if v := opts.Version; v != "" {
-		w.Write([]byte(fmt.Sprintf("Pulling convox/praxis:%s... ", v)))
-
-		if err := exec.Command("docker", "pull", fmt.Sprintf("convox/praxis:%s", opts.Version)).Run(); err != nil {
-			w.Write([]byte("ERROR\n"))
-			return err
-		}
-
-		w.Write([]byte("OK\n"))
-
 		w.Write([]byte("Restarting... OK\n"))
 
-		home, err := homedir.Dir()
-		if err != nil {
+		if err := ioutil.WriteFile("/var/convox/version", []byte(v), 0644); err != nil {
 			return err
 		}
 
-		if err := ioutil.WriteFile(filepath.Join(home, ".convox", "version"), []byte(v), 0644); err != nil {
-			return err
-		}
-
-		os.Exit(0)
+		defer os.Exit(0)
 	}
 
 	return nil
