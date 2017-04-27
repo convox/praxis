@@ -75,59 +75,12 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 
 	stack := fmt.Sprintf("%s-%s", p.Name, app)
 
-	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stack),
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(res.Stacks) != 1 {
-		return nil, fmt.Errorf("could not find stack: %s", stack)
-	}
-
-	params := []*cloudformation.Parameter{}
-
-	for _, p := range res.Stacks[0].Parameters {
-		if u, ok := updates[*p.ParameterKey]; ok {
-			params = append(params, &cloudformation.Parameter{
-				ParameterKey:   p.ParameterKey,
-				ParameterValue: aws.String(u),
-			})
-			delete(updates, *p.ParameterKey)
-		} else {
-			params = append(params, &cloudformation.Parameter{
-				ParameterKey:     p.ParameterKey,
-				UsePreviousValue: aws.Bool(true),
-			})
-		}
-	}
-
-	for k, v := range updates {
-		params = append(params, &cloudformation.Parameter{
-			ParameterKey:   aws.String(k),
-			ParameterValue: aws.String(v),
-		})
-	}
-
-	np, err := formationParameters(data)
+	params, err := p.cloudformationUpdateParameters(stack, data, updates)
 	if err != nil {
 		return nil, err
 	}
 
-	for i, q := range params {
-		found := false
-		for _, p := range np {
-			if p == *q.ParameterKey {
-				found = true
-				break
-			}
-		}
-		if !found {
-			params = append(params[:i], params[i+1:]...)
-		}
-	}
-
-	// fmt.Printf("string(data) = %+v\n", string(data))
+	fmt.Printf("string(data) = %+v\n", string(data))
 
 	_, err = p.CloudFormation().UpdateStack(&cloudformation.UpdateStackInput{
 		Capabilities: []*string{aws.String("CAPABILITY_IAM")},

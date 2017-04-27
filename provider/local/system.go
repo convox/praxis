@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"text/template"
+	"time"
 
 	"github.com/convox/praxis/types"
 )
@@ -62,7 +63,10 @@ func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
 			return err
 		}
 
-		defer os.Exit(0)
+		go func() {
+			time.Sleep(1 * time.Second)
+			os.Exit(0)
+		}()
 	}
 
 	return nil
