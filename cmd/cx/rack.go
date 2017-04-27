@@ -306,6 +306,11 @@ func fetchCredentialsAWS() error {
 
 	os.Setenv("AWS_SECRET_ACCESS_KEY", strings.TrimSpace(string(data)))
 
+	data, _ = aws("configure", "get", "aws_session_token")
+	if len(data) > 0 {
+		os.Setenv("AWS_SESSION_TOKEN", strings.TrimSpace(string(data)))
+	}
+
 	return nil
 }
 
