@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/convox/praxis/provider"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
+	homedir "github.com/mitchellh/go-homedir"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -181,6 +184,22 @@ func runRackInstall(c *cli.Context) error {
 func runRackStart(c *cli.Context) error {
 	version := "latest"
 
+	home, err := homedir.Dir()
+	if err != nil {
+		return err
+	}
+
+	vf := filepath.Join(home, ".convox", "version")
+
+	if _, err := os.Stat(vf); !os.IsNotExist(err) {
+		data, err := ioutil.ReadFile(vf)
+		if err != nil {
+			return err
+		}
+
+		version = strings.TrimSpace(string(data))
+	}
+
 	switch len(c.Args()) {
 	case 0:
 	case 1:
@@ -232,7 +251,18 @@ func runRackUninstall(c *cli.Context) error {
 }
 
 func runRackUpdate(c *cli.Context) error {
-	if err := Rack.SystemUpdate("latest", types.SystemUpdateOptions{Output: os.Stdout}); err != nil {
+	if len(c.Args()) < 1 {
+		return stdcli.Usage(c)
+	}
+
+	version := c.Args()[0]
+
+	opts := types.SystemUpdateOptions{
+		Output:  os.Stdout,
+		Version: version,
+	}
+
+	if err := Rack.SystemUpdate(opts); err != nil {
 		return err
 	}
 

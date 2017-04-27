@@ -19,6 +19,12 @@ func (c *Client) SystemUninstall(name string, opts types.SystemInstallOptions) e
 	return fmt.Errorf("unimplemented")
 }
 
-func (c *Client) SystemUpdate(name string, opts types.SystemUpdateOptions) error {
-	return fmt.Errorf("unimplemented")
+func (c *Client) SystemUpdate(opts types.SystemUpdateOptions) error {
+	ro := RequestOptions{
+		Params: Params{
+			"version": opts.Version,
+		},
+	}
+
+	return c.Post("/system", ro, nil)
 }
