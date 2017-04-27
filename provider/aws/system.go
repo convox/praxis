@@ -80,7 +80,7 @@ func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions)
 	return nil
 }
 
-func (p *Provider) SystemUpdate(version string, opts types.SystemUpdateOptions) error {
+func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
 	return fmt.Errorf("unimplemented")
 }
 

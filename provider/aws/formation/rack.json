@@ -1,6 +1,11 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Mappings": {
+    "Constants": {
+      "Values": {
+        "Version": "latest"
+      }
+    },
     "RegionConfig": {
       "us-east-1": { "Ami": "ami-d69c74c0" },
       "us-east-2": { "Ami": "ami-64270201" },
@@ -54,7 +59,7 @@
     },
     "Version": {
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Version" } },
-      "Value": { "Ref": "Version" }
+      "Value": { "Fn::FindInMap": [ "Constants", "Values", "Version" ] }
     },
     "Vpc": {
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Vpc" } },
@@ -62,15 +67,13 @@
     }
   },
   "Parameters": {
-    "Password": {
-      "Description": "Master password",
-      "MinLength": "1",
-      "NoEcho": true,
+    "InstanceSize": {
+      "Default": "t2.micro",
       "Type": "String"
     },
-    "Version": {
-      "Description": "Release version",
-      "MinLength" : "1",
+    "Password": {
+      "MinLength": "1",
+      "NoEcho": true,
       "Type": "String"
     }
   },
@@ -78,7 +81,10 @@
     "Network": {
       "Type": "AWS::CloudFormation::Stack",
       "Properties": {
-        "TemplateURL": { "Fn::Sub": "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/network.json" }
+        "TemplateURL": { "Fn::Sub": [
+          "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/network.json",
+          { "Version": { "Fn::FindInMap": [ "Constants", "Values", "Version" ] } }
+        ] }
       }
     },
     "InstancesSecurity": {
@@ -122,7 +128,7 @@
         "IamInstanceProfile": { "Ref": "InstancesProfile" },
         "ImageId": { "Fn::FindInMap": [ "RegionConfig", { "Ref": "AWS::Region" }, "Ami" ] },
         "InstanceMonitoring": true,
-        "InstanceType": "t2.micro",
+        "InstanceType": { "Ref": "InstanceSize" },
         "PlacementTenancy" : "default",
         "SecurityGroups": [ { "Ref": "InstancesSecurity" } ],
         "UserData": { "Fn::Base64":
@@ -136,7 +142,8 @@
             "echo ECS_ENGINE_AUTH_TYPE=docker >> /etc/ecs/ecs.config\n",
             "echo 'OPTIONS=\"${OPTIONS} --log-opt max-file=2 --log-opt max-size=50m --host=unix:///var/run/docker.sock --host=0.0.0.0:2376\"' >> /etc/sysconfig/docker\n",
             "echo -e '/var/log/docker {\\n  rotate 7\\n  daily\\n  nocompress\\n  copytruncate\\n}' >> /etc/logrotate.d/docker\n",
-            "/opt/aws/bin/cfn-signal --stack ", { "Ref": "AWS::StackName" }, " --region ", { "Ref": "AWS::Region" }, " --resource Instances\n"
+            "/opt/aws/bin/cfn-signal --stack ", { "Ref": "AWS::StackName" }, " --region ", { "Ref": "AWS::Region" }, " --resource Instances\n",
+            "docker pull convox/praxis:", { "Fn::FindInMap": [ "Constants", "Values", "Version" ] }, "\n"
           ] ] }
         }
       }
@@ -330,10 +337,13 @@
               { "Name": "NAME", "Value": { "Ref": "AWS::StackName"} },
               { "Name": "PASSWORD", "Value": { "Ref": "Password" } },
               { "Name": "PROVIDER", "Value": "aws" },
-              { "Name": "VERSION", "Value": { "Ref": "Version" } }
+              { "Name": "VERSION", "Value": { "Fn::FindInMap": [ "Constants", "Values", "Version" ] } }
             ],
             "Essential": "true",
-            "Image": { "Fn::Sub": "convox/praxis:${Version}" },
+            "Image": { "Fn::Sub": [
+              "convox/praxis:${Version}",
+              { "Version": { "Fn::FindInMap": [ "Constants", "Values", "Version" ] } }
+            ] },
             "LogConfiguration": {
               "LogDriver": "awslogs",
               "Options": {

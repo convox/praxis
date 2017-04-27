@@ -841,13 +841,13 @@ func (_m *MockProvider) SystemUninstall(name string, opts types.SystemInstallOpt
 	return r0
 }
 
-// SystemUpdate provides a mock function with given fields: version, opts
-func (_m *MockProvider) SystemUpdate(version string, opts types.SystemUpdateOptions) error {
-	ret := _m.Called(version, opts)
+// SystemUpdate provides a mock function with given fields: opts
+func (_m *MockProvider) SystemUpdate(opts types.SystemUpdateOptions) error {
+	ret := _m.Called(opts)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, types.SystemUpdateOptions) error); ok {
-		r0 = rf(version, opts)
+	if rf, ok := ret.Get(0).(func(types.SystemUpdateOptions) error); ok {
+		r0 = rf(opts)
 	} else {
 		r0 = ret.Error(0)
 	}

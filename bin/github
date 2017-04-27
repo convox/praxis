@@ -1,0 +1,24 @@
+#!/bin/sh
+
+gethub() {
+  local path=$1 filter=$2 query=$3
+  curl -s -u :$token "https://api.github.com$path?$query" | tr -d '\t\r' | jq -r "$filter"
+}
+
+posthub() {
+  local path=$1 data=$2 filter=$3
+  curl -X POST -s -u :$token -d "$data" "https://api.github.com$path" | tr -d '\t\r' | jq -r "$filter"
+}
+
+patchhub() {
+  local path=$1 data=$2 filter=$3
+  curl -X PATCH -s -u :$token -d "$data" "https://api.github.com$path" | tr -d '\t\r' | jq -r "$filter"
+}
+
+token=$(git config github.token)
+
+[ -z $token ] && die "no github.token found in git config"
+
+[ -x "$(which curl)" ] || die "needs curl"
+[ -x "$(which jq)" ]   || die "needs jq"
+[ -x "$(which tr)" ]   || die "needs tr"
