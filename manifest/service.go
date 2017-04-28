@@ -12,13 +12,12 @@ type Service struct {
 	Name string
 
 	Build       ServiceBuild
-	Command     string
+	Command     ServiceCommand
 	Environment []string
 	Image       string
 	Port        ServicePort
 	Resources   []string
 	Scale       ServiceScale
-	Test        string
 	Volumes     []string
 }
 
@@ -27,6 +26,12 @@ type Services []Service
 type ServiceBuild struct {
 	Args []string
 	Path string
+}
+
+type ServiceCommand struct {
+	Development string
+	Test        string
+	Production  string
 }
 
 type ServiceCount struct {

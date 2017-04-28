@@ -61,13 +61,13 @@ func runTest(c *cli.Context) error {
 	}
 
 	for _, s := range m.Services {
-		if s.Test == "" {
+		if s.Command.Test == "" {
 			continue
 		}
 
 		w := m.Writer(s.Name, os.Stdout)
 
-		if err := w.Writef("running: %s\n", s.Test); err != nil {
+		if err := w.Writef("running: %s\n", s.Command.Test); err != nil {
 			return err
 		}
 
@@ -77,7 +77,7 @@ func runTest(c *cli.Context) error {
 		}
 
 		code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{
-			Command:     s.Test,
+			Command:     s.Command.Test,
 			Environment: senv,
 			Service:     s.Name,
 			Stream: types.Stream{

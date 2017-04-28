@@ -133,7 +133,7 @@
       "Properties": {
         "ContainerDefinitions": [ {
           {{ if .Command }}
-            "Command": [ "sh", "-c", "{{ .Command }}" ],
+            "Command": [ "sh", "-c", "{{ .Command.Production }}" ],
           {{ end }}
           "Cpu": "128",
           "Environment": [

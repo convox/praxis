@@ -57,6 +57,11 @@ func TestManifestLoad(t *testing.T) {
 				Build: manifest.ServiceBuild{
 					Path: "api",
 				},
+				Command: manifest.ServiceCommand{
+					Development: "rerun github.com/convox/praxis",
+					Test:        "make test",
+					Production:  "",
+				},
 				Environment: []string{
 					"DEVELOPMENT=false",
 					"SECRET",
@@ -68,9 +73,11 @@ func TestManifestLoad(t *testing.T) {
 				},
 			},
 			manifest.Service{
-				Name:    "proxy",
-				Command: "bash",
-				Image:   "ubuntu:16.04",
+				Name: "proxy",
+				Command: manifest.ServiceCommand{
+					Production: "bash",
+				},
+				Image: "ubuntu:16.04",
 				Environment: []string{
 					"SECRET",
 				},

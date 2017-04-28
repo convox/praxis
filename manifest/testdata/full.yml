@@ -17,6 +17,9 @@ services:
   api:
     build:
       path: api
+    command:
+      development: rerun github.com/convox/praxis
+      test: make test
     environment:
       - DEVELOPMENT=false
       - SECRET
