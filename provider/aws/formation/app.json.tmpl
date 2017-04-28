@@ -11,6 +11,7 @@
       "Default": ""
     },
     "Rack": {
+      "MinLength": "1",
       "Type": "String"
     },
     "Role": {
@@ -20,6 +21,7 @@
   },
   "Resources": {
     {{ template "balancers" . }}
+    {{ template "resources" . }}
     {{ template "services" . }}
 
     "Bucket": {
@@ -49,6 +51,20 @@
 }
 
 {{ define "balancers" }}
+{{ end }}
+
+{{ define "resources" }}
+  {{ range .Manifest.Resources }}
+    "Resource{{ resource .Name }}": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": { "Fn::Sub": [
+          "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/resource/{{ .Type }}.json",
+          { "Version": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Version" } } }
+        ] }
+      }
+    },
+  {{ end }}
 {{ end }}
 
 {{ define "services" }}
