@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"sort"
 	"time"
 
@@ -18,15 +19,22 @@ const (
 )
 
 func (p *Provider) SystemGet() (*types.System, error) {
+	aid, err := p.rackOutput("Account")
+	if err != nil {
+		return nil, err
+	}
+
 	domain, err := p.rackOutput("Domain")
 	if err != nil {
 		return nil, err
 	}
 
 	system := &types.System{
+		Account: aid,
 		Domain:  domain,
 		Name:    p.Name,
 		Image:   fmt.Sprintf("convox/praxis:%s", p.Version),
+		Region:  os.Getenv("AWS_REGION"),
 		Version: p.Version,
 	}
 

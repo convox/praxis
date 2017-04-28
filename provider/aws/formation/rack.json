@@ -21,6 +21,9 @@
     }
   },
   "Outputs": {
+    "Account" : {
+      "Value": { "Ref": "AWS::AccountId" }
+    },
     "BalancerListener": {
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:BalancerListener" } },
       "Value": { "Ref": "BalancerListener" }
