@@ -53,8 +53,6 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 		filters = append(filters, fmt.Sprintf("label=convox.service=%s", opts.Service))
 	}
 
-	fmt.Printf("filters = %+v\n", filters)
-
 	return processList(filters, false)
 }
 
@@ -133,8 +131,6 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 	}
 
 	args = append(args, oargs...)
-
-	fmt.Printf("args = %+v\n", args)
 
 	data, err := exec.Command("docker", args...).CombinedOutput()
 	if err != nil {
@@ -252,8 +248,6 @@ func processList(filters []string, all bool) (types.Processes, error) {
 	}
 
 	args = append(args, "--format", "{{json .}}")
-
-	fmt.Printf("args = %+v\n", args)
 
 	data, err := exec.Command("docker", args...).CombinedOutput()
 	if err != nil {
