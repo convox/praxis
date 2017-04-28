@@ -342,6 +342,15 @@ func resourceURL(app, kind, name string) (string, error) {
 	return "", fmt.Errorf("unknown resource type: %s", kind)
 }
 
+func resourceVolumes(app, kind, name string) ([]string, error) {
+	switch kind {
+	case "postgres":
+		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/var/lib/postgresql/data", app, name)}, nil
+	}
+
+	return []string{}, fmt.Errorf("unknown resource type: %s", kind)
+}
+
 func (p *Provider) balancerContainers(balancers manifest.Balancers, app, release string) ([]container, error) {
 	cs := []container{}
 
@@ -396,6 +405,11 @@ func (p *Provider) resourceContainers(resources manifest.Resources, app, release
 			return nil, err
 		}
 
+		vs, err := resourceVolumes(app, r.Type, r.Name)
+		if err != nil {
+			return nil, err
+		}
+
 		cs = append(cs, container{
 			Name:     fmt.Sprintf("%s.%s.resource.%s", p.Name, app, r.Name),
 			Hostname: fmt.Sprintf("%s.resource.%s.%s", r.Name, app, p.Name),
@@ -403,7 +417,8 @@ func (p *Provider) resourceContainers(resources manifest.Resources, app, release
 				Host:      rp,
 				Container: rp,
 			},
-			Image: fmt.Sprintf("convox/%s", r.Type),
+			Image:   fmt.Sprintf("convox/%s", r.Type),
+			Volumes: vs,
 			Labels: map[string]string{
 				"convox.rack":     p.Name,
 				"convox.app":      app,
