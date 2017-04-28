@@ -25,7 +25,6 @@ type ProcessExecOptions struct {
 
 type ProcessListOptions struct {
 	Service string
-	Type    string
 }
 
 type ProcessRunOptions struct {
@@ -34,12 +33,12 @@ type ProcessRunOptions struct {
 	Height      int
 	Image       string
 	Links       []string
+	Memory      int
 	Name        string
 	Ports       map[int]int
 	Release     string
 	Service     string
 	Stream      io.ReadWriter
-	Type        string
 	Volumes     map[string]string
 	Width       int
 }

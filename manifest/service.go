@@ -29,14 +29,19 @@ type ServiceBuild struct {
 	Path string
 }
 
+type ServiceCount struct {
+	Min int
+	Max int
+}
+
 type ServicePort struct {
 	Port   int
 	Scheme string
 }
 
 type ServiceScale struct {
-	Min int
-	Max int
+	Count  ServiceCount
+	Memory int
 }
 
 func (s Service) BuildHash() string {

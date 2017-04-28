@@ -169,7 +169,7 @@ func formationHelpers() template.FuncMap {
 			return strings.ToLower(s)
 		},
 		"priority": func(app, service string) uint32 {
-			return crc32.ChecksumIEEE([]byte(fmt.Sprintf("%s-%s", app, service))) % 100000
+			return crc32.ChecksumIEEE([]byte(fmt.Sprintf("%s-%s", app, service))) % 50000
 		},
 		"resource": func(s string) string {
 			return upperName(s)
@@ -191,6 +191,9 @@ func formationHelpers() template.FuncMap {
 			}
 
 			return nil, fmt.Errorf("no target found")
+		},
+		"upper": func(s string) string {
+			return strings.ToUpper(s)
 		},
 	}
 }
@@ -404,7 +407,6 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	req := &ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			{
-				Cpu:       aws.Int64(512),
 				Essential: aws.Bool(true),
 				Image:     aws.String(""),
 				LogConfiguration: &ecs.LogConfiguration{
@@ -415,7 +417,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 						"awslogs-stream-prefix": aws.String("convox"),
 					},
 				},
-				MemoryReservation: aws.Int64(512),
+				MemoryReservation: aws.Int64(256),
 				Name:              aws.String(opts.Service),
 			},
 		},

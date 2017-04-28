@@ -59,10 +59,10 @@
         "Cluster": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Cluster" } },
         "DeploymentConfiguration": { "MinimumHealthyPercent": "50", "MaximumPercent": "200" },
         "DesiredCount": "2",
-        {{ if .Port }}
+        {{ if .Port.Port }}
           "LoadBalancers": [ {
             "ContainerName": "{{ .Name }}",
-            "ContainerPort": "{{ .Port }}",
+            "ContainerPort": "{{ .Port.Port }}",
             "TargetGroupArn": { "Ref": "Service{{ resource .Name }}TargetGroup" }
           } ],
           "Role": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:ServiceRole" } },
@@ -70,7 +70,7 @@
         "TaskDefinition": { "Ref": "Service{{ resource .Name }}Tasks" }
       }
     },
-    {{ if .Port }}
+    {{ if .Port.Port }}
       "Service{{ resource .Name }}ListenerRule": {
         "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
         "Properties": {
@@ -87,8 +87,8 @@
           "HealthCheckTimeoutSeconds": 5,
           "UnhealthyThresholdCount": 2,
           "HealthCheckPath": "/",
-          "Port": "{{ .Port }}",
-          "Protocol": "HTTP",
+          "Port": "{{ .Port.Port }}",
+          "Protocol": "{{ upper .Port.Scheme }}",
           "TargetGroupAttributes": [
             { "Key": "deregistration_delay.timeout_seconds", "Value": "5" },
             { "Key": "stickiness.enabled", "Value": "true" }
@@ -99,7 +99,7 @@
     {{ end }}
     "Service{{ resource .Name }}Tasks": {
       "Type": "AWS::ECS::TaskDefinition",
-      {{ if .Port }}
+      {{ if .Port.Port }}
         "DependsOn": "Service{{ resource .Name }}ListenerRule",
       {{ end }}
       "Properties": {
@@ -126,7 +126,7 @@
           },
           "Memory": "128",
           "Name": "{{ .Name }}",
-          {{ with .Port }}
+          {{ with .Port.Port }}
             "PortMappings": [ { "ContainerPort": "{{ . }}", "Protocol": "tcp" } ]
           {{ end }}
         } ],

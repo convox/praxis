@@ -48,13 +48,12 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 		fmt.Sprintf("label=convox.rack=%s", p.Name),
 	}
 
-	if opts.Type != "" {
-		filters = append(filters, fmt.Sprintf("label=convox.type=%s", opts.Type))
-	}
-
 	if opts.Service != "" {
+		filters = append(filters, fmt.Sprintf("label=convox.type=service"))
 		filters = append(filters, fmt.Sprintf("label=convox.service=%s", opts.Service))
 	}
+
+	fmt.Printf("filters = %+v\n", filters)
 
 	return processList(filters, false)
 }
@@ -135,6 +134,8 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 
 	args = append(args, oargs...)
 
+	fmt.Printf("args = %+v\n", args)
+
 	data, err := exec.Command("docker", args...).CombinedOutput()
 	if err != nil {
 		return "", err
@@ -192,6 +193,10 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		args = append(args, "--link", l)
 	}
 
+	if opts.Memory > 0 {
+		args = append(args, "--memory", fmt.Sprintf("%dM"))
+	}
+
 	if opts.Name != "" {
 		args = append(args, "--name", opts.Name)
 	}
@@ -215,7 +220,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
 	args = append(args, "--label", fmt.Sprintf("convox.release=%s", opts.Release))
 	args = append(args, "--label", fmt.Sprintf("convox.service=%s", opts.Service))
-	args = append(args, "--label", fmt.Sprintf("convox.type=%s", coalesce(opts.Type, "process")))
+	args = append(args, "--label", fmt.Sprintf("convox.type=%s", "process"))
 
 	for from, to := range opts.Volumes {
 		args = append(args, "-v", fmt.Sprintf("%s:%s", from, to))
@@ -247,6 +252,8 @@ func processList(filters []string, all bool) (types.Processes, error) {
 	}
 
 	args = append(args, "--format", "{{json .}}")
+
+	fmt.Printf("args = %+v\n", args)
 
 	data, err := exec.Command("docker", args...).CombinedOutput()
 	if err != nil {
