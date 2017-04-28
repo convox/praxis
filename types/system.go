@@ -17,6 +17,7 @@ type SystemInstallOptions struct {
 }
 
 type SystemUpdateOptions struct {
-	Output  io.Writer
-	Version string
+	Output   io.Writer
+	Password string
+	Version  string
 }

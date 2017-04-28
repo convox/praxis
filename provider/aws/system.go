@@ -92,9 +92,14 @@ func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
 	}
 
 	template := fmt.Sprintf(RackFormation, version)
+	updates := map[string]string{}
 
 	if opts.Version != "" {
 		template = fmt.Sprintf(RackFormation, opts.Version)
+	}
+
+	if opts.Password != "" {
+		updates["Password"] = opts.Password
 	}
 
 	res, err := http.Get(template)
@@ -109,7 +114,7 @@ func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
 		return err
 	}
 
-	params, err := p.cloudformationUpdateParameters(p.Name, data, map[string]string{})
+	params, err := p.cloudformationUpdateParameters(p.Name, data, updates)
 	if err != nil {
 		return err
 	}
