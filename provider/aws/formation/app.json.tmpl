@@ -11,6 +11,7 @@
       "Default": ""
     },
     "Rack": {
+      "MinLength": "1",
       "Type": "String"
     },
     "Role": {
@@ -20,6 +21,7 @@
   },
   "Resources": {
     {{ template "balancers" . }}
+    {{ template "resources" . }}
     {{ template "services" . }}
 
     "Bucket": {
@@ -51,8 +53,34 @@
 {{ define "balancers" }}
 {{ end }}
 
+{{ define "resources" }}
+  {{ range .Manifest.Resources }}
+    "Resource{{ resource .Name }}": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "Parameters": {
+          "Password": "{{ password }}",
+          "Rack": { "Ref": "Rack" }
+        },
+        "Tags": [
+          { "Key": "Name", "Value": "{{ .Name }}" },
+          { "Key": "Rack", "Value": { "Ref": "Rack" } },
+          { "Key": "Resource", "Value": "{{ .Type }}" },
+          { "Key": "System", "Value": "convox" },
+          { "Key": "Type", "Value": "resource" },
+          { "Key": "Version", "Value": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Version" } } }
+        ],
+        "TemplateURL": { "Fn::Sub": [
+          "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/resource/{{ .Type }}.json",
+          { "Version": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Version" } } }
+        ] }
+      }
+    },
+  {{ end }}
+{{ end }}
+
 {{ define "services" }}
-  {{ range .Manifest.Services }}
+  {{ range $s := .Manifest.Services }}
     "Service{{ resource .Name }}": {
       "Type": "AWS::ECS::Service",
       "Properties": {
@@ -109,6 +137,9 @@
           {{ end }}
           "Cpu": "128",
           "Environment": [
+            {{ range .Resources }}
+              { "Name": "{{ upper . }}_URL", "Value": { "Fn::GetAtt": [ "Resource{{resource . }}", "Outputs.Url" ] } },
+            {{ end }}
             {{ range $k, $v := $.Env }}
               { "Name": "{{$k}}", "Value": "{{$v}}" },
             {{ end }}

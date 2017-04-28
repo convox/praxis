@@ -168,6 +168,9 @@ func formationHelpers() template.FuncMap {
 		"lower": func(s string) string {
 			return strings.ToLower(s)
 		},
+		"password": func() (string, error) {
+			return types.Key(32)
+		},
 		"priority": func(app, service string) uint32 {
 			return crc32.ChecksumIEEE([]byte(fmt.Sprintf("%s-%s", app, service))) % 50000
 		},
