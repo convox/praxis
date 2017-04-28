@@ -161,7 +161,7 @@
             "PortMappings": [ { "ContainerPort": "{{ . }}", "Protocol": "tcp" } ]
           {{ end }}
         } ],
-        "Family": { "Fn::Sub": "${AWS::StackName}-rack" },
+        "Family": { "Fn::Sub": "${AWS::StackName}-{{ .Name }}" },
         "TaskRoleArn": { "Ref": "Role" },
         "Volumes": [ { "Name": "docker", "Host": { "SourcePath": "/var/run/docker.sock" } } ]
       }
