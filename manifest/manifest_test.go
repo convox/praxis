@@ -75,7 +75,8 @@ func TestManifestLoad(t *testing.T) {
 			manifest.Service{
 				Name: "proxy",
 				Command: manifest.ServiceCommand{
-					Production: "bash",
+					Development: "bash",
+					Production:  "bash",
 				},
 				Image: "ubuntu:16.04",
 				Environment: []string{

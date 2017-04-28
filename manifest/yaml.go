@@ -167,6 +167,7 @@ func (v *ServiceCommand) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		// v.Args = r.Args
 		// v.Path = r.Path
 	case string:
+		v.Development = t
 		v.Production = t
 	default:
 		return fmt.Errorf("unknown type for service command: %T", t)
