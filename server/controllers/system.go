@@ -17,10 +17,12 @@ func SystemGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 }
 
 func SystemUpdate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	password := c.Form("password")
 	version := c.Form("version")
 
 	opts := types.SystemUpdateOptions{
-		Version: version,
+		Password: password,
+		Version:  version,
 	}
 
 	if err := Provider.SystemUpdate(opts); err != nil {
