@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"sort"
 
-	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -98,42 +96,6 @@ func runAppsInfo(c *cli.Context) error {
 	info.Add("Name", a.Name)
 	info.Add("Release", a.Release)
 	info.Add("Status", a.Status)
-
-	if a.Release != "" {
-		r, err := Rack.ReleaseGet(app, a.Release)
-		if err != nil {
-			return err
-		}
-
-		if r.Build != "" {
-			sys, err := Rack.SystemGet()
-			if err != nil {
-				return err
-			}
-
-			b, err := Rack.BuildGet(app, r.Build)
-			if err != nil {
-				return err
-			}
-
-			m, err := manifest.Load([]byte(b.Manifest))
-			if err != nil {
-				return err
-			}
-
-			endpoints := []string{}
-
-			for _, s := range m.Services {
-				if s.Port.Port > 0 {
-					endpoints = append(endpoints, fmt.Sprintf("https://%s-%s.%s", app, s.Name, sys.Domain))
-				}
-			}
-
-			sort.Strings(endpoints)
-
-			info.Add("Endpoints", endpoints...)
-		}
-	}
 
 	info.Print()
 

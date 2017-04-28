@@ -48,11 +48,8 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 		fmt.Sprintf("label=convox.rack=%s", p.Name),
 	}
 
-	if opts.Type != "" {
-		filters = append(filters, fmt.Sprintf("label=convox.type=%s", opts.Type))
-	}
-
 	if opts.Service != "" {
+		filters = append(filters, fmt.Sprintf("label=convox.type=service"))
 		filters = append(filters, fmt.Sprintf("label=convox.service=%s", opts.Service))
 	}
 
@@ -192,6 +189,10 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		args = append(args, "--link", l)
 	}
 
+	if opts.Memory > 0 {
+		args = append(args, "--memory", fmt.Sprintf("%dM", opts.Memory))
+	}
+
 	if opts.Name != "" {
 		args = append(args, "--name", opts.Name)
 	}
@@ -215,7 +216,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
 	args = append(args, "--label", fmt.Sprintf("convox.release=%s", opts.Release))
 	args = append(args, "--label", fmt.Sprintf("convox.service=%s", opts.Service))
-	args = append(args, "--label", fmt.Sprintf("convox.type=%s", coalesce(opts.Type, "process")))
+	args = append(args, "--label", fmt.Sprintf("convox.type=%s", "process"))
 
 	for from, to := range opts.Volumes {
 		args = append(args, "-v", fmt.Sprintf("%s:%s", from, to))

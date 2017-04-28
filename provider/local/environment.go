@@ -8,6 +8,11 @@ import (
 )
 
 func (p *Provider) EnvironmentGet(app string) (types.Environment, error) {
+	_, err := p.AppGet(app)
+	if err != nil {
+		return nil, err
+	}
+
 	var env types.Environment
 
 	if err := p.storageLoad(fmt.Sprintf("apps/%s/environment", app), &env); err != nil {
@@ -21,6 +26,11 @@ func (p *Provider) EnvironmentGet(app string) (types.Environment, error) {
 }
 
 func (p *Provider) EnvironmentSet(app string, env types.Environment) error {
+	_, err := p.AppGet(app)
+	if err != nil {
+		return err
+	}
+
 	cenv, err := p.EnvironmentGet(app)
 	if err != nil {
 		return err

@@ -10,14 +10,32 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/convox/praxis/manifest"
-	"github.com/convox/praxis/types"
+	shellquote "github.com/kballard/go-shellquote"
 )
 
+type container struct {
+	Command  []string
+	Env      map[string]string
+	Hostname string
+	Image    string
+	Labels   map[string]string
+	Id       string
+	Name     string
+	Port     containerPort
+	Volumes  []string
+}
+
+type containerPort struct {
+	Container int
+	Host      int
+}
+
 func (p *Provider) converge(app string) error {
-	log := Logger.At("converge").Start()
+	log := Logger.At("converge").Namespace("app=%s", app).Start()
 
 	a, err := p.AppGet(app)
 	if err != nil {
@@ -47,24 +65,208 @@ func (p *Provider) converge(app string) error {
 		return err
 	}
 
-	if err := p.balancersConverge(app, r.Id, m.Balancers); err != nil {
-		log.Error(err)
+	cs := []container{}
+
+	c, err := p.balancerContainers(m.Balancers, app, r.Id)
+	if err != nil {
+		return err
 	}
 
-	if err := p.endpointsConverge(app, r.Id, m.Services); err != nil {
-		log.Error(err)
+	cs = append(cs, c...)
+
+	c, err = p.resourceContainers(m.Resources, app, r.Id)
+	if err != nil {
+		return err
 	}
 
-	if err := p.resourcesConverge(app, r.Id, m.Resources); err != nil {
-		log.Error(err)
+	cs = append(cs, c...)
+
+	c, err = p.serviceContainers(m.Services, app, r.Id)
+	if err != nil {
+		return err
 	}
 
-	if err := p.servicesConverge(app, r.Id, m.Services); err != nil {
-		log.Error(err)
+	cs = append(cs, c...)
+
+	for i, c := range cs {
+		id, err := p.containerConverge(c, app, r.Id)
+		if err != nil {
+			return err
+		}
+
+		cs[i].Id = id
+
+		if err := p.containerRegister(cs[i]); err != nil {
+			return err
+		}
+	}
+
+	running, err := containersByLabels(map[string]string{
+		"convox.rack": p.Name,
+		"convox.app":  app,
+	})
+	if err != nil {
+		return err
+	}
+
+	ps, err := containersByLabels(map[string]string{
+		"convox.rack": p.Name,
+		"convox.app":  app,
+		"convox.type": "process",
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, rc := range running {
+		found := false
+
+		for _, c := range cs {
+			if c.Id == rc {
+				found = true
+				break
+			}
+		}
+
+		// dont stop oneoff processes
+		for _, pc := range ps {
+			if rc == pc {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			log.Successf("action=kill id=%s", rc)
+			exec.Command("docker", "kill", rc).Run()
+		}
 	}
 
 	log.Success()
 	return nil
+}
+
+func (p *Provider) containerConverge(c container, app, release string) (string, error) {
+	log := Logger.At("converge.container").Namespace("app=%s name=%s", app, c.Name).Start()
+
+	args := []string{}
+
+	for k, v := range c.Labels {
+		args = append(args, "--filter", fmt.Sprintf("label=%s=%s", k, v))
+	}
+
+	ids, err := containerList(args...)
+	if err != nil {
+		return "", err
+	}
+
+	id := ""
+
+	switch len(ids) {
+	case 0:
+		i, err := p.containerStart(c, app, release)
+		if err != nil {
+			return "", err
+		}
+
+		id = i
+
+		log = log.Namespace("action=start")
+	case 1:
+		id = ids[0]
+
+		log = log.Namespace("action=found")
+	default:
+		return "", fmt.Errorf("matched more than one container")
+	}
+
+	log.Success()
+	return id, nil
+}
+
+func (p *Provider) containerRegister(c container) error {
+	if c.Hostname == "" || c.Port.Container == 0 || c.Port.Host == 0 {
+		return nil
+	}
+
+	bind, err := containerBinding(c.Id, fmt.Sprintf("%d/tcp", c.Port.Container))
+	if err != nil {
+		return err
+	}
+
+	uv := url.Values{}
+	uv.Add("port", strconv.Itoa(c.Port.Host))
+	uv.Add("target", fmt.Sprintf("localhost:%s", bind))
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:9477/endpoints/%s", p.Frontend, c.Hostname), bytes.NewReader([]byte(uv.Encode())))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+
+	return nil
+}
+
+func (p *Provider) containerStart(c container, app, release string) (string, error) {
+	if c.Name == "" {
+		return "", fmt.Errorf("name required")
+	}
+
+	args := []string{"run", "--detach"}
+
+	args = append(args, "--name", c.Name)
+
+	for k, v := range c.Labels {
+		args = append(args, "--label", fmt.Sprintf("%s=%s", k, v))
+	}
+
+	for k, v := range c.Env {
+		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
+	}
+
+	if p := c.Port.Container; p != 0 {
+		args = append(args, "-p", fmt.Sprintf("%d:%d", rand.Intn(40000)+20000, p))
+	}
+
+	for _, v := range c.Volumes {
+		args = append(args, "-v", v)
+	}
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+
+	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
+	args = append(args, "-e", fmt.Sprintf("RACK=%s", p.Name))
+	args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s:3000", hostname))
+	args = append(args, "--link", hostname)
+
+	args = append(args, c.Image)
+	args = append(args, c.Command...)
+
+	exec.Command("docker", "rm", "-f", c.Name).Run()
+
+	data, err := exec.Command("docker", args...).CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	id := strings.TrimSpace(string(data))
+
+	if len(id) < 12 {
+		return "", fmt.Errorf("unable to start container")
+	}
+
+	return id[0:12], nil
 }
 
 func containerBinding(id string, bind string) (string, error) {
@@ -99,14 +301,10 @@ func containersByLabels(labels map[string]string) ([]string, error) {
 		args = append(args, "--filter", fmt.Sprintf("label=%s=%s", k, v))
 	}
 
-	return containerPSFilter(args...)
+	return containerList(args...)
 }
 
-func containersByName(name string) ([]string, error) {
-	return containerPSFilter("--filter", fmt.Sprintf("name=%s", name))
-}
-
-func containerPSFilter(args ...string) ([]string, error) {
+func containerList(args ...string) ([]string, error) {
 	as := []string{"ps", "--format", "{{.ID}}"}
 	as = append(as, args...)
 
@@ -126,514 +324,209 @@ func containerPSFilter(args ...string) ([]string, error) {
 	return cs, nil
 }
 
-func (p *Provider) containersKillOutdated(kind, app, release string) error {
-	acs, err := containersByLabels(map[string]string{
-		"convox.type": kind,
-		"convox.rack": p.Name,
-		"convox.app":  app,
-	})
-	if err != nil {
-		return err
-	}
-
-	cs, err := containersByLabels(map[string]string{
-		"convox.type":    kind,
-		"convox.rack":    p.Name,
-		"convox.app":     app,
-		"convox.release": release,
-	})
-	if err != nil {
-		return err
-	}
-
-	for _, id := range diff(acs, cs) {
-		if err := exec.Command("docker", "kill", id).Run(); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func resourcePort(kind string) (string, error) {
+func resourcePort(kind string) (int, error) {
 	switch kind {
 	case "postgres":
-		return "5432", nil
+		return 5432, nil
 	}
 
-	return "", fmt.Errorf("unknown resource type: %s", kind)
+	return 0, fmt.Errorf("unknown resource type: %s", kind)
 }
 
 func resourceURL(app, kind, name string) (string, error) {
 	switch kind {
 	case "postgres":
-		return fmt.Sprintf("postgres://postgres:password@%s-%s.resource.convox:5432/app?sslmode=disable", app, name), nil
+		return fmt.Sprintf("postgres://postgres:password@%s.resource.%s.convox:5432/app?sslmode=disable", name, app), nil
 	}
 
 	return "", fmt.Errorf("unknown resource type: %s", kind)
 }
 
-func (p *Provider) balancersConverge(app, release string, balancers manifest.Balancers) error {
-	if err := p.containersKillOutdated("balancer", app, release); err != nil {
-		return err
+func resourceVolumes(app, kind, name string) ([]string, error) {
+	switch kind {
+	case "postgres":
+		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/var/lib/postgresql/data", app, name)}, nil
 	}
 
-	for _, b := range balancers {
-		if !p.balancerRunning(app, release, b.Name) {
-			if err := p.balancerStart(app, release, b); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %s\n", err)
-				continue
-			}
-		}
-
-		if err := p.balancerRegister(app, b); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %s\n", err)
-			continue
-		}
-	}
-
-	return nil
+	return []string{}, fmt.Errorf("unknown resource type: %s", kind)
 }
 
-func (p *Provider) balancerRegister(app string, balancer manifest.Balancer) error {
-	if p.Frontend == "none" {
-		return nil
-	}
-
-	host := fmt.Sprintf("%s-%s.%s", app, balancer.Name, p.Name)
-
-	for _, e := range balancer.Endpoints {
-		name := fmt.Sprintf("%s.%s.balancer.%s.%s", p.Name, app, balancer.Name, e.Port)
-
-		port, err := containerBinding(name, "3000/tcp")
-		if err != nil {
-			return err
-		}
-		if port == "" {
-			return fmt.Errorf("balancer not bound to 3000/tcp: %s", name)
-		}
-
-		uv := url.Values{}
-		uv.Add("port", e.Port)
-		uv.Add("target", fmt.Sprintf("localhost:%s", port))
-
-		req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:9477/endpoints/%s", p.Frontend, host), bytes.NewReader([]byte(uv.Encode())))
-		if err != nil {
-			return err
-		}
-
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-
-		defer res.Body.Close()
-	}
-
-	return nil
-}
-
-func (p *Provider) balancerRunning(app, release, balancer string) bool {
-	cs, err := containersByLabels(map[string]string{
-		"convox.type":     "balancer",
-		"convox.rack":     p.Name,
-		"convox.app":      app,
-		"convox.release":  release,
-		"convox.balancer": balancer,
-	})
-	if err != nil {
-		return false
-	}
-	if len(cs) == 0 {
-		return false
-	}
-
-	return true
-}
-
-func (p *Provider) balancerStart(app, release string, balancer manifest.Balancer) error {
-	for _, e := range balancer.Endpoints {
-		name := fmt.Sprintf("%s.%s.balancer.%s.%s", p.Name, app, balancer.Name, e.Port)
-
-		exec.Command("docker", "rm", "-f", name).Run()
-
-		command := []string{}
-
-		switch {
-		case e.Redirect != "":
-			command = []string{"balancer", e.Protocol, "redirect", e.Redirect}
-		case e.Target != "":
-			command = []string{"balancer", e.Protocol, "target", e.Target}
-		default:
-			return fmt.Errorf("invalid balancer endpoint: %s:%s", balancer.Name, e.Port)
-		}
-
-		sys, err := p.SystemGet()
-		if err != nil {
-			return err
-		}
-
-		rp := rand.Intn(40000) + 20000
-
-		hostname, err := os.Hostname()
-		if err != nil {
-			return err
-		}
-
-		args := []string{"run", "--detach"}
-
-		args = append(args, "--name", name)
-		args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
-		args = append(args, "--label", fmt.Sprintf("convox.balancer=%s", balancer.Name))
-		args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
-		args = append(args, "--label", fmt.Sprintf("convox.release=%s", release))
-		args = append(args, "--label", "convox.type=balancer")
-		args = append(args, "-e", fmt.Sprintf("APP=%s", app))
-		args = append(args, "-e", fmt.Sprintf("RACK=%s", p.Name))
-		args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s:3000", hostname))
-		args = append(args, "--link", hostname)
-		args = append(args, "-p", fmt.Sprintf("%d:3000", rp))
-		args = append(args, sys.Image)
-		args = append(args, command...)
-
-		if err := exec.Command("docker", args...).Run(); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (p *Provider) endpointsConverge(app, release string, services manifest.Services) error {
-	if err := p.containersKillOutdated("endpoint", app, release); err != nil {
-		return err
-	}
-
-	for _, s := range services {
-		if s.Port.Port == 0 {
-			continue
-		}
-
-		if !p.endpointRunning(app, release, s.Name) {
-			if err := p.endpointStart(app, release, s); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %s\n", err)
-				continue
-			}
-		}
-
-		if err := p.endpointRegister(app, s); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %s\n", err)
-			continue
-		}
-	}
-
-	return nil
-}
-
-func (p *Provider) endpointRegister(app string, s manifest.Service) error {
-	if p.Frontend == "none" {
-		return nil
-	}
-
-	if s.Port.Port == 0 {
-		return fmt.Errorf("no endpoint")
-	}
-
-	host := fmt.Sprintf("%s-%s.%s", app, s.Name, p.Name)
-	name := fmt.Sprintf("%s.%s.endpoint.%s.%d", p.Name, app, s.Name, s.Port.Port)
-
-	port, err := containerBinding(name, "3000/tcp")
-	if err != nil {
-		return err
-	}
-	if port == "" {
-		return fmt.Errorf("balancer not bound to 3000/tcp: %s", name)
-	}
-
-	uv := url.Values{}
-	uv.Add("port", "443")
-	uv.Add("target", fmt.Sprintf("localhost:%s", port))
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:9477/endpoints/%s", p.Frontend, host), bytes.NewReader([]byte(uv.Encode())))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	defer res.Body.Close()
-
-	return nil
-}
-
-func (p *Provider) endpointRunning(app, release, service string) bool {
-	cs, err := containersByLabels(map[string]string{
-		"convox.type":    "endpoint",
-		"convox.rack":    p.Name,
-		"convox.app":     app,
-		"convox.release": release,
-		"convox.service": service,
-	})
-	if err != nil {
-		return false
-	}
-	if len(cs) == 0 {
-		return false
-	}
-
-	return true
-}
-
-func (p *Provider) endpointStart(app, release string, s manifest.Service) error {
-	if s.Port.Port == 0 {
-		return fmt.Errorf("no endpoint")
-	}
-
-	name := fmt.Sprintf("%s.%s.endpoint.%s.%d", p.Name, app, s.Name, s.Port.Port)
-
-	exec.Command("docker", "rm", "-f", name).Run()
-
-	command := []string{"balancer", "https", "target", fmt.Sprintf("%s://%s:%d", s.Port.Scheme, s.Name, s.Port.Port)}
+func (p *Provider) balancerContainers(balancers manifest.Balancers, app, release string) ([]container, error) {
+	cs := []container{}
 
 	sys, err := p.SystemGet()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	rp := rand.Intn(40000) + 20000
+	for _, b := range balancers {
+		for _, e := range b.Endpoints {
+			command := []string{}
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return err
+			switch {
+			case e.Redirect != "":
+				command = []string{"balancer", e.Protocol, "redirect", e.Redirect}
+			case e.Target != "":
+				command = []string{"balancer", e.Protocol, "target", e.Target}
+			default:
+				return nil, fmt.Errorf("invalid balancer endpoint: %s:%s", b.Name, e.Port)
+			}
+
+			cs = append(cs, container{
+				Name:     fmt.Sprintf("%s.%s.balancer.%s", p.Name, app, b.Name),
+				Hostname: fmt.Sprintf("%s.balancer.%s.%s", b.Name, app, p.Name),
+				Port: containerPort{
+					Host:      443,
+					Container: 3000,
+				},
+				Image:   sys.Image,
+				Command: command,
+				Labels: map[string]string{
+					"convox.rack":    p.Name,
+					"convox.app":     app,
+					"convox.release": release,
+					"convox.type":    "balancer",
+					"convox.name":    b.Name,
+					"convox.port":    e.Port,
+				},
+			})
+		}
 	}
 
-	args := []string{"run", "--detach"}
-
-	args = append(args, "--name", name)
-	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
-	args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
-	args = append(args, "--label", fmt.Sprintf("convox.release=%s", release))
-	args = append(args, "--label", fmt.Sprintf("convox.service=%s", s.Name))
-	args = append(args, "--label", "convox.type=endpoint")
-	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
-	args = append(args, "-e", fmt.Sprintf("RACK=%s", p.Name))
-	args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s:3000", hostname))
-	args = append(args, "--link", hostname)
-	args = append(args, "-p", fmt.Sprintf("%d:3000", rp))
-	args = append(args, sys.Image)
-	args = append(args, command...)
-
-	if err := exec.Command("docker", args...).Run(); err != nil {
-		return err
-	}
-
-	return nil
+	return cs, nil
 }
 
-func (p *Provider) resourcesConverge(app, release string, resources manifest.Resources) error {
-	if err := p.containersKillOutdated("resource", app, release); err != nil {
-		return err
-	}
+func (p *Provider) resourceContainers(resources manifest.Resources, app, release string) ([]container, error) {
+	cs := []container{}
 
 	for _, r := range resources {
-		if !p.resourceRunning(app, release, r.Name) {
-			if err := p.resourceStart(app, release, r); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %s\n", err)
-				continue
-			}
+		rp, err := resourcePort(r.Type)
+		if err != nil {
+			return nil, err
 		}
 
-		if err := p.resourceRegister(app, r); err != nil {
-			return err
+		vs, err := resourceVolumes(app, r.Type, r.Name)
+		if err != nil {
+			return nil, err
 		}
+
+		cs = append(cs, container{
+			Name:     fmt.Sprintf("%s.%s.resource.%s", p.Name, app, r.Name),
+			Hostname: fmt.Sprintf("%s.resource.%s.%s", r.Name, app, p.Name),
+			Port: containerPort{
+				Host:      rp,
+				Container: rp,
+			},
+			Image:   fmt.Sprintf("convox/%s", r.Type),
+			Volumes: vs,
+			Labels: map[string]string{
+				"convox.rack":     p.Name,
+				"convox.app":      app,
+				"convox.release":  release,
+				"convox.type":     "resource",
+				"convox.name":     r.Name,
+				"convox.resource": r.Type,
+			},
+		})
 	}
 
-	return nil
+	return cs, nil
 }
 
-func (p *Provider) resourceRegister(app string, r manifest.Resource) error {
-	if p.Frontend == "none" {
-		return nil
-	}
+func (p *Provider) serviceContainers(services manifest.Services, app, release string) ([]container, error) {
+	cs := []container{}
 
-	host := fmt.Sprintf("%s-%s.resource.%s", app, r.Name, p.Name)
-	name := fmt.Sprintf("%s.%s.resource.%s", p.Name, app, r.Name)
-
-	ip, err := resourcePort(r.Type)
+	sys, err := p.SystemGet()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	port, err := containerBinding(name, fmt.Sprintf("%s/tcp", ip))
-	if err != nil {
-		return err
-	}
-	if port == "" {
-		return fmt.Errorf("balancer not bound to %s/tcp: %s", ip, name)
-	}
-
-	uv := url.Values{}
-	uv.Add("port", ip)
-	uv.Add("target", fmt.Sprintf("localhost:%s", port))
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:9477/endpoints/%s", p.Frontend, host), bytes.NewReader([]byte(uv.Encode())))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	defer res.Body.Close()
-
-	return nil
-}
-
-func (p *Provider) resourceRunning(app, release, resource string) bool {
-	cs, err := containersByLabels(map[string]string{
-		"convox.type":     "resource",
-		"convox.rack":     p.Name,
-		"convox.app":      app,
-		"convox.release":  release,
-		"convox.resource": resource,
-	})
-	if err != nil {
-		return false
-	}
-	if len(cs) == 0 {
-		return false
-	}
-
-	return true
-}
-
-func (p *Provider) resourceStart(app, release string, r manifest.Resource) error {
-	name := fmt.Sprintf("%s.%s.resource.%s", p.Name, app, r.Name)
-
-	exec.Command("docker", "rm", "-f", name).Run()
-
-	ip, err := resourcePort(r.Type)
-	if err != nil {
-		return err
-	}
-
-	rp := rand.Intn(40000) + 20000
-
-	args := []string{"run", "--detach"}
-
-	args = append(args, "--name", name)
-	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))
-	args = append(args, "--label", fmt.Sprintf("convox.rack=%s", p.Name))
-	args = append(args, "--label", fmt.Sprintf("convox.release=%s", release))
-	args = append(args, "--label", fmt.Sprintf("convox.resource=%s", r.Name))
-	args = append(args, "--label", fmt.Sprintf("convox.type=%s", r.Type))
-	args = append(args, "--label", "convox.type=resource")
-	args = append(args, "-p", fmt.Sprintf("%d:%s", rp, ip))
-	args = append(args, fmt.Sprintf("convox/%s", r.Type))
-
-	if err := exec.Command("docker", args...).Run(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (p *Provider) servicesConverge(app, release string, services manifest.Services) error {
-	if err := p.containersKillOutdated("service", app, release); err != nil {
-		return err
-	}
-
-	for _, s := range services {
-		if !p.serviceRunning(app, release, s.Name) {
-			if err := p.serviceStart(app, release, s); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %s\n", err)
-				continue
-			}
-		}
-	}
-
-	return nil
-}
-
-func (p *Provider) serviceRunning(app, release, service string) bool {
-	cs, err := containersByLabels(map[string]string{
-		"convox.type":    "service",
-		"convox.rack":    p.Name,
-		"convox.app":     app,
-		"convox.release": release,
-		"convox.service": service,
-	})
-	if err != nil {
-		return false
-	}
-	if len(cs) == 0 {
-		return false
-	}
-
-	return true
-}
-
-func (p *Provider) serviceStart(app, release string, service manifest.Service) error {
 	r, err := p.ReleaseGet(app, release)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	b, err := p.BuildGet(app, r.Build)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	m, err := manifest.Load([]byte(b.Manifest))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	senv, err := service.Env(r.Env)
-	if err != nil {
-		return err
-	}
+	for _, s := range services {
+		if s.Port.Port > 0 {
+			cs = append(cs, container{
+				Name:     fmt.Sprintf("%s.%s.endpoint.%s", p.Name, app, s.Name),
+				Hostname: fmt.Sprintf("%s.service.%s.%s", s.Name, app, p.Name),
+				Port: containerPort{
+					Host:      443,
+					Container: 3000,
+				},
+				Image:   sys.Image,
+				Command: []string{"balancer", "https", "target", fmt.Sprintf("%s://%s:%d", s.Port.Scheme, s.Name, s.Port.Port)},
+				Labels: map[string]string{
+					"convox.rack":    p.Name,
+					"convox.app":     app,
+					"convox.release": release,
+					"convox.type":    "endpoint",
+					"convox.name":    s.Name,
+					"convox.service": s.Name,
+					"convox.port":    strconv.Itoa(s.Port.Port),
+				},
+			})
+		}
 
-	for _, rs := range service.Resources {
-		for _, mr := range m.Resources {
-			if mr.Name == rs {
-				u, err := resourceURL(app, mr.Type, rs)
-				if err != nil {
-					return err
+		cmd, err := shellquote.Split(s.Command)
+		if err != nil {
+			return nil, err
+		}
+
+		env, err := s.Env(r.Env)
+		if err != nil {
+			return nil, err
+		}
+
+		// copy the map so we can hold on to it
+		e := map[string]string{}
+
+		for k, v := range env {
+			e[k] = v
+		}
+
+		// add resources
+		for _, sr := range s.Resources {
+			for _, r := range m.Resources {
+				if r.Name == sr {
+					u, err := resourceURL(app, r.Type, r.Name)
+					if err != nil {
+						return nil, err
+					}
+
+					e[fmt.Sprintf("%s_URL", strings.ToUpper(sr))] = u
 				}
-
-				senv[fmt.Sprintf("%s_URL", strings.ToUpper(rs))] = u
 			}
 		}
+
+		cs = append(cs, container{
+			Name:    fmt.Sprintf("%s.%s.service.%s.1", p.Name, app, s.Name),
+			Image:   fmt.Sprintf("%s/%s/%s:%s", p.Name, app, s.Name, r.Build),
+			Command: cmd,
+			Env:     e,
+			Volumes: s.Volumes,
+			Labels: map[string]string{
+				"convox.rack":    p.Name,
+				"convox.app":     app,
+				"convox.release": release,
+				"convox.type":    "service",
+				"convox.name":    s.Name,
+				"convox.service": s.Name,
+				"convox.index":   "1",
+			},
+		})
 	}
 
-	k, err := types.Key(6)
-	if err != nil {
-		return err
-	}
-
-	_, err = p.ProcessStart(app, types.ProcessRunOptions{
-		Command:     service.Command,
-		Environment: senv,
-		Name:        fmt.Sprintf("%s.%s.service.%s.%s", p.Name, app, service.Name, k),
-		Release:     release,
-		Service:     service.Name,
-		Type:        "service",
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return cs, nil
 }

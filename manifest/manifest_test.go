@@ -62,7 +62,10 @@ func TestManifestLoad(t *testing.T) {
 					"SECRET",
 				},
 				Resources: []string{"database"},
-				Scale:     manifest.ServiceScale{Min: 3, Max: 10},
+				Scale: manifest.ServiceScale{
+					Count:  manifest.ServiceCount{Min: 3, Max: 10},
+					Memory: 256,
+				},
 			},
 			manifest.Service{
 				Name:    "proxy",
@@ -71,7 +74,10 @@ func TestManifestLoad(t *testing.T) {
 				Environment: []string{
 					"SECRET",
 				},
-				Scale: manifest.ServiceScale{Min: 1},
+				Scale: manifest.ServiceScale{
+					Count:  manifest.ServiceCount{Min: 1},
+					Memory: 256,
+				},
 			},
 		},
 		Tables: manifest.Tables{

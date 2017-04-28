@@ -22,7 +22,8 @@ services:
       - SECRET
     resources:
       - database
-    scale: 3-10
+    scale:
+      count: 3-10
   proxy:
     command: bash
     image: ubuntu:16.04

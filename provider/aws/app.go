@@ -70,6 +70,10 @@ func (p *Provider) AppGet(name string) (*types.App, error) {
 		return nil, fmt.Errorf("no such app: %s", name)
 	}
 
+	if app.Status == "creating" {
+		return app, nil
+	}
+
 	rs, err := p.ReleaseList(name)
 	if err != nil {
 		return nil, err
@@ -172,7 +176,7 @@ func (p *Provider) appFromStack(stack *cloudformation.Stack) *types.App {
 
 func appStatusFromStackStatus(status string) string {
 	switch status {
-	case "CREATE_COMPLETE", "ROLLBACK_COMPLETE":
+	case "CREATE_COMPLETE":
 		return "running"
 	case "CREATE_IN_PROGRESS":
 		return "creating"
@@ -180,12 +184,16 @@ func appStatusFromStackStatus(status string) string {
 		return "deleting"
 	case "DELETE_FAILED":
 		return "error"
+	case "ROLLBACK_COMPLETE":
+		return "running"
 	case "ROLLBACK_IN_PROGRESS":
 		return "rollback"
 	case "UPDATE_COMPLETE":
 		return "running"
 	case "UPDATE_IN_PROGRESS":
 		return "updating"
+	case "UPDATE_ROLLBACK_COMPLETE":
+		return "running"
 	default:
 		return status
 	}

@@ -783,6 +783,29 @@ func (_m *MockProvider) ReleaseLogs(app string, id string) (io.ReadCloser, error
 	return r0, r1
 }
 
+// ServiceList provides a mock function with given fields: app
+func (_m *MockProvider) ServiceList(app string) (types.Services, error) {
+	ret := _m.Called(app)
+
+	var r0 types.Services
+	if rf, ok := ret.Get(0).(func(string) types.Services); ok {
+		r0 = rf(app)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Services)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(app)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SystemGet provides a mock function with given fields:
 func (_m *MockProvider) SystemGet() (*types.System, error) {
 	ret := _m.Called()

@@ -30,10 +30,8 @@ func Load(data []byte) (*Manifest, error) {
 		return nil, err
 	}
 
-	for i, s := range m.Services {
-		if s.Scale.Min == 0 {
-			m.Services[i].Scale.Min = 1
-		}
+	if err := m.applyDefaults(); err != nil {
+		return nil, err
 	}
 
 	return &m, nil
@@ -72,6 +70,20 @@ func (m *Manifest) Validate(env types.Environment) error {
 	for _, s := range m.Services {
 		if err := s.Validate(env); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *Manifest) applyDefaults() error {
+	for i, s := range m.Services {
+		if s.Scale.Count.Min == 0 {
+			m.Services[i].Scale.Count.Min = 1
+		}
+
+		if s.Scale.Memory == 0 {
+			m.Services[i].Scale.Memory = 256
 		}
 	}
 

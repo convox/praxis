@@ -1,6 +1,3 @@
-balancers:
-  rack:
-    6443/https: https://rack:3000
 services:
   rack:
     build: .
@@ -13,7 +10,10 @@ services:
       - PASSWORD=
       - PROVIDER=local
       - VERSION=latest
-    scale: 1
+    port: https:3000
+    scale:
+      count: 1
+      memory: 256
     test: make test
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
