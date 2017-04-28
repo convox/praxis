@@ -40,6 +40,7 @@ type Provider struct {
 	Config      *aws.Config
 	Development bool
 	Name        string
+	Password    string
 	Region      string
 	Session     *session.Session
 	Version     string
@@ -61,6 +62,7 @@ func FromEnv() (*Provider, error) {
 		Config:      &aws.Config{Region: aws.String(region)},
 		Development: os.Getenv("DEVELOPMENT") == "true",
 		Name:        os.Getenv("NAME"),
+		Password:    os.Getenv("PASSWORD"),
 		Region:      region,
 		Session:     session,
 		Version:     os.Getenv("VERSION"),
@@ -441,7 +443,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		return "", err
 	}
 
-	u.User = url.UserPassword(os.Getenv("PASSWORD"), "")
+	u.User = url.UserPassword(p.Password, "")
 
 	aenv := map[string]string{
 		"APP":      app,

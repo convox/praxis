@@ -3,6 +3,7 @@ package aws
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"sort"
 	"time"
 
@@ -10,6 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/convox/praxis/types"
 	"github.com/fatih/color"
+)
+
+const (
+	RackFormation = "https://s3.amazonaws.com/praxis-releases/release/%s/formation/rack.json"
 )
 
 func (p *Provider) SystemGet() (*types.System, error) {
@@ -30,7 +35,7 @@ func (p *Provider) SystemGet() (*types.System, error) {
 
 func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (string, error) {
 	version := coalesce(opts.Version, "latest")
-	template := fmt.Sprintf("https://s3.amazonaws.com/praxis-releases/release/%s/formation/rack.json", version)
+	template := fmt.Sprintf(RackFormation, version)
 
 	_, err := p.CloudFormation().CreateStack(&cloudformation.CreateStackInput{
 		Capabilities: []*string{aws.String("CAPABILITY_IAM")},
@@ -80,8 +85,46 @@ func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions)
 	return nil
 }
 
-func (p *Provider) SystemUpdate(version string, opts types.SystemUpdateOptions) error {
-	return fmt.Errorf("unimplemented")
+func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
+	version, err := p.stackOutput(p.Name, "Version")
+	if err != nil {
+		return err
+	}
+
+	template := fmt.Sprintf(RackFormation, version)
+
+	if opts.Version != "" {
+		template = fmt.Sprintf(RackFormation, opts.Version)
+	}
+
+	res, err := http.Get(template)
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	params, err := p.cloudformationUpdateParameters(p.Name, data, map[string]string{})
+	if err != nil {
+		return err
+	}
+
+	_, err = p.CloudFormation().UpdateStack(&cloudformation.UpdateStackInput{
+		Capabilities: []*string{aws.String("CAPABILITY_IAM")},
+		Parameters:   params,
+		StackName:    aws.String(p.Name),
+		TemplateURL:  aws.String(string(template)),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *Provider) cloudformationProgress(name string, opts types.SystemInstallOptions) error {
