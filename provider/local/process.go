@@ -190,7 +190,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	}
 
 	if opts.Memory > 0 {
-		args = append(args, "--memory", fmt.Sprintf("%dM"))
+		args = append(args, "--memory", fmt.Sprintf("%dM", opts.Memory))
 	}
 
 	if opts.Name != "" {
