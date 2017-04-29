@@ -17,6 +17,9 @@ services:
   api:
     build:
       path: api
+    command:
+      development: rerun github.com/convox/praxis
+      test: make test
     environment:
       - DEVELOPMENT=false
       - SECRET
@@ -29,6 +32,8 @@ services:
     image: ubuntu:16.04
     environment:
       - SECRET
+    scale:
+      memory: 512
 tables:
   proxies:
     indexes:

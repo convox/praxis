@@ -141,6 +141,41 @@ func (v *ServiceBuild) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+func (v *ServiceCommand) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var w interface{}
+
+	if err := unmarshal(&w); err != nil {
+		return err
+	}
+
+	switch t := w.(type) {
+	case map[interface{}]interface{}:
+		if c, ok := t["development"].(string); ok {
+			v.Development = c
+		}
+		if c, ok := t["test"].(string); ok {
+			v.Test = c
+		}
+		if c, ok := t["production"].(string); ok {
+			v.Production = c
+		}
+		// type serviceBuild ServiceBuild
+		// var r serviceBuild
+		// if err := remarshal(w, &r); err != nil {
+		//   return err
+		// }
+		// v.Args = r.Args
+		// v.Path = r.Path
+	case string:
+		v.Development = t
+		v.Production = t
+	default:
+		return fmt.Errorf("unknown type for service command: %T", t)
+	}
+
+	return nil
+}
+
 func (v *ServiceCount) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var w interface{}
 

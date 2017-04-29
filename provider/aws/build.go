@@ -1,8 +1,10 @@
 package aws
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -91,7 +93,7 @@ func (p *Provider) BuildGet(app, id string) (*types.Build, error) {
 		return nil, err
 	}
 
-	return buildFromAttributes(id, res.Attributes)
+	return p.buildFromAttributes(id, res.Attributes)
 }
 
 func (p *Provider) BuildList(app string) (types.Builds, error) {
@@ -113,7 +115,7 @@ func (p *Provider) BuildList(app string) (types.Builds, error) {
 	builds := make(types.Builds, len(res.Items))
 
 	for i, item := range res.Items {
-		if build, err := buildFromAttributes(*item.Name, item.Attributes); err == nil {
+		if build, err := p.buildFromAttributes(*item.Name, item.Attributes); err == nil {
 			builds[i] = *build
 		}
 	}
@@ -168,10 +170,17 @@ func (p *Provider) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*
 	return nil, nil
 }
 
-func buildFromAttributes(id string, attrs []*simpledb.Attribute) (*types.Build, error) {
+func (p *Provider) buildFromAttributes(id string, attrs []*simpledb.Attribute) (*types.Build, error) {
 	build := &types.Build{Id: id}
 
 	var err error
+
+	// get app first so we can use it later
+	for _, attr := range attrs {
+		if *attr.Name == "app" {
+			build.App = *attr.Value
+		}
+	}
 
 	for _, attr := range attrs {
 		switch *attr.Name {
@@ -188,7 +197,21 @@ func buildFromAttributes(id string, attrs []*simpledb.Attribute) (*types.Build, 
 				return nil, err
 			}
 		case "manifest":
-			build.Manifest = *attr.Value
+			key := *attr.Value
+
+			if key != "" {
+				r, err := p.ObjectFetch(build.App, key)
+				if err != nil {
+					return nil, err
+				}
+
+				data, err := ioutil.ReadAll(r)
+				if err != nil {
+					return nil, err
+				}
+
+				build.Manifest = string(data)
+			}
 		case "process":
 			build.Process = *attr.Value
 		case "release":
@@ -212,17 +235,30 @@ func (p *Provider) buildStore(build *types.Build) error {
 		return err
 	}
 
+	attrs := []*simpledb.ReplaceableAttribute{
+		{Name: aws.String("app"), Value: aws.String(build.App)},
+		{Name: aws.String("created"), Value: aws.String(build.Created.Format(sortableTime))},
+		{Name: aws.String("ended"), Value: aws.String(build.Ended.Format(sortableTime))},
+		{Name: aws.String("process"), Value: aws.String(build.Process)},
+		{Name: aws.String("release"), Value: aws.String(build.Release)},
+		{Name: aws.String("started"), Value: aws.String(build.Started.Format(sortableTime))},
+		{Name: aws.String("status"), Value: aws.String(build.Status)},
+	}
+
+	if build.Manifest != "" {
+		mo, err := p.ObjectStore(build.App, fmt.Sprintf("convox/build/%s/manifest", build.Id), bytes.NewReader([]byte(build.Manifest)), types.ObjectStoreOptions{})
+		if err != nil {
+			return err
+		}
+
+		attrs = append(attrs, &simpledb.ReplaceableAttribute{
+			Name:  aws.String("manifest"),
+			Value: aws.String(mo.Key),
+		})
+	}
+
 	_, err = p.SimpleDB().PutAttributes(&simpledb.PutAttributesInput{
-		Attributes: []*simpledb.ReplaceableAttribute{
-			{Name: aws.String("app"), Value: aws.String(build.App)},
-			{Name: aws.String("created"), Value: aws.String(build.Created.Format(sortableTime))},
-			{Name: aws.String("ended"), Value: aws.String(build.Ended.Format(sortableTime))},
-			{Name: aws.String("manifest"), Value: aws.String(build.Manifest)},
-			{Name: aws.String("process"), Value: aws.String(build.Process)},
-			{Name: aws.String("release"), Value: aws.String(build.Release)},
-			{Name: aws.String("started"), Value: aws.String(build.Started.Format(sortableTime))},
-			{Name: aws.String("status"), Value: aws.String(build.Status)},
-		},
+		Attributes: attrs,
 		DomainName: aws.String(domain),
 		ItemName:   aws.String(build.Id),
 	})

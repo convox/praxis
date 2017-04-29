@@ -158,7 +158,7 @@ func (p *Provider) appFromStack(stack *cloudformation.Stack) *types.App {
 		tags[*t.Key] = *t.Value
 	}
 
-	if tags["System"] != "convox" || tags["Rack"] != p.Name {
+	if tags["System"] != "convox" || tags["Rack"] != p.Name || tags["Type"] != "app" {
 		return nil
 	}
 

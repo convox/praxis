@@ -58,15 +58,23 @@ func FromEnv() (*Provider, error) {
 
 	region := os.Getenv("AWS_REGION")
 
-	return &Provider{
+	p := &Provider{
 		Config:      &aws.Config{Region: aws.String(region)},
 		Development: os.Getenv("DEVELOPMENT") == "true",
 		Name:        os.Getenv("NAME"),
 		Password:    os.Getenv("PASSWORD"),
 		Region:      region,
 		Session:     session,
-		Version:     os.Getenv("VERSION"),
-	}, nil
+	}
+
+	v, err := p.rackOutput("Version")
+	if err != nil {
+		return nil, err
+	}
+
+	p.Version = v
+
+	return p, nil
 }
 
 func (p *Provider) CloudFormation() *cloudformation.CloudFormation {
@@ -167,6 +175,9 @@ func formationHelpers() template.FuncMap {
 	return template.FuncMap{
 		"lower": func(s string) string {
 			return strings.ToLower(s)
+		},
+		"password": func() (string, error) {
+			return types.Key(32)
 		},
 		"priority": func(app, service string) uint32 {
 			return crc32.ChecksumIEEE([]byte(fmt.Sprintf("%s-%s", app, service))) % 50000

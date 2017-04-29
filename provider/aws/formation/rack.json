@@ -61,12 +61,23 @@
       "Value": { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }
     },
     "Version": {
-      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Version" } },
       "Value": { "Fn::FindInMap": [ "Constants", "Values", "Version" ] }
     },
     "Vpc": {
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Vpc" } },
       "Value": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
+    },
+    "VpcCidr": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:VpcCidr" } },
+      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Cidr" ] }
+    },
+    "VpcSubnet0": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:VpcSubnet0" } },
+      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] }
+    },
+    "VpcSubnet1": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:VpcSubnet1" } },
+      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }
     }
   },
   "Parameters": {

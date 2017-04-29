@@ -11,6 +11,7 @@
       "Default": ""
     },
     "Rack": {
+      "MinLength": "1",
       "Type": "String"
     },
     "Role": {
@@ -20,6 +21,7 @@
   },
   "Resources": {
     {{ template "balancers" . }}
+    {{ template "resources" . }}
     {{ template "services" . }}
 
     "Bucket": {
@@ -51,14 +53,36 @@
 {{ define "balancers" }}
 {{ end }}
 
+{{ define "resources" }}
+  {{ range .Manifest.Resources }}
+    "Resource{{ resource .Name }}": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "Parameters": {
+          "Password": "{{ password }}",
+          "Rack": { "Ref": "Rack" }
+        },
+        "Tags": [
+          { "Key": "Name", "Value": "{{ .Name }}" },
+          { "Key": "Rack", "Value": { "Ref": "Rack" } },
+          { "Key": "Resource", "Value": "{{ .Type }}" },
+          { "Key": "System", "Value": "convox" },
+          { "Key": "Type", "Value": "resource" }
+        ],
+        "TemplateURL": { "Fn::Sub": "http://praxis-releases.s3.amazonaws.com/release/{{ $.Version }}/formation/resource/{{ .Type }}.json" }
+      }
+    },
+  {{ end }}
+{{ end }}
+
 {{ define "services" }}
-  {{ range .Manifest.Services }}
+  {{ range $s := .Manifest.Services }}
     "Service{{ resource .Name }}": {
       "Type": "AWS::ECS::Service",
       "Properties": {
         "Cluster": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Cluster" } },
         "DeploymentConfiguration": { "MinimumHealthyPercent": "50", "MaximumPercent": "200" },
-        "DesiredCount": "2",
+        "DesiredCount": "{{ .Scale.Count.Min }}",
         {{ if .Port.Port }}
           "LoadBalancers": [ {
             "ContainerName": "{{ .Name }}",
@@ -104,11 +128,13 @@
       {{ end }}
       "Properties": {
         "ContainerDefinitions": [ {
-          {{ if .Command }}
-            "Command": [ "sh", "-c", "{{ .Command }}" ],
+          {{ if .Command.Production }}
+            "Command": [ "sh", "-c", "{{ .Command.Production }}" ],
           {{ end }}
-          "Cpu": "128",
           "Environment": [
+            {{ range .Resources }}
+              { "Name": "{{ upper . }}_URL", "Value": { "Fn::GetAtt": [ "Resource{{resource . }}", "Outputs.Url" ] } },
+            {{ end }}
             {{ range $k, $v := $.Env }}
               { "Name": "{{$k}}", "Value": "{{$v}}" },
             {{ end }}
@@ -124,13 +150,13 @@
               "awslogs-stream-prefix": "{{ $.App.Name }}"
             }
           },
-          "Memory": "128",
+          "Memory": "{{ .Scale.Memory }}",
           "Name": "{{ .Name }}",
           {{ with .Port.Port }}
             "PortMappings": [ { "ContainerPort": "{{ . }}", "Protocol": "tcp" } ]
           {{ end }}
         } ],
-        "Family": { "Fn::Sub": "${AWS::StackName}-rack" },
+        "Family": { "Fn::Sub": "${AWS::StackName}-{{ .Name }}" },
         "TaskRoleArn": { "Ref": "Role" },
         "Volumes": [ { "Name": "docker", "Host": { "SourcePath": "/var/run/docker.sock" } } ]
       }
