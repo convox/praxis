@@ -67,13 +67,9 @@
           { "Key": "Rack", "Value": { "Ref": "Rack" } },
           { "Key": "Resource", "Value": "{{ .Type }}" },
           { "Key": "System", "Value": "convox" },
-          { "Key": "Type", "Value": "resource" },
-          { "Key": "Version", "Value": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Version" } } }
+          { "Key": "Type", "Value": "resource" }
         ],
-        "TemplateURL": { "Fn::Sub": [
-          "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/resource/{{ .Type }}.json",
-          { "Version": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Version" } } }
-        ] }
+        "TemplateURL": { "Fn::Sub": "http://praxis-releases.s3.amazonaws.com/release/{{ $.Version }}/formation/resource/{{ .Type }}.json" }
       }
     },
   {{ end }}
@@ -86,7 +82,7 @@
       "Properties": {
         "Cluster": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Cluster" } },
         "DeploymentConfiguration": { "MinimumHealthyPercent": "50", "MaximumPercent": "200" },
-        "DesiredCount": "2",
+        "DesiredCount": "{{ .Scale.Count.Min }}",
         {{ if .Port.Port }}
           "LoadBalancers": [ {
             "ContainerName": "{{ .Name }}",
@@ -132,10 +128,9 @@
       {{ end }}
       "Properties": {
         "ContainerDefinitions": [ {
-          {{ if .Command }}
+          {{ if .Command.Production }}
             "Command": [ "sh", "-c", "{{ .Command.Production }}" ],
           {{ end }}
-          "Cpu": "128",
           "Environment": [
             {{ range .Resources }}
               { "Name": "{{ upper . }}_URL", "Value": { "Fn::GetAtt": [ "Resource{{resource . }}", "Outputs.Url" ] } },
@@ -155,7 +150,7 @@
               "awslogs-stream-prefix": "{{ $.App.Name }}"
             }
           },
-          "Memory": "128",
+          "Memory": "{{ .Scale.Memory }}",
           "Name": "{{ .Name }}",
           {{ with .Port.Port }}
             "PortMappings": [ { "ContainerPort": "{{ . }}", "Protocol": "tcp" } ]

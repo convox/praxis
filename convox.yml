@@ -9,7 +9,6 @@ services:
       - NAME=dev
       - PASSWORD=
       - PROVIDER=local
-      - VERSION=latest
     port: https:3000
     scale:
       count: 1

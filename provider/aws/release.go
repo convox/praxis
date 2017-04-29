@@ -56,6 +56,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		"Env":      r.Env,
 		"Manifest": m,
 		"Release":  r,
+		"Version":  p.Version,
 	}
 
 	data, err := formationTemplate("app", tp)

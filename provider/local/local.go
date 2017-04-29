@@ -2,12 +2,14 @@ package local
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -37,10 +39,21 @@ type Provider struct {
 // FromEnv returns a new local.Provider from env vars
 func FromEnv() (*Provider, error) {
 	p := &Provider{
-		Frontend: coalesce(os.Getenv("PROVIDER_FRONTEND"), "10.42.84.0"),
 		Name:     coalesce(os.Getenv("NAME"), "convox"),
+		Frontend: coalesce(os.Getenv("PROVIDER_FRONTEND"), "10.42.84.0"),
 		Root:     coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
-		Version:  coalesce(os.Getenv("VERSION"), "latest"),
+		Version:  "latest",
+	}
+
+	vf := "/var/convox/version"
+
+	if _, err := os.Stat(vf); !os.IsNotExist(err) {
+		data, err := ioutil.ReadFile(vf)
+		if err != nil {
+			return nil, err
+		}
+
+		p.Version = strings.TrimSpace(string(data))
 	}
 
 	if err := p.Init(); err != nil {

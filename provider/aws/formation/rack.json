@@ -61,7 +61,6 @@
       "Value": { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }
     },
     "Version": {
-      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Version" } },
       "Value": { "Fn::FindInMap": [ "Constants", "Values", "Version" ] }
     },
     "Vpc": {
