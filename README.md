@@ -131,6 +131,18 @@ Praxis utilizes the best underlying infrastructure at each provider to implement
 
     $ convox deploy
 
+## UPDATING
+
+Get the latest version from https://github.com/convox/praxis/releases
+
+#### CLI
+
+    $ cx update VERSION
+    
+#### Rack
+
+    $ cx rack update VERSION
+
 ## COPYRIGHT
 
 Convox, Inc. 2017
