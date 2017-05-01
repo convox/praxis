@@ -104,6 +104,7 @@ func runRack(c *cli.Context) error {
 	info := stdcli.NewInfo()
 
 	info.Add("Name", rack.Name)
+	info.Add("Status", rack.Status)
 	info.Add("Version", rack.Version)
 
 	info.Print()

@@ -8,6 +8,7 @@ type System struct {
 	Name    string `json:"name"`
 	Image   string `json:"image"`
 	Region  string `json:"region"`
+	Status  string `json:"status"`
 	Version string `json:"version"`
 }
 

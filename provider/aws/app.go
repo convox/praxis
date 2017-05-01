@@ -4,10 +4,14 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"os"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/convox/praxis/types"
 )
@@ -106,8 +110,73 @@ func (p *Provider) AppList() (types.Apps, error) {
 	return apps, nil
 }
 
-func (p *Provider) AppLogs(name string) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("unimplemented")
+func (p *Provider) AppLogs(app string, opts types.AppLogsOptions) (io.ReadCloser, error) {
+	group, err := p.appResource(app, "Logs")
+	if err != nil {
+		return nil, err
+	}
+
+	r, w := io.Pipe()
+
+	go p.subscribeLogs(group, opts, w)
+
+	return r, nil
+}
+
+func (p *Provider) subscribeLogs(group string, opts types.AppLogsOptions, w io.WriteCloser) error {
+	defer w.Close()
+
+	start := time.Now().Add(-2 * time.Minute)
+
+	if !opts.Since.IsZero() {
+		start = opts.Since
+	}
+
+	req := &cloudwatchlogs.FilterLogEventsInput{
+		Interleaved:  aws.Bool(true),
+		LogGroupName: aws.String(group),
+		StartTime:    aws.Int64(start.UTC().Unix() * 1000),
+	}
+
+	if opts.Filter != "" {
+		req.FilterPattern = aws.String(opts.Filter)
+	}
+
+	for {
+		events := []*cloudwatchlogs.FilteredLogEvent{}
+
+		err := p.CloudWatchLogs().FilterLogEventsPages(req, func(res *cloudwatchlogs.FilterLogEventsOutput, last bool) bool {
+			for _, e := range res.Events {
+				events = append(events, e)
+			}
+
+			return true
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		}
+
+		sort.Slice(events, func(i, j int) bool { return *events[i].Timestamp < *events[j].Timestamp })
+
+		for _, e := range events {
+			parts := strings.SplitN(*e.LogStreamName, "/", 3)
+
+			if len(parts) == 3 {
+				pp := strings.Split(parts[2], "-")
+				ts := time.Unix(*e.Timestamp/1000, *e.Timestamp%1000*1000).UTC()
+
+				fmt.Fprintf(w, "%s %s/%s/%s %s\n", ts.Format(printableTime), parts[0], parts[1], pp[len(pp)-1], *e.Message)
+			}
+		}
+
+		if !opts.Follow {
+			break
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+
+	return nil
 }
 
 func (p *Provider) AppRegistry(app string) (*types.Registry, error) {
@@ -170,31 +239,6 @@ func (p *Provider) appFromStack(stack *cloudformation.Stack) *types.App {
 	return &types.App{
 		Name:    name,
 		Release: params["Release"],
-		Status:  appStatusFromStackStatus(*stack.StackStatus),
-	}
-}
-
-func appStatusFromStackStatus(status string) string {
-	switch status {
-	case "CREATE_COMPLETE":
-		return "running"
-	case "CREATE_IN_PROGRESS":
-		return "creating"
-	case "DELETE_IN_PROGRESS":
-		return "deleting"
-	case "DELETE_FAILED":
-		return "error"
-	case "ROLLBACK_COMPLETE":
-		return "running"
-	case "ROLLBACK_IN_PROGRESS":
-		return "rollback"
-	case "UPDATE_COMPLETE":
-		return "running"
-	case "UPDATE_IN_PROGRESS":
-		return "updating"
-	case "UPDATE_ROLLBACK_COMPLETE":
-		return "running"
-	default:
-		return status
+		Status:  humanStatus(*stack.StackStatus),
 	}
 }

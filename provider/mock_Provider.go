@@ -93,13 +93,13 @@ func (_m *MockProvider) AppList() (types.Apps, error) {
 	return r0, r1
 }
 
-// AppLogs provides a mock function with given fields: app
-func (_m *MockProvider) AppLogs(app string) (io.ReadCloser, error) {
-	ret := _m.Called(app)
+// AppLogs provides a mock function with given fields: app, opts
+func (_m *MockProvider) AppLogs(app string, opts types.AppLogsOptions) (io.ReadCloser, error) {
+	ret := _m.Called(app, opts)
 
 	var r0 io.ReadCloser
-	if rf, ok := ret.Get(0).(func(string) io.ReadCloser); ok {
-		r0 = rf(app)
+	if rf, ok := ret.Get(0).(func(string, types.AppLogsOptions) io.ReadCloser); ok {
+		r0 = rf(app, opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(io.ReadCloser)
@@ -107,8 +107,8 @@ func (_m *MockProvider) AppLogs(app string) (io.ReadCloser, error) {
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(app)
+	if rf, ok := ret.Get(1).(func(string, types.AppLogsOptions) error); ok {
+		r1 = rf(app, opts)
 	} else {
 		r1 = ret.Error(1)
 	}

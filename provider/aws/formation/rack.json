@@ -41,13 +41,16 @@
         ".rack.convox.io"
       ] ] }
     },
-    "Endpoint": { "Value": { "Fn::Join": [ "", [
-      "https://rack.",
-      { "Fn::Select": [ 0, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
-      ".",
-      { "Fn::Select": [ 1, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
-      ".rack.convox.io"
-    ] ] } },
+    "Endpoint": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Endpoint" } },
+      "Value": { "Fn::Join": [ "", [
+        "https://rack.",
+        { "Fn::Select": [ 0, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
+        ".",
+        { "Fn::Select": [ 1, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
+        ".rack.convox.io"
+      ] ] }
+    },
     "ServiceRole": {
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:ServiceRole" } },
       "Value": { "Ref": "RackServiceRole" }

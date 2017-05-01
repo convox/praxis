@@ -16,7 +16,7 @@ type Provider interface {
 	AppDelete(name string) error
 	AppGet(name string) (*types.App, error)
 	AppList() (types.Apps, error)
-	AppLogs(app string) (io.ReadCloser, error)
+	AppLogs(app string, opts types.AppLogsOptions) (io.ReadCloser, error)
 	AppRegistry(app string) (*types.Registry, error)
 
 	BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error)

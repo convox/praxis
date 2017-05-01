@@ -1,6 +1,9 @@
 services:
   rack:
     build: .
+    command:
+      development: rerun -watch . -build github.com/convox/praxis/cmd/rack
+      test: make test
     environment:
       - AWS_REGION=
       - AWS_ACCESS_KEY_ID=

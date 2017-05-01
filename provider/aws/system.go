@@ -29,12 +29,23 @@ func (p *Provider) SystemGet() (*types.System, error) {
 		return nil, err
 	}
 
+	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(p.Name),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Stacks) != 1 {
+		return nil, fmt.Errorf("could not find stack: %s", p.Name)
+	}
+
 	system := &types.System{
 		Account: aid,
 		Domain:  domain,
-		Name:    p.Name,
 		Image:   fmt.Sprintf("convox/praxis:%s", p.Version),
+		Name:    p.Name,
 		Region:  os.Getenv("AWS_REGION"),
+		Status:  humanStatus(*res.Stacks[0].StackStatus),
 		Version: p.Version,
 	}
 

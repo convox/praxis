@@ -84,7 +84,7 @@ func TestManifestLoad(t *testing.T) {
 				},
 				Scale: manifest.ServiceScale{
 					Count:  manifest.ServiceCount{Min: 1},
-					Memory: 256,
+					Memory: 512,
 				},
 			},
 		},
