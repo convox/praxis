@@ -120,7 +120,12 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 	}
 
 	if opts.Name == "" {
-		opts.Name = fmt.Sprintf("%s.%s.process.%s", p.Name, app, opts.Service)
+		rs, err := types.Key(6)
+		if err != nil {
+			return "", err
+		}
+
+		opts.Name = fmt.Sprintf("%s.%s.process.%s.%s", p.Name, app, opts.Service, rs)
 	}
 
 	args := []string{"run", "--detach"}
