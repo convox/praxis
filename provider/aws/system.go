@@ -49,7 +49,6 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 		Capabilities: []*string{aws.String("CAPABILITY_IAM")},
 		Parameters: []*cloudformation.Parameter{
 			&cloudformation.Parameter{ParameterKey: aws.String("Password"), ParameterValue: aws.String(opts.Password)},
-			&cloudformation.Parameter{ParameterKey: aws.String("Version"), ParameterValue: aws.String(version)},
 		},
 		StackName: aws.String(name),
 		Tags: []*cloudformation.Tag{
