@@ -69,7 +69,7 @@ func FromEnv() (*Provider, error) {
 
 	v, err := p.rackOutput("Version")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	p.Version = v
