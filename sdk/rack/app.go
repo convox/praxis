@@ -3,6 +3,7 @@ package rack
 import (
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/convox/praxis/types"
 )
@@ -32,8 +33,19 @@ func (c *Client) AppList() (apps types.Apps, err error) {
 	return
 }
 
-func (c *Client) AppLogs(app string) (io.ReadCloser, error) {
-	res, err := c.GetStream(fmt.Sprintf("/apps/%s/logs", app), RequestOptions{})
+func (c *Client) AppLogs(app string, opts types.AppLogsOptions) (io.ReadCloser, error) {
+	ro := RequestOptions{
+		Query: Query{
+			"filter": opts.Filter,
+			"follow": fmt.Sprintf("%t", opts.Follow),
+		},
+	}
+
+	if !opts.Since.IsZero() {
+		ro.Query["since"] = strconv.Itoa(int(opts.Since.UTC().Unix()))
+	}
+
+	res, err := c.GetStream(fmt.Sprintf("/apps/%s/logs", app), ro)
 	if err != nil {
 		return nil, err
 	}

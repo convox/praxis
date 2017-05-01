@@ -2,14 +2,12 @@ package local
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
@@ -45,15 +43,8 @@ func FromEnv() (*Provider, error) {
 		Version:  "latest",
 	}
 
-	vf := "/var/convox/version"
-
-	if _, err := os.Stat(vf); !os.IsNotExist(err) {
-		data, err := ioutil.ReadFile(vf)
-		if err != nil {
-			return nil, err
-		}
-
-		p.Version = strings.TrimSpace(string(data))
+	if v := os.Getenv("VERSION"); v != "" {
+		p.Version = v
 	}
 
 	if err := p.Init(); err != nil {

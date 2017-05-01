@@ -33,7 +33,8 @@ import (
 )
 
 const (
-	sortableTime = "20060102.150405.000000000"
+	printableTime = "2006-01-02 15:04:05"
+	sortableTime  = "20060102.150405.000000000"
 )
 
 type Provider struct {
@@ -367,6 +368,35 @@ func (p *Provider) dockerHostForInstance(instance string) (string, error) {
 	}
 
 	return host, nil
+}
+
+func humanStatus(status string) string {
+	switch status {
+	case "CREATE_COMPLETE":
+		return "running"
+	case "CREATE_IN_PROGRESS":
+		return "creating"
+	case "DELETE_IN_PROGRESS":
+		return "deleting"
+	case "DELETE_FAILED":
+		return "error"
+	case "ROLLBACK_COMPLETE":
+		return "running"
+	case "ROLLBACK_IN_PROGRESS":
+		return "rollback"
+	case "UPDATE_COMPLETE":
+		return "running"
+	case "UPDATE_IN_PROGRESS":
+		return "updating"
+	case "UPDATE_ROLLBACK_COMPLETE":
+		return "running"
+	case "UPDATE_ROLLBACK_IN_PROGRESS":
+		return "rollback"
+	case "UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS":
+		return "rollback"
+	default:
+		return status
+	}
 }
 
 func (p *Provider) rackOutput(output string) (string, error) {

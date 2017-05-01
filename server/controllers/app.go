@@ -3,8 +3,11 @@ package controllers
 import (
 	"net/http"
 	"sort"
+	"strconv"
+	"time"
 
 	"github.com/convox/api"
+	"github.com/convox/praxis/types"
 )
 
 func AppCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
@@ -59,7 +62,21 @@ func AppLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		return err
 	}
 
-	logs, err := Provider.AppLogs(app)
+	opts := types.AppLogsOptions{
+		Filter: c.Query("filter"),
+		Follow: c.Query("follow") == "true",
+	}
+
+	if since := c.Query("since"); since != "" {
+		t, err := strconv.Atoi(since)
+		if err != nil {
+			return err
+		}
+
+		opts.Since = time.Unix(int64(t), 0)
+	}
+
+	logs, err := Provider.AppLogs(app, opts)
 	if err != nil {
 		return err
 	}

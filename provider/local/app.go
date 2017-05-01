@@ -81,7 +81,7 @@ func (p *Provider) AppList() (types.Apps, error) {
 	return apps, nil
 }
 
-func (p *Provider) AppLogs(app string) (io.ReadCloser, error) {
+func (p *Provider) AppLogs(app string, opts types.AppLogsOptions) (io.ReadCloser, error) {
 	pss, err := p.ProcessList(app, types.ProcessListOptions{})
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (p *Provider) AppLogs(app string) (io.ReadCloser, error) {
 	r, w := io.Pipe()
 
 	for _, ps := range pss {
-		go p.processLogs(app, ps, w)
+		go p.processLogs(app, ps, opts, w)
 	}
 
 	return r, nil
@@ -106,7 +106,9 @@ func (p *Provider) AppRegistry(app string) (*types.Registry, error) {
 	return registry, nil
 }
 
-func (p *Provider) processLogs(app string, ps types.Process, w io.Writer) {
+func (p *Provider) processLogs(app string, ps types.Process, opts types.AppLogsOptions, w io.Writer) {
+	// TODO: use opts
+
 	r, err := p.ProcessLogs(app, ps.Id)
 	if err != nil {
 		w.Write([]byte(fmt.Sprintf("error: %s\n", err)))

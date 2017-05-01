@@ -114,7 +114,7 @@ func runStart(c *cli.Context) error {
 		go watchChanges(m, app, s.Name, ch)
 	}
 
-	logs, err := Rack.AppLogs(app)
+	logs, err := Rack.AppLogs(app, types.AppLogsOptions{})
 	if err != nil {
 		return err
 	}

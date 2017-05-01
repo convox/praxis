@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 type App struct {
 	Name string
 
@@ -8,3 +10,9 @@ type App struct {
 }
 
 type Apps []App
+
+type AppLogsOptions struct {
+	Filter string
+	Follow bool
+	Since  time.Time
+}
