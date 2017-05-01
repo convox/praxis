@@ -88,7 +88,7 @@ Praxis utilizes the best underlying infrastructure at each provider to implement
 
 #### MacOS
 
-    $ curl https://s3.amazonaws.com/praxis-releases/cli/macos/cx -o /usr/local/bin/cx
+    $ curl https://s3.amazonaws.com/praxis-releases/cli/darwin/cx -o /usr/local/bin/cx
     $ chmod +x /usr/local/bin/cx
 
 #### Linux

@@ -38,6 +38,10 @@ func main() {
 	app.Version = Version
 	app.Usage = "convox management tool"
 
+	stdcli.VersionPrinter(func(c *cli.Context) {
+		runVersion(c)
+	})
+
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		os.Exit(1)
