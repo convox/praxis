@@ -132,6 +132,8 @@
             "Command": [ "sh", "-c", "{{ .Command.Production }}" ],
           {{ end }}
           "Environment": [
+            { "Name": "APP", "Value": "{{ $.App.Name }}" },
+            { "Name": "RACK_URL", "Value": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Endpoint" } },
             {{ range .Resources }}
               { "Name": "{{ upper . }}_URL", "Value": { "Fn::GetAtt": [ "Resource{{resource . }}", "Outputs.Url" ] } },
             {{ end }}
