@@ -516,6 +516,24 @@
 			"revisionTime": "2016-04-07T17:41:26Z"
 		},
 		{
+			"checksumSHA1": "YjZiQ5N552dJ7GpJ2P4TTRu4PKI=",
+			"path": "github.com/inconshreveable/go-update",
+			"revision": "8152e7eb6ccf8679a64582a66b78519688d156ad",
+			"revisionTime": "2016-01-12T19:33:35Z"
+		},
+		{
+			"checksumSHA1": "LeFW+ad/zlj30+Z0O4wwnXrVUSQ=",
+			"path": "github.com/inconshreveable/go-update/internal/binarydist",
+			"revision": "8152e7eb6ccf8679a64582a66b78519688d156ad",
+			"revisionTime": "2016-01-12T19:33:35Z"
+		},
+		{
+			"checksumSHA1": "H63+DW/S2nASpHk59G1wEUZD1qk=",
+			"path": "github.com/inconshreveable/go-update/internal/osext",
+			"revision": "8152e7eb6ccf8679a64582a66b78519688d156ad",
+			"revisionTime": "2016-01-12T19:33:35Z"
+		},
+		{
 			"checksumSHA1": "3/Bhy+ua/DCv2ElMD5GzOYSGN6g=",
 			"path": "github.com/jmespath/go-jmespath",
 			"revision": "c01cf91b011868172fdcd9f41838e80c9d716264",
@@ -550,12 +568,6 @@
 			"path": "github.com/miekg/dns",
 			"revision": "5a15a35f5f671cf6ad8b316b50607c76e5e87fb6",
 			"revisionTime": "2017-02-15T20:40:16Z"
-		},
-		{
-			"checksumSHA1": "BT3BK4a+5+8WCnM1e71uIwJGsBs=",
-			"path": "github.com/mitchellh/go-homedir",
-			"revision": "1f6da4a72e57d4e7edd4a7295a585e0a3999a2d4",
-			"revisionTime": "2015-04-17T22:12:18Z"
 		},
 		{
 			"checksumSHA1": "Ssz9STAL5P2+1poiM63klFjhqhE=",
@@ -606,8 +618,8 @@
 		{
 			"checksumSHA1": "+Bpj4WCjvjD0IBgkeW4nfuVrmdQ=",
 			"path": "golang.org/x/exp/inotify",
-			"revision": "47ce6ee20a163c4dcbcb613bbea6d62c77bc7bfc",
-			"revisionTime": "2017-03-10T10:08:48Z"
+			"revision": "239d448f23a0d683c1ab7225da01af038355f5e9",
+			"revisionTime": "2017-04-22T22:56:19Z"
 		},
 		{
 			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
