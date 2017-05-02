@@ -39,6 +39,11 @@ func TestManifestLoad(t *testing.T) {
 				},
 			},
 		},
+		Keys: manifest.Keys{
+			manifest.Key{
+				Name: "master",
+			},
+		},
 		Queues: manifest.Queues{
 			manifest.Queue{
 				Name:    "traffic",

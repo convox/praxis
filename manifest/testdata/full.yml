@@ -7,6 +7,8 @@ balancers:
     443: proxy:3002
     1080: proxy:3003
     2133: proxy:3000
+keys:
+  master:
 queues:
   traffic:
     timeout: 5m

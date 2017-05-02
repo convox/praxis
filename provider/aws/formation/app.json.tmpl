@@ -21,6 +21,7 @@
   },
   "Resources": {
     {{ template "balancers" . }}
+    {{ template "keys" . }}
     {{ template "resources" . }}
     {{ template "services" . }}
 
@@ -51,6 +52,33 @@
 }
 
 {{ define "balancers" }}
+{{ end }}
+
+{{ define "keys" }}
+  {{ range .Manifest.Keys }}
+    "Key{{ resource .Name }}": {
+      "Type": "AWS::KMS::Key",
+      "Properties": {
+        "Description": "{{ $.App.Name }} {{ .Name }}",
+        "KeyPolicy": {
+          "Version": "2012-10-17",
+          "Statement": [ {
+            "Effect": "Allow",
+            "Principal": { "AWS": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:RackRole" } } },
+            "Action": [ "kms:*" ],
+            "Resource": "*"
+          } ]
+        }
+      }
+    },
+    "Key{{ resource .Name }}Alias": {
+      "Type": "AWS::KMS::Alias",
+      "Properties": {
+        "AliasName": { "Fn::Sub": "${AWS::StackName}-{{ .Name }}" },
+        "TargetKeyId": { "Ref": "Key{{ resource .Name }}" }
+      }
+    },
+  {{ end }}
 {{ end }}
 
 {{ define "resources" }}
