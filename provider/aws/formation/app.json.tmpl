@@ -171,9 +171,17 @@
           {{ if .Command.Production }}
             "Command": [ "sh", "-c", "{{ .Command.Production }}" ],
           {{ end }}
+          "DockerLabels": {
+            "convox.app": "{{ $.App.Name }}",
+            "convox.rack": { "Ref": "Rack" },
+            "convox.release": "{{ $.Release.Id }}",
+            "convox.service": "{{ .Name }}",
+            "convox.type": "service"
+          },
           "Environment": [
             { "Name": "APP", "Value": "{{ $.App.Name }}" },
             { "Name": "RACK_URL", "Value": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Endpoint" } } },
+            { "Name": "RELEASE", "Value": "{{ $.Release.Id }}" },
             {{ range .Resources }}
               { "Name": "{{ upper . }}_URL", "Value": { "Fn::GetAtt": [ "Resource{{resource . }}", "Outputs.Url" ] } },
             {{ end }}

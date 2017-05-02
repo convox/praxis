@@ -206,15 +206,15 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		args = append(args, "-p", fmt.Sprintf("%d:%d", from, to))
 	}
 
-	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
-	args = append(args, "-e", fmt.Sprintf("RACK=%s", p.Name))
-
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
 
+	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
 	args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s:3000", hostname))
+	args = append(args, "-e", fmt.Sprintf("RELEASE=%s", opts.Release))
+
 	args = append(args, "--link", hostname)
 
 	args = append(args, "--label", fmt.Sprintf("convox.app=%s", app))

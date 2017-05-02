@@ -246,8 +246,8 @@ func (p *Provider) containerStart(c container, app, release string) (string, err
 	}
 
 	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
-	args = append(args, "-e", fmt.Sprintf("RACK=%s", p.Name))
 	args = append(args, "-e", fmt.Sprintf("RACK_URL=https://%s:3000", hostname))
+	args = append(args, "-e", fmt.Sprintf("RELEASE=%s", release))
 	args = append(args, "--link", hostname)
 
 	args = append(args, c.Image)
