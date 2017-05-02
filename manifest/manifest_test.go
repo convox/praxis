@@ -46,8 +46,7 @@ func TestManifestLoad(t *testing.T) {
 		},
 		Queues: manifest.Queues{
 			manifest.Queue{
-				Name:    "traffic",
-				Timeout: "5m",
+				Name: "traffic",
 			},
 		},
 		Resources: manifest.Resources{

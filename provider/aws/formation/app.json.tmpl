@@ -22,6 +22,7 @@
   "Resources": {
     {{ template "balancers" . }}
     {{ template "keys" . }}
+    {{ template "queues" . }}
     {{ template "resources" . }}
     {{ template "services" . }}
 
@@ -76,6 +77,17 @@
       "Properties": {
         "AliasName": { "Fn::Sub": "${AWS::StackName}-{{ .Name }}" },
         "TargetKeyId": { "Ref": "Key{{ resource .Name }}" }
+      }
+    },
+  {{ end }}
+{{ end }}
+
+{{ define "queues" }}
+  {{ range .Manifest.Queues }}
+    "Queue{{ resource .Name }}": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "ReceiveMessageWaitTimeSeconds": "20"
       }
     },
   {{ end }}
