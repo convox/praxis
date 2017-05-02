@@ -47,18 +47,13 @@ func (p *Provider) QueueStore(app, queue string, attrs map[string]string) error 
 		return err
 	}
 
-	res, err := p.SQS().SendMessage(&sqs.SendMessageInput{
+	_, err = p.SQS().SendMessage(&sqs.SendMessageInput{
 		QueueUrl:    aws.String(q),
 		MessageBody: aws.String(string(data)),
 	})
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("app = %+v\n", app)
-	fmt.Printf("queue = %+v\n", queue)
-	fmt.Printf("attrs = %+v\n", attrs)
-	fmt.Printf("res = %+v\n", res)
 
 	return nil
 }
