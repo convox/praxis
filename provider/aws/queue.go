@@ -18,6 +18,7 @@ func (p *Provider) QueueFetch(app, queue string, opts types.QueueFetchOptions) (
 	res, err := p.SQS().ReceiveMessage(&sqs.ReceiveMessageInput{
 		QueueUrl:            aws.String(q),
 		MaxNumberOfMessages: aws.Int64(1),
+		WaitTimeSeconds:     aws.Int64(int64(coalescei(opts.Timeout, 10))),
 	})
 	if err != nil {
 		return nil, err

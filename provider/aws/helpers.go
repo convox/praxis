@@ -17,6 +17,16 @@ func coalesce(strings ...string) string {
 	return ""
 }
 
+func coalescei(ints ...int) int {
+	for _, i := range ints {
+		if i > 0 {
+			return i
+		}
+	}
+
+	return 0
+}
+
 func (p *Provider) cloudformationUpdateParameters(stack string, body []byte, updates map[string]string) ([]*cloudformation.Parameter, error) {
 	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stack),
