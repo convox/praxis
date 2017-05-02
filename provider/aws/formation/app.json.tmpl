@@ -75,7 +75,7 @@
     "Key{{ resource .Name }}Alias": {
       "Type": "AWS::KMS::Alias",
       "Properties": {
-        "AliasName": { "Fn::Sub": "${AWS::StackName}-{{ .Name }}" },
+        "AliasName": { "Fn::Sub": "alias/${AWS::StackName}-{{ .Name }}" },
         "TargetKeyId": { "Ref": "Key{{ resource .Name }}" }
       }
     },
