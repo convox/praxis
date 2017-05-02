@@ -24,8 +24,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/simpledb"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
@@ -66,14 +68,12 @@ func FromEnv() (*Provider, error) {
 		Password:    os.Getenv("PASSWORD"),
 		Region:      region,
 		Session:     session,
+		Version:     os.Getenv("VERSION"),
 	}
 
-	v, err := p.rackOutput("Version")
-	if err != nil {
-		return nil, err
+	if v, err := p.rackOutput("Version"); err == nil && v != "" {
+		p.Version = v
 	}
-
-	p.Version = v
 
 	return p, nil
 }
@@ -106,6 +106,10 @@ func (p *Provider) EC2() *ec2.EC2 {
 	return ec2.New(p.Session, p.Config)
 }
 
+func (p *Provider) KMS() *kms.KMS {
+	return kms.New(p.Session, p.Config)
+}
+
 func (p *Provider) IAM() *iam.IAM {
 	return iam.New(p.Session, p.Config)
 }
@@ -116,6 +120,10 @@ func (p *Provider) S3() *s3.S3 {
 
 func (p *Provider) SimpleDB() *simpledb.SimpleDB {
 	return simpledb.New(p.Session, p.Config)
+}
+
+func (p *Provider) SQS() *sqs.SQS {
+	return sqs.New(p.Session, p.Config)
 }
 
 func (p *Provider) STS() *sts.STS {
@@ -176,9 +184,6 @@ func formationHelpers() template.FuncMap {
 	return template.FuncMap{
 		"lower": func(s string) string {
 			return strings.ToLower(s)
-		},
-		"password": func() (string, error) {
-			return types.Key(32)
 		},
 		"priority": func(app, service string) uint32 {
 			return crc32.ChecksumIEEE([]byte(fmt.Sprintf("%s-%s", app, service))) % 50000

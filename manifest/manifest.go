@@ -13,6 +13,7 @@ import (
 
 type Manifest struct {
 	Balancers Balancers
+	Keys      Keys
 	Queues    Queues
 	Resources Resources
 	Services  Services

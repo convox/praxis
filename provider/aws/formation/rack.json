@@ -51,6 +51,10 @@
         ".rack.convox.io"
       ] ] }
     },
+    "RackRole": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:RackRole" } },
+      "Value": { "Fn::GetAtt": [ "RackRole", "Arn" ] }
+    },
     "ServiceRole": {
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:ServiceRole" } },
       "Value": { "Ref": "RackServiceRole" }

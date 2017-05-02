@@ -77,6 +77,15 @@ func (v *BalancerEndpoint) SetName(name string) error {
 	return nil
 }
 
+func (v *Keys) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return unmarshalMapSlice(unmarshal, v)
+}
+
+func (v *Key) SetName(name string) error {
+	v.Name = name
+	return nil
+}
+
 func (v Queues) MarshalYAML() (interface{}, error) {
 	return nil, fmt.Errorf("unimplemented")
 }

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/convox/api"
@@ -38,5 +39,7 @@ func QueueStore(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		return err
 	}
 
-	return c.RenderJSON("")
+	fmt.Fprintf(w, "ok")
+
+	return nil
 }
