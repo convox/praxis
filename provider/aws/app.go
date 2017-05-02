@@ -123,62 +123,6 @@ func (p *Provider) AppLogs(app string, opts types.AppLogsOptions) (io.ReadCloser
 	return r, nil
 }
 
-func (p *Provider) subscribeLogs(group string, opts types.AppLogsOptions, w io.WriteCloser) error {
-	defer w.Close()
-
-	start := time.Now().Add(-2 * time.Minute)
-
-	if !opts.Since.IsZero() {
-		start = opts.Since
-	}
-
-	req := &cloudwatchlogs.FilterLogEventsInput{
-		Interleaved:  aws.Bool(true),
-		LogGroupName: aws.String(group),
-		StartTime:    aws.Int64(start.UTC().Unix() * 1000),
-	}
-
-	if opts.Filter != "" {
-		req.FilterPattern = aws.String(opts.Filter)
-	}
-
-	for {
-		events := []*cloudwatchlogs.FilteredLogEvent{}
-
-		err := p.CloudWatchLogs().FilterLogEventsPages(req, func(res *cloudwatchlogs.FilterLogEventsOutput, last bool) bool {
-			for _, e := range res.Events {
-				events = append(events, e)
-			}
-
-			return true
-		})
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %s\n", err)
-		}
-
-		sort.Slice(events, func(i, j int) bool { return *events[i].Timestamp < *events[j].Timestamp })
-
-		for _, e := range events {
-			parts := strings.SplitN(*e.LogStreamName, "/", 3)
-
-			if len(parts) == 3 {
-				pp := strings.Split(parts[2], "-")
-				ts := time.Unix(*e.Timestamp/1000, *e.Timestamp%1000*1000).UTC()
-
-				fmt.Fprintf(w, "%s %s/%s/%s %s\n", ts.Format(printableTime), parts[0], parts[1], pp[len(pp)-1], *e.Message)
-			}
-		}
-
-		if !opts.Follow {
-			break
-		}
-
-		time.Sleep(1 * time.Second)
-	}
-
-	return nil
-}
-
 func (p *Provider) AppRegistry(app string) (*types.Registry, error) {
 	account, err := p.accountID()
 	if err != nil {
@@ -241,4 +185,60 @@ func (p *Provider) appFromStack(stack *cloudformation.Stack) *types.App {
 		Release: params["Release"],
 		Status:  humanStatus(*stack.StackStatus),
 	}
+}
+
+func (p *Provider) subscribeLogs(group string, opts types.AppLogsOptions, w io.WriteCloser) error {
+	defer w.Close()
+
+	start := time.Now().Add(-2 * time.Minute)
+
+	if !opts.Since.IsZero() {
+		start = opts.Since
+	}
+
+	req := &cloudwatchlogs.FilterLogEventsInput{
+		Interleaved:  aws.Bool(true),
+		LogGroupName: aws.String(group),
+		StartTime:    aws.Int64(start.UTC().Unix() * 1000),
+	}
+
+	if opts.Filter != "" {
+		req.FilterPattern = aws.String(opts.Filter)
+	}
+
+	for {
+		events := []*cloudwatchlogs.FilteredLogEvent{}
+
+		err := p.CloudWatchLogs().FilterLogEventsPages(req, func(res *cloudwatchlogs.FilterLogEventsOutput, last bool) bool {
+			for _, e := range res.Events {
+				events = append(events, e)
+			}
+
+			return true
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		}
+
+		sort.Slice(events, func(i, j int) bool { return *events[i].Timestamp < *events[j].Timestamp })
+
+		for _, e := range events {
+			parts := strings.SplitN(*e.LogStreamName, "/", 3)
+
+			if len(parts) == 3 {
+				pp := strings.Split(parts[2], "-")
+				ts := time.Unix(*e.Timestamp/1000, *e.Timestamp%1000*1000).UTC()
+
+				fmt.Fprintf(w, "%s %s/%s/%s %s\n", ts.Format(printableTime), parts[0], parts[1], pp[len(pp)-1], *e.Message)
+			}
+		}
+
+		if !opts.Follow {
+			break
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+
+	return nil
 }
