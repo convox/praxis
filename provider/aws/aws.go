@@ -391,6 +391,8 @@ func humanStatus(status string) string {
 		return "rollback"
 	case "UPDATE_COMPLETE":
 		return "running"
+	case "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS":
+		return "updating"
 	case "UPDATE_IN_PROGRESS":
 		return "updating"
 	case "UPDATE_ROLLBACK_COMPLETE":
@@ -495,7 +497,6 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 
 	aenv := map[string]string{
 		"APP":      app,
-		"RACK":     p.Name,
 		"RACK_URL": u.String(),
 	}
 

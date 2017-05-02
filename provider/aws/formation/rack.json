@@ -352,6 +352,12 @@
           {
             "Command": [ "bin/rack" ],
             "Cpu": "128",
+            "DockerLabels": {
+              "convox.rack": { "Ref": "AWS::StackName" },
+              "convox.release": { "Fn::FindInMap": [ "Constants", "Values", "Version" ] },
+              "convox.service": "rack",
+              "convox.type": "service"
+            },
             "Environment": [
               { "Name": "AWS_REGION", "Value": { "Ref": "AWS::Region" } },
               { "Name": "NAME", "Value": { "Ref": "AWS::StackName"} },

@@ -13,6 +13,7 @@ type Process struct {
 	Release string    `json:"release"`
 	Service string    `json:"service"`
 	Started time.Time `json:"started"`
+	Status  string    `json:"status"`
 	Type    string    `json:"type"`
 }
 
