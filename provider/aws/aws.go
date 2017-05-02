@@ -66,14 +66,12 @@ func FromEnv() (*Provider, error) {
 		Password:    os.Getenv("PASSWORD"),
 		Region:      region,
 		Session:     session,
+		Version:     os.Getenv("VERSION"),
 	}
 
-	v, err := p.rackOutput("Version")
-	if err != nil {
-		return nil, err
+	if v, err := p.rackOutput("Version"); err == nil && v != "" {
+		p.Version = v
 	}
-
-	p.Version = v
 
 	return p, nil
 }
