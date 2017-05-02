@@ -99,7 +99,7 @@
       "Type": "AWS::CloudFormation::Stack",
       "Properties": {
         "Parameters": {
-          "Password": "{{ password }}",
+          "Password": { "Fn::Base64": { "Fn::Select": [ 2, { "Fn::Split": [ "/", { "Ref": "AWS::StackId" } ] } ] } },
           "Rack": { "Ref": "Rack" }
         },
         "Tags": [
