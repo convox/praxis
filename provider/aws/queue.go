@@ -18,7 +18,6 @@ func (p *Provider) QueueFetch(app, queue string, opts types.QueueFetchOptions) (
 	res, err := p.SQS().ReceiveMessage(&sqs.ReceiveMessageInput{
 		QueueUrl:            aws.String(q),
 		MaxNumberOfMessages: aws.Int64(1),
-		WaitTimeSeconds:     aws.Int64(1),
 	})
 	if err != nil {
 		return nil, err
@@ -30,6 +29,14 @@ func (p *Provider) QueueFetch(app, queue string, opts types.QueueFetchOptions) (
 	var body map[string]string
 
 	if err := json.Unmarshal([]byte(*res.Messages[0].Body), &body); err != nil {
+		return nil, err
+	}
+
+	_, err = p.SQS().DeleteMessage(&sqs.DeleteMessageInput{
+		QueueUrl:      aws.String(q),
+		ReceiptHandle: res.Messages[0].ReceiptHandle,
+	})
+	if err != nil {
 		return nil, err
 	}
 
