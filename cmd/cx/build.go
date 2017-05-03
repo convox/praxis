@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
-	"github.com/convox/rack/cmd/convox/helpers"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/archive"
 	cli "gopkg.in/urfave/cli.v1"
