@@ -20,3 +20,21 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/convox:/var/convox
+workflows:
+  change:
+    create:
+      - test
+      - create: staging/praxis-$branch
+      - deploy: staging/praxis-$branch
+    update:
+      - test
+      - deploy: staging/praxis-$branch
+    close:
+      - delete: staging/praxis-$branch
+  merge:
+    demo:
+      - deploy: demo/praxis-demo
+    master:
+      - test
+      - app: staging/praxis-release
+      - run: bin/release
