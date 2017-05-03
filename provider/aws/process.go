@@ -59,9 +59,26 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 }
 
 func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
+	group, err := p.appResource(app, "Logs")
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := p.taskForPid(pid)
+	if err != nil {
+		return nil, err
+	}
+	if len(t.Containers) != 1 {
+		return nil, fmt.Errorf("invalid container for task: %s\n", pid)
+	}
+
+	stream := fmt.Sprintf("convox/%s/%s", *t.Containers[0].Name, pid)
+
+	fmt.Printf("stream = %+v\n", stream)
+
 	r, w := io.Pipe()
 
-	go p.cloudwatchLogStream(app, pid, w)
+	go p.subscribeLogs(group, stream, types.LogsOptions{Follow: true}, w)
 
 	return r, nil
 }
@@ -96,7 +113,7 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 		return "", fmt.Errorf("unable to start process")
 	}
 
-	parts := strings.Split(*res.Tasks[0].TaskArn, "-")
+	parts := strings.Split(*res.Tasks[0].TaskArn, "/")
 
 	return parts[len(parts)-1], nil
 }
