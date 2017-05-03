@@ -24,6 +24,7 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 
 	_, err = p.CloudFormation().CreateStack(&cloudformation.CreateStackInput{
 		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("Password"), ParameterValue: aws.String(p.Password)},
 			{ParameterKey: aws.String("Rack"), ParameterValue: aws.String(p.Name)},
 		},
 		StackName: aws.String(fmt.Sprintf("%s-%s", p.Name, name)),
