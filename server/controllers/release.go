@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"sort"
+	"strconv"
 
 	"github.com/convox/api"
 	"github.com/convox/praxis/types"
@@ -51,7 +52,17 @@ func ReleaseList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		return err
 	}
 
-	releases, err := Provider.ReleaseList(app)
+	count := 0
+
+	if cs := c.Query("count"); cs != "" {
+		i, err := strconv.Atoi(cs)
+		if err != nil {
+			return err
+		}
+		count = i
+	}
+
+	releases, err := Provider.ReleaseList(app, types.ReleaseListOptions{Count: count})
 	if err != nil {
 		return err
 	}

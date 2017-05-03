@@ -22,3 +22,7 @@ type ReleaseCreateOptions struct {
 	Build string
 	Env   map[string]string
 }
+
+type ReleaseListOptions struct {
+	Count int
+}

@@ -54,7 +54,7 @@ func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error
 	return
 }
 
-func (p *Provider) ReleaseList(app string) (types.Releases, error) {
+func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
 	ids, err := p.storageList(fmt.Sprintf("apps/%s/releases", app))
 	if err != nil {
 		return nil, err
@@ -72,6 +72,12 @@ func (p *Provider) ReleaseList(app string) (types.Releases, error) {
 	}
 
 	sort.Slice(releases, func(i, j int) bool { return releases[j].Created.Before(releases[i].Created) })
+
+	limit := coalescei(opts.Count, 10)
+
+	if len(releases) > limit {
+		releases = releases[0:limit]
+	}
 
 	return releases, nil
 }
@@ -113,7 +119,7 @@ func (p *Provider) releaseFork(app string) (*types.Release, error) {
 		Created: time.Now().UTC(),
 	}
 
-	rs, err := p.ReleaseList(app)
+	rs, err := p.ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return nil, err
 	}

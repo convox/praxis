@@ -3,6 +3,7 @@ package rack
 import (
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/convox/praxis/types"
 )
@@ -25,8 +26,14 @@ func (c *Client) ReleaseGet(app, id string) (release *types.Release, err error) 
 	return
 }
 
-func (c *Client) ReleaseList(app string) (releases types.Releases, err error) {
-	err = c.Get(fmt.Sprintf("/apps/%s/releases", app), RequestOptions{}, &releases)
+func (c *Client) ReleaseList(app string, opts types.ReleaseListOptions) (releases types.Releases, err error) {
+	ro := RequestOptions{}
+
+	if opts.Count > 0 {
+		ro.Query["count"] = strconv.Itoa(opts.Count)
+	}
+
+	err = c.Get(fmt.Sprintf("/apps/%s/releases", app), ro, &releases)
 	return
 }
 

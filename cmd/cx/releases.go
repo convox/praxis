@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/convox/praxis/stdcli"
+	"github.com/convox/praxis/types"
 	"github.com/convox/rack/cmd/convox/helpers"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -45,7 +46,7 @@ func runReleases(c *cli.Context) error {
 		return err
 	}
 
-	releases, err := Rack.ReleaseList(app)
+	releases, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return err
 	}
