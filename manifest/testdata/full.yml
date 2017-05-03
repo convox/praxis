@@ -24,6 +24,8 @@ services:
     environment:
       - DEVELOPMENT=false
       - SECRET
+    health:
+      interval: 10
     resources:
       - database
     scale:
@@ -33,6 +35,7 @@ services:
     image: ubuntu:16.04
     environment:
       - SECRET
+    health: /auth
     scale:
       memory: 512
 tables:

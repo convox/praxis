@@ -14,6 +14,7 @@ type Service struct {
 	Build       ServiceBuild
 	Command     ServiceCommand
 	Environment []string
+	Health      ServiceHealth
 	Image       string
 	Port        ServicePort
 	Resources   []string
@@ -37,6 +38,12 @@ type ServiceCommand struct {
 type ServiceCount struct {
 	Min int
 	Max int
+}
+
+type ServiceHealth struct {
+	Interval int
+	Path     string
+	Timeout  int
 }
 
 type ServicePort struct {

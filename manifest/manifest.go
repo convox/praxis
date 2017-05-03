@@ -79,6 +79,18 @@ func (m *Manifest) Validate(env types.Environment) error {
 
 func (m *Manifest) applyDefaults() error {
 	for i, s := range m.Services {
+		if s.Health.Path == "" {
+			m.Services[i].Health.Path = "/"
+		}
+
+		if s.Health.Interval == 0 {
+			m.Services[i].Health.Interval = 5
+		}
+
+		if s.Health.Timeout == 0 {
+			m.Services[i].Health.Timeout = m.Services[i].Health.Interval - 1
+		}
+
 		if s.Scale.Count.Min == 0 {
 			m.Services[i].Scale.Count.Min = 1
 		}

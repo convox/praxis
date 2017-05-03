@@ -152,10 +152,10 @@
       "Service{{ resource .Name }}TargetGroup": {
         "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
         "Properties": {
-          "HealthCheckIntervalSeconds": 10,
-          "HealthCheckTimeoutSeconds": 5,
+          "HealthCheckIntervalSeconds": {{ .Health.Interval }},
+          "HealthCheckTimeoutSeconds": {{ .Health.Timeout }},
           "UnhealthyThresholdCount": 2,
-          "HealthCheckPath": "/",
+          "HealthCheckPath": "{{ .Health.Path }}",
           "Port": "{{ .Port.Port }}",
           "Protocol": "{{ upper .Port.Scheme }}",
           "TargetGroupAttributes": [
