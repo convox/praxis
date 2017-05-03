@@ -253,15 +253,18 @@ func generateSelfSignedCertificate(host string) (tls.Certificate, error) {
 
 func stream(a, b net.Conn) {
 	var wg sync.WaitGroup
+
 	wg.Add(2)
+
 	go copyWait(a, b, &wg)
 	go copyWait(b, a, &wg)
+
 	wg.Wait()
-	a.Close()
-	b.Close()
 }
 
-func copyWait(w io.Writer, r io.Reader, wg *sync.WaitGroup) {
+func copyWait(w io.WriteCloser, r io.Reader, wg *sync.WaitGroup) {
 	defer wg.Done()
+	defer w.Close()
+
 	io.Copy(w, r)
 }
