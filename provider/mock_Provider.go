@@ -737,13 +737,13 @@ func (_m *MockProvider) ReleaseGet(app string, id string) (*types.Release, error
 	return r0, r1
 }
 
-// ReleaseList provides a mock function with given fields: app
-func (_m *MockProvider) ReleaseList(app string) (types.Releases, error) {
-	ret := _m.Called(app)
+// ReleaseList provides a mock function with given fields: app, opts
+func (_m *MockProvider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
+	ret := _m.Called(app, opts)
 
 	var r0 types.Releases
-	if rf, ok := ret.Get(0).(func(string) types.Releases); ok {
-		r0 = rf(app)
+	if rf, ok := ret.Get(0).(func(string, types.ReleaseListOptions) types.Releases); ok {
+		r0 = rf(app, opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(types.Releases)
@@ -751,8 +751,8 @@ func (_m *MockProvider) ReleaseList(app string) (types.Releases, error) {
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(app)
+	if rf, ok := ret.Get(1).(func(string, types.ReleaseListOptions) error); ok {
+		r1 = rf(app, opts)
 	} else {
 		r1 = ret.Error(1)
 	}
