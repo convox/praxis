@@ -46,7 +46,7 @@ func runLogs(c *cli.Context) error {
 		return err
 	}
 
-	opts := types.AppLogsOptions{
+	opts := types.LogsOptions{
 		Filter: c.String("filter"),
 		Follow: c.Bool("follow"),
 		Since:  time.Now().Add(-1 * since),
