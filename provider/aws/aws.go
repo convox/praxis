@@ -71,8 +71,10 @@ func FromEnv() (*Provider, error) {
 		Version:     os.Getenv("VERSION"),
 	}
 
-	if v, err := p.rackOutput("Version"); err == nil && v != "" {
-		p.Version = v
+	if p.Version == "" {
+		if v, err := p.rackOutput("Version"); err == nil && v != "" {
+			p.Version = v
+		}
 	}
 
 	return p, nil
