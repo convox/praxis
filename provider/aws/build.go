@@ -93,6 +93,8 @@ func (p *Provider) BuildGet(app, id string) (*types.Build, error) {
 		return nil, err
 	}
 
+	fmt.Printf("res = %+v\n", res)
+
 	return p.buildFromAttributes(id, res.Attributes)
 }
 
@@ -236,13 +238,13 @@ func (p *Provider) buildStore(build *types.Build) error {
 	}
 
 	attrs := []*simpledb.ReplaceableAttribute{
-		{Name: aws.String("app"), Value: aws.String(build.App)},
-		{Name: aws.String("created"), Value: aws.String(build.Created.Format(sortableTime))},
-		{Name: aws.String("ended"), Value: aws.String(build.Ended.Format(sortableTime))},
-		{Name: aws.String("process"), Value: aws.String(build.Process)},
-		{Name: aws.String("release"), Value: aws.String(build.Release)},
-		{Name: aws.String("started"), Value: aws.String(build.Started.Format(sortableTime))},
-		{Name: aws.String("status"), Value: aws.String(build.Status)},
+		{Replace: aws.Bool(true), Name: aws.String("app"), Value: aws.String(build.App)},
+		{Replace: aws.Bool(true), Name: aws.String("created"), Value: aws.String(build.Created.Format(sortableTime))},
+		{Replace: aws.Bool(true), Name: aws.String("ended"), Value: aws.String(build.Ended.Format(sortableTime))},
+		{Replace: aws.Bool(true), Name: aws.String("process"), Value: aws.String(build.Process)},
+		{Replace: aws.Bool(true), Name: aws.String("release"), Value: aws.String(build.Release)},
+		{Replace: aws.Bool(true), Name: aws.String("started"), Value: aws.String(build.Started.Format(sortableTime))},
+		{Replace: aws.Bool(true), Name: aws.String("status"), Value: aws.String(build.Status)},
 	}
 
 	if build.Manifest != "" {
