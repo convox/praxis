@@ -168,13 +168,6 @@ func (v *ServiceCommand) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		if c, ok := t["production"].(string); ok {
 			v.Production = c
 		}
-		// type serviceBuild ServiceBuild
-		// var r serviceBuild
-		// if err := remarshal(w, &r); err != nil {
-		//   return err
-		// }
-		// v.Args = r.Args
-		// v.Path = r.Path
 	case string:
 		v.Development = t
 		v.Production = t
@@ -229,6 +222,33 @@ func (v *ServiceCount) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		}
 	default:
 		return fmt.Errorf("invalid scale: %v", w)
+	}
+
+	return nil
+}
+
+func (v *ServiceHealth) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var w interface{}
+
+	if err := unmarshal(&w); err != nil {
+		return err
+	}
+
+	switch t := w.(type) {
+	case map[interface{}]interface{}:
+		if w, ok := t["path"].(string); ok {
+			v.Path = w
+		}
+		if w, ok := t["interval"].(int); ok {
+			v.Interval = w
+		}
+		if w, ok := t["timeout"].(int); ok {
+			v.Timeout = w
+		}
+	case string:
+		v.Path = t
+	default:
+		return fmt.Errorf("unknown type for service health: %T", t)
 	}
 
 	return nil

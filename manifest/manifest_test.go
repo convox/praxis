@@ -70,6 +70,11 @@ func TestManifestLoad(t *testing.T) {
 					"DEVELOPMENT=false",
 					"SECRET",
 				},
+				Health: manifest.ServiceHealth{
+					Path:     "/",
+					Interval: 10,
+					Timeout:  9,
+				},
 				Resources: []string{"database"},
 				Scale: manifest.ServiceScale{
 					Count:  manifest.ServiceCount{Min: 3, Max: 10},
@@ -81,6 +86,11 @@ func TestManifestLoad(t *testing.T) {
 				Command: manifest.ServiceCommand{
 					Development: "bash",
 					Production:  "bash",
+				},
+				Health: manifest.ServiceHealth{
+					Path:     "/auth",
+					Interval: 5,
+					Timeout:  4,
 				},
 				Image: "ubuntu:16.04",
 				Environment: []string{
