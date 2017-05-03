@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/convox/praxis/stdcli"
@@ -142,18 +140,7 @@ func buildLogs(build *types.Build, w io.Writer) error {
 		return err
 	}
 
-	go func() {
-		s := bufio.NewScanner(logs)
-
-		// strip the date and container prefix from each line
-		for s.Scan() {
-			parts := strings.SplitN(s.Text(), " ", 4)
-
-			if len(parts) == 4 {
-				fmt.Println(parts[3])
-			}
-		}
-	}()
+	go io.Copy(w, logs)
 
 	for {
 		b, err := Rack.BuildGet(build.App, build.Id)
