@@ -33,7 +33,7 @@ func (c *Client) AppList() (apps types.Apps, err error) {
 	return
 }
 
-func (c *Client) AppLogs(app string, opts types.AppLogsOptions) (io.ReadCloser, error) {
+func (c *Client) AppLogs(app string, opts types.LogsOptions) (io.ReadCloser, error) {
 	ro := RequestOptions{
 		Query: Query{
 			"filter": opts.Filter,

@@ -111,7 +111,7 @@ func (p *Provider) AppList() (types.Apps, error) {
 	return apps, nil
 }
 
-func (p *Provider) AppLogs(app string, opts types.AppLogsOptions) (io.ReadCloser, error) {
+func (p *Provider) AppLogs(app string, opts types.LogsOptions) (io.ReadCloser, error) {
 	group, err := p.appResource(app, "Logs")
 	if err != nil {
 		return nil, err
