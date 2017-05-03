@@ -1,9 +1,11 @@
 package aws
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"strings"
 	"time"
 
@@ -70,8 +72,9 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 	}
 
 	updates := map[string]string{
-		"Domain":  strings.ToLower(domain),
-		"Release": r.Id,
+		"Domain":   strings.ToLower(domain),
+		"Password": p.Password,
+		"Release":  r.Id,
 	}
 
 	stack := fmt.Sprintf("%s-%s", p.Name, app)
@@ -110,7 +113,7 @@ func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error
 		return nil, err
 	}
 
-	return releaseFromAttributes(id, res.Attributes)
+	return p.releaseFromAttributes(id, res.Attributes)
 }
 
 func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
@@ -149,9 +152,16 @@ func (p *Provider) ReleaseLogs(app, id string) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("unimplemented")
 }
 
-func releaseFromAttributes(id string, attrs []*simpledb.Attribute) (*types.Release, error) {
+func (p *Provider) releaseFromAttributes(id string, attrs []*simpledb.Attribute) (*types.Release, error) {
 	release := &types.Release{
 		Id: id,
+	}
+
+	// get app first so we can use it later
+	for _, attr := range attrs {
+		if *attr.Name == "app" {
+			release.App = *attr.Value
+		}
 	}
 
 	var err error
@@ -168,8 +178,22 @@ func releaseFromAttributes(id string, attrs []*simpledb.Attribute) (*types.Relea
 				return nil, err
 			}
 		case "env":
-			if err := json.Unmarshal([]byte(*attr.Value), &release.Env); err != nil {
-				return nil, err
+			key := *attr.Value
+
+			if key != "" {
+				r, err := p.ObjectFetch(release.App, key)
+				if err != nil {
+					return nil, err
+				}
+
+				data, err := ioutil.ReadAll(r)
+				if err != nil {
+					return nil, err
+				}
+
+				if err := json.Unmarshal(data, &release.Env); err != nil {
+					return nil, err
+				}
 			}
 		case "status":
 			release.Status = *attr.Value
@@ -187,7 +211,7 @@ func (p *Provider) releaseFork(app string) (*types.Release, error) {
 		Created: time.Now().UTC(),
 	}
 
-	rs, err := p.ReleaseList(app)
+	rs, err := p.ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return nil, err
 	}
@@ -206,19 +230,32 @@ func (p *Provider) releaseStore(release *types.Release) error {
 		return err
 	}
 
-	env, err := json.Marshal(release.Env)
-	if err != nil {
-		return err
+	attrs := []*simpledb.ReplaceableAttribute{
+		{Name: aws.String("app"), Value: aws.String(release.App)},
+		{Name: aws.String("build"), Value: aws.String(release.Build)},
+		{Name: aws.String("created"), Value: aws.String(release.Created.Format(sortableTime))},
+		{Name: aws.String("status"), Value: aws.String(release.Status)},
+	}
+
+	if len(release.Env) > 0 {
+		data, err := json.Marshal(release.Env)
+		if err != nil {
+			return err
+		}
+
+		eo, err := p.ObjectStore(release.App, fmt.Sprintf("convox/release/%s/env", release.Id), bytes.NewReader(data), types.ObjectStoreOptions{})
+		if err != nil {
+			return err
+		}
+
+		attrs = append(attrs, &simpledb.ReplaceableAttribute{
+			Name:  aws.String("env"),
+			Value: aws.String(eo.Key),
+		})
 	}
 
 	_, err = p.SimpleDB().PutAttributes(&simpledb.PutAttributesInput{
-		Attributes: []*simpledb.ReplaceableAttribute{
-			{Name: aws.String("app"), Value: aws.String(release.App)},
-			{Name: aws.String("build"), Value: aws.String(release.Build)},
-			{Name: aws.String("created"), Value: aws.String(release.Created.Format(sortableTime))},
-			{Name: aws.String("env"), Value: aws.String(string(env))},
-			{Name: aws.String("status"), Value: aws.String(release.Status)},
-		},
+		Attributes: attrs,
 		DomainName: aws.String(domain),
 		ItemName:   aws.String(release.Id),
 	})
