@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) ObjectExists(app, key string) (exists bool, err error) {
-	err = c.Head(fmt.Sprintf("/apps/%s/objects/%s", app, key), RequestOptions{}, &exists)
+	err = c.Get(fmt.Sprintf("/apps/%s/objects/%s/exists", app, key), RequestOptions{}, &exists)
 	return
 }
 
