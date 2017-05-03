@@ -113,7 +113,9 @@ func (p *Proxy) handleConnection(cn net.Conn) {
 	log.Success()
 }
 
-func copyAsync(w io.Writer, r io.Reader, wg *sync.WaitGroup) {
+func copyAsync(w io.WriteCloser, r io.Reader, wg *sync.WaitGroup) {
 	defer wg.Done()
+	defer w.Close()
+
 	io.Copy(w, r)
 }
