@@ -383,6 +383,7 @@ func (p *Provider) balancerContainers(balancers manifest.Balancers, app, release
 				Command: command,
 				Labels: map[string]string{
 					"convox.rack":    p.Name,
+					"convox.version": p.Version,
 					"convox.app":     app,
 					"convox.release": release,
 					"convox.type":    "balancer",
@@ -421,6 +422,7 @@ func (p *Provider) resourceContainers(resources manifest.Resources, app, release
 			Volumes: vs,
 			Labels: map[string]string{
 				"convox.rack":     p.Name,
+				"convox.version":  p.Version,
 				"convox.app":      app,
 				"convox.release":  release,
 				"convox.type":     "resource",
@@ -469,6 +471,7 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 				Command: []string{"balancer", "https", "target", fmt.Sprintf("%s://%s:%d", s.Port.Scheme, s.Name, s.Port.Port)},
 				Labels: map[string]string{
 					"convox.rack":    p.Name,
+					"convox.version": p.Version,
 					"convox.app":     app,
 					"convox.release": release,
 					"convox.type":    "endpoint",
@@ -518,6 +521,7 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 			Volumes: s.Volumes,
 			Labels: map[string]string{
 				"convox.rack":    p.Name,
+				"convox.version": p.Version,
 				"convox.app":     app,
 				"convox.release": release,
 				"convox.type":    "service",
