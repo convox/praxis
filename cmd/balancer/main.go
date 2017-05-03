@@ -14,11 +14,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/types"
 )
@@ -155,13 +157,14 @@ func handleTarget(protocol, target string) error {
 }
 
 func handleConnection(cn net.Conn, app string, scheme, host string, port int) error {
+	defer cn.Close()
+
 	ps, err := Rack.ProcessList(app, types.ProcessListOptions{Service: host})
 	if err != nil {
 		return err
 	}
 
 	if len(ps) < 1 {
-		cn.Close()
 		return fmt.Errorf("no processes for service: %s", host)
 	}
 
@@ -199,15 +202,11 @@ func handleConnection(cn net.Conn, app string, scheme, host string, port int) er
 		return err
 	}
 
-	if _, err := io.Copy(cn, out); err != nil {
+	defer out.Close()
+
+	if err := helpers.HalfPipe(cn, out); err != nil {
 		return err
 	}
-
-	if err := cn.Close(); err != nil {
-		return err
-	}
-
-	out.Close()
 
 	return nil
 }

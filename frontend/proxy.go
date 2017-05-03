@@ -2,10 +2,10 @@ package frontend
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"strconv"
-	"sync"
+
+	"github.com/convox/praxis/helpers"
 )
 
 type Proxy struct {
@@ -71,7 +71,6 @@ func (p *Proxy) handleConnection(cn net.Conn) {
 
 	ip, port, err := net.SplitHostPort(cn.LocalAddr().String())
 	if err != nil {
-		cn.Write([]byte(fmt.Sprintf("error: %s\n", err)))
 		log.Error(err)
 		return
 	}
@@ -80,14 +79,13 @@ func (p *Proxy) handleConnection(cn net.Conn) {
 
 	pi, err := strconv.Atoi(port)
 	if err != nil {
-		cn.Write([]byte(fmt.Sprintf("error: %s\n", err)))
 		log.Error(err)
 		return
 	}
 
 	ep, ok := p.frontend.endpoints[fmt.Sprintf("%s:%d", ip, pi)]
 	if !ok {
-		cn.Write([]byte(fmt.Sprintf("no endpoint\n")))
+		log.Error(fmt.Errorf("no endpoint"))
 		return
 	}
 
@@ -95,27 +93,16 @@ func (p *Proxy) handleConnection(cn net.Conn) {
 
 	out, err := net.Dial("tcp", ep.Target)
 	if err != nil {
-		cn.Write([]byte(fmt.Sprintf("error: %s\n", err)))
+		log.Error(err)
 		return
 	}
 
 	defer out.Close()
 
-	var wg sync.WaitGroup
-
-	wg.Add(2)
-
-	go copyAsync(out, cn, &wg)
-	go copyAsync(cn, out, &wg)
-
-	wg.Wait()
+	if err := helpers.Pipe(cn, out); err != nil {
+		log.Error(err)
+		return
+	}
 
 	log.Success()
-}
-
-func copyAsync(w io.WriteCloser, r io.Reader, wg *sync.WaitGroup) {
-	defer wg.Done()
-	defer w.Close()
-
-	io.Copy(w, r)
 }

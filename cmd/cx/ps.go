@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
-	"github.com/convox/rack/cmd/convox/helpers"
 	"gopkg.in/urfave/cli.v1"
 )
 
