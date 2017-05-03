@@ -37,6 +37,7 @@
     },
     "Instance": {
       "Type": "AWS::RDS::DBInstance",
+      "DeletionPolicy": "Snapshot",
       "Properties": {
         "AllocatedStorage": "10",
         "DBInstanceClass": "db.t2.micro",
