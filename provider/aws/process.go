@@ -23,54 +23,28 @@ func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
 }
 
 func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error) {
-	cluster, err := p.rackResource("RackCluster")
+	tasks, err := p.rackTasks()
 	if err != nil {
 		return nil, err
 	}
 
 	pss := types.Processes{}
 
-	req := &ecs.ListTasksInput{
-		Cluster:    aws.String(cluster),
-		MaxResults: aws.Int64(2),
-	}
-
-	for {
-		res, err := p.ECS().ListTasks(req)
+	for _, t := range tasks {
+		ps, err := p.processFromTask(app, t)
 		if err != nil {
 			return nil, err
 		}
 
-		dres, err := p.ECS().DescribeTasks(&ecs.DescribeTasksInput{
-			Cluster: aws.String(cluster),
-			Tasks:   res.TaskArns,
-		})
-		if err != nil {
-			return nil, err
+		if ps.App != app {
+			continue
 		}
 
-		for _, t := range dres.Tasks {
-			ps, err := p.processFromTask(app, t)
-			if err != nil {
-				return nil, err
-			}
-
-			if ps.App != app {
-				continue
-			}
-
-			if opts.Service != "" && ps.Service != opts.Service {
-				continue
-			}
-
-			pss = append(pss, *ps)
+		if opts.Service != "" && ps.Service != opts.Service {
+			continue
 		}
 
-		if res.NextToken == nil {
-			break
-		}
-
-		req.NextToken = res.NextToken
+		pss = append(pss, *ps)
 	}
 
 	sort.Slice(pss, func(i, j int) bool {
@@ -82,6 +56,64 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 	})
 
 	return pss, nil
+}
+
+func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
+	r, w := io.Pipe()
+
+	go p.cloudwatchLogStream(app, pid, w)
+
+	return r, nil
+}
+
+func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
+	return 0, fmt.Errorf("unimplemented")
+}
+
+func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
+	cluster, err := p.rackResource("RackCluster")
+	if err != nil {
+		return "", err
+	}
+
+	td, err := p.taskDefinition(app, opts)
+	if err != nil {
+		return "", err
+	}
+
+	req := &ecs.RunTaskInput{
+		Cluster:        aws.String(cluster),
+		StartedBy:      aws.String(opts.Name),
+		TaskDefinition: aws.String(td),
+	}
+
+	res, err := p.ECS().RunTask(req)
+	if err != nil {
+		return "", err
+	}
+
+	if len(res.Tasks) != 1 {
+		return "", fmt.Errorf("unable to start process")
+	}
+
+	parts := strings.Split(*res.Tasks[0].TaskArn, "-")
+
+	return parts[len(parts)-1], nil
+}
+
+func (p *Provider) ProcessStop(app, pid string) error {
+	return fmt.Errorf("unimplemented")
+}
+
+func (p *Provider) fetchTaskDefinition(arn string) (*ecs.TaskDefinition, error) {
+	res, err := p.ECS().DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: aws.String(arn),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res.TaskDefinition, nil
 }
 
 func (p *Provider) processFromTask(app string, t *ecs.Task) (*types.Process, error) {
@@ -132,60 +164,41 @@ func (p *Provider) processFromTask(app string, t *ecs.Task) (*types.Process, err
 	return ps, nil
 }
 
-func (p *Provider) fetchTaskDefinition(arn string) (*ecs.TaskDefinition, error) {
-	res, err := p.ECS().DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
-		TaskDefinition: aws.String(arn),
-	})
+func (p *Provider) rackTasks() ([]*ecs.Task, error) {
+	tasks := []*ecs.Task{}
+
+	cluster, err := p.rackResource("RackCluster")
 	if err != nil {
 		return nil, err
 	}
 
-	return res.TaskDefinition, nil
-}
-
-func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
-	r, w := io.Pipe()
-
-	go p.cloudwatchLogStream(app, pid, w)
-
-	return r, nil
-}
-
-func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
-	return 0, fmt.Errorf("unimplemented")
-}
-
-func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
-	cluster, err := p.rackResource("RackCluster")
-	if err != nil {
-		return "", err
+	req := &ecs.ListTasksInput{
+		Cluster:    aws.String(cluster),
+		MaxResults: aws.Int64(2),
 	}
 
-	td, err := p.taskDefinition(app, opts)
-	if err != nil {
-		return "", err
+	for {
+		res, err := p.ECS().ListTasks(req)
+		if err != nil {
+			return nil, err
+		}
+
+		dres, err := p.ECS().DescribeTasks(&ecs.DescribeTasksInput{
+			Cluster: aws.String(cluster),
+			Tasks:   res.TaskArns,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		tasks = append(tasks, dres.Tasks...)
+
+		if res.NextToken == nil {
+			break
+		}
+
+		req.NextToken = res.NextToken
 	}
 
-	req := &ecs.RunTaskInput{
-		Cluster:        aws.String(cluster),
-		StartedBy:      aws.String(opts.Name),
-		TaskDefinition: aws.String(td),
-	}
-
-	res, err := p.ECS().RunTask(req)
-	if err != nil {
-		return "", err
-	}
-
-	if len(res.Tasks) != 1 {
-		return "", fmt.Errorf("unable to start process")
-	}
-
-	parts := strings.Split(*res.Tasks[0].TaskArn, "-")
-
-	return parts[len(parts)-1], nil
-}
-
-func (p *Provider) ProcessStop(app, pid string) error {
-	return fmt.Errorf("unimplemented")
+	return tasks, nil
 }
