@@ -50,7 +50,7 @@ func TestReleaseList(t *testing.T) {
 	p.ReleaseCreate("app", types.ReleaseCreateOptions{Env: map[string]string{"FOO": "baz"}})
 	p.ReleaseCreate("app", types.ReleaseCreateOptions{Build: "B4"})
 
-	rs, err := p.ReleaseList("app")
+	rs, err := p.ReleaseList("app", types.ReleaseListOptions{})
 
 	if assert.NoError(t, err) && assert.Len(t, rs, 6) {
 		assert.Equal(t, "B4", rs[0].Build)
