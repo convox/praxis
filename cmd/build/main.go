@@ -86,10 +86,12 @@ func main() {
 	}
 
 	if err := build(); err != nil {
+		fmt.Fprintf(w, "IN BUILD")
 		fail(err)
 	}
 
 	if err := release(); err != nil {
+		fmt.Fprintf(w, "IN RELEASE")
 		fail(err)
 	}
 }
@@ -122,7 +124,7 @@ func auth() error {
 
 func build() error {
 	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Started: time.Now(), Status: "running"}); err != nil {
-		return err
+		return fmt.Errorf("build update error: %s", err)
 	}
 
 	tmp, err := ioutil.TempDir("", "")
@@ -170,7 +172,7 @@ func build() error {
 	}
 
 	if err := m.Build(flagPrefix, flagId, opts); err != nil {
-		return err
+		return fmt.Errorf("build error: %s", err)
 	}
 
 	return nil
@@ -179,15 +181,15 @@ func build() error {
 func release() error {
 	release, err := Rack.ReleaseCreate(flagApp, types.ReleaseCreateOptions{Build: flagId})
 	if err != nil {
-		return err
+		return fmt.Errorf("release create error: %s", err)
 	}
 
 	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Ended: time.Now(), Release: release.Id, Status: "complete"}); err != nil {
-		return err
+		return fmt.Errorf("build update error: %s", err)
 	}
 
 	if _, err := Rack.ObjectStore(flagApp, fmt.Sprintf("convox/builds/%s/log", flagId), &output, types.ObjectStoreOptions{}); err != nil {
-		return err
+		return fmt.Errorf("object store error: %s", err)
 	}
 
 	return nil
