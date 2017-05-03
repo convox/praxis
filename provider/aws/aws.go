@@ -1,10 +1,7 @@
 package aws
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"hash/crc32"
 	"io"
 	"math/rand"
 	"net/url"
@@ -13,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alecthomas/template"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -29,7 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/simpledb"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/convox/praxis/manifest"
+	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/types"
 	"github.com/fsouza/go-dockerclient"
 )
@@ -139,87 +135,19 @@ func awsError(err error) string {
 	return ""
 }
 
-func formationTemplate(name string, data interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-
-	tn := fmt.Sprintf("%s.json.tmpl", name)
-	tf := fmt.Sprintf("provider/aws/formation/%s", tn)
-
-	t, err := template.New(tn).Funcs(formationHelpers()).ParseFiles(tf)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := t.Execute(&buf, data); err != nil {
-		return nil, err
-	}
-
-	var v interface{}
-
-	if err := json.Unmarshal(buf.Bytes(), &v); err != nil {
-		switch t := err.(type) {
-		case *json.SyntaxError:
-			return nil, jsonSyntaxError(t, buf.Bytes())
-		}
-		return nil, err
-	}
-
-	return json.MarshalIndent(v, "", "  ")
-}
-
-func jsonSyntaxError(err *json.SyntaxError, data []byte) error {
-	start := bytes.LastIndex(data[:err.Offset], []byte("\n")) + 1
-	line := bytes.Count(data[:start], []byte("\n"))
-	pos := int(err.Offset) - start - 1
-	ltext := strings.Split(string(data), "\n")[line]
-
-	return fmt.Errorf("json syntax error: line %d pos %d: %s: %s", line, pos, err.Error(), ltext)
-}
-
-type target struct {
-	Balancer string
-	Endpoint string
-	Port     string
-}
-
-func formationHelpers() template.FuncMap {
-	return template.FuncMap{
-		"lower": func(s string) string {
-			return strings.ToLower(s)
-		},
-		"priority": func(app, service string) uint32 {
-			return crc32.ChecksumIEEE([]byte(fmt.Sprintf("%s-%s", app, service))) % 50000
-		},
-		"resource": func(s string) string {
-			return upperName(s)
-		},
-		"target": func(m *manifest.Manifest, service string) (*target, error) {
-			for _, b := range m.Balancers {
-				for _, e := range b.Endpoints {
-					if e.Target == "" {
-						continue
-					}
-
-					u, err := url.Parse(e.Target)
-					if err != nil {
-						return nil, err
-					}
-
-					return &target{Balancer: b.Name, Endpoint: e.Port, Port: u.Port()}, nil
-				}
-			}
-
-			return nil, fmt.Errorf("no target found")
-		},
-		"upper": func(s string) string {
-			return strings.ToUpper(s)
-		},
-	}
-}
-
 func (p *Provider) accountID() (string, error) {
+	if v, ok := cache.Get("accountID", "").(string); ok {
+		return v, nil
+	}
+
 	res, err := p.STS().GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
+		return "", err
+	}
+
+	a := *res.Account
+
+	if err := cache.Set("accountID", "", a, 24*time.Hour); err != nil {
 		return "", err
 	}
 
@@ -232,149 +160,6 @@ func (p *Provider) appOutput(app string, resource string) (string, error) {
 
 func (p *Provider) appResource(app string, resource string) (string, error) {
 	return p.stackResource(fmt.Sprintf("%s-%s", p.Name, app), resource)
-}
-
-func (p *Provider) cloudwatchLogStream(app, pid string, w io.WriteCloser) {
-	defer w.Close()
-
-	task, err := p.taskForPid(app, pid)
-	if err != nil {
-		w.Write([]byte(fmt.Sprintf("error: %s\n", err)))
-		return
-	}
-
-	arn := *task.TaskArn
-
-	if len(task.Containers) < 1 {
-		w.Write([]byte(fmt.Sprintf("no container for task: %s", arn)))
-		return
-	}
-
-	ap := strings.Split(arn, "/")
-	uuid := ap[len(ap)-1]
-	name := *task.Containers[0].Name
-	stream := fmt.Sprintf("convox/%s/%s", name, uuid)
-
-	group, err := p.appResource(app, "Logs")
-	if err != nil {
-		w.Write([]byte(fmt.Sprintf("error: %s\n", err)))
-		return
-	}
-
-	req := &cloudwatchlogs.GetLogEventsInput{
-		LogGroupName:  aws.String(group),
-		LogStreamName: aws.String(stream),
-		StartFromHead: aws.Bool(true),
-	}
-
-	empty := 0
-
-	for {
-		res, err := p.CloudWatchLogs().GetLogEvents(req)
-		if err != nil {
-			w.Write([]byte(fmt.Sprintf("error: %s\n", err)))
-			return
-		}
-
-		if len(res.Events) == 0 {
-			if _, err := p.taskForPid(app, pid); err != nil {
-				empty++
-				if empty >= 4 {
-					return
-				}
-			}
-		} else {
-			empty = 0
-		}
-
-		events := res.Events
-
-		sort.Slice(events, func(i, j int) bool { return *events[i].Timestamp < *events[j].Timestamp })
-
-		for _, e := range events {
-			w.Write([]byte(fmt.Sprintf("%s\n", *e.Message)))
-		}
-
-		req.NextToken = res.NextForwardToken
-
-		time.Sleep(250 * time.Millisecond)
-	}
-}
-
-func (p *Provider) containerForPid(app, pid string) (*docker.Client, *docker.APIContainers, error) {
-	task, err := p.taskForPid(app, pid)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	host, err := p.dockerHostForInstance(*task.ContainerInstanceArn)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	dc, err := p.Docker(host)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	cs, err := dc.ListContainers(docker.ListContainersOptions{
-		All: true,
-		Filters: map[string][]string{
-			"label": {fmt.Sprintf("com.amazonaws.ecs.task-arn=%s", *task.TaskArn)},
-		},
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-	if len(cs) < 1 {
-		return nil, nil, fmt.Errorf("no container for task: %s", *task.TaskArn)
-	}
-
-	return dc, &cs[0], nil
-}
-
-func (p *Provider) dockerHostForInstance(instance string) (string, error) {
-	cluster, err := p.rackResource("RackCluster")
-	if err != nil {
-		return "", err
-	}
-
-	req := &ecs.DescribeContainerInstancesInput{
-		Cluster:            aws.String(cluster),
-		ContainerInstances: []*string{aws.String(instance)},
-	}
-
-	res, err := p.ECS().DescribeContainerInstances(req)
-	if err != nil {
-		return "", err
-	}
-
-	if len(res.ContainerInstances) < 1 {
-		return "", fmt.Errorf("no such container instance: %s", instance)
-	}
-
-	ereq := &ec2.DescribeInstancesInput{
-		InstanceIds: []*string{aws.String(*res.ContainerInstances[0].Ec2InstanceId)},
-	}
-
-	eres, err := p.EC2().DescribeInstances(ereq)
-	if err != nil {
-		return "", err
-	}
-
-	if len(eres.Reservations) != 1 || len(eres.Reservations[0].Instances) != 1 {
-		return "", fmt.Errorf("could not find instance: %s", *ereq.InstanceIds[0])
-	}
-
-	i := eres.Reservations[0].Instances[0]
-
-	host := fmt.Sprintf("http://%s:2376", *i.PrivateIpAddress)
-
-	if p.Development {
-		host = fmt.Sprintf("http://%s:2376", *i.PublicIpAddress)
-	}
-
-	return host, nil
 }
 
 func humanStatus(status string) string {
@@ -416,7 +201,74 @@ func (p *Provider) rackResource(resource string) (string, error) {
 	return p.stackResource(p.Name, resource)
 }
 
+func (p *Provider) subscribeLogs(group, stream string, opts types.LogsOptions, w io.WriteCloser) error {
+	defer w.Close()
+
+	req := &cloudwatchlogs.FilterLogEventsInput{
+		Interleaved:  aws.Bool(true),
+		LogGroupName: aws.String(group),
+	}
+
+	if stream != "" {
+		req.LogStreamNames = []*string{aws.String(stream)}
+	}
+
+	if opts.Filter != "" {
+		req.FilterPattern = aws.String(opts.Filter)
+	}
+
+	if !opts.Since.IsZero() {
+		req.StartTime = aws.Int64(opts.Since.UTC().Unix() * 1000)
+	}
+
+	for {
+		events := []*cloudwatchlogs.FilteredLogEvent{}
+
+		err := p.CloudWatchLogs().FilterLogEventsPages(req, func(res *cloudwatchlogs.FilterLogEventsOutput, last bool) bool {
+			for _, e := range res.Events {
+				events = append(events, e)
+			}
+
+			return true
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		}
+
+		sort.Slice(events, func(i, j int) bool { return *events[i].Timestamp < *events[j].Timestamp })
+
+		for _, e := range events {
+			parts := strings.SplitN(*e.LogStreamName, "/", 3)
+
+			if len(parts) == 3 {
+				pp := strings.Split(parts[2], "-")
+				ts := time.Unix(*e.Timestamp/1000, *e.Timestamp%1000*1000).UTC()
+
+				fmt.Fprintf(w, "%s %s/%s/%s %s\n", ts.Format(printableTime), parts[0], parts[1], pp[len(pp)-1], *e.Message)
+			}
+		}
+
+		if !opts.Follow {
+			break
+		}
+
+		time.Sleep(1 * time.Second)
+
+		if len(events) > 0 {
+			req.StartTime = aws.Int64(*events[len(events)-1].Timestamp + 1)
+		}
+	}
+
+	return nil
+}
+
 func (p *Provider) stackOutput(name string, output string) (string, error) {
+	ck := fmt.Sprintf("%s/%s", name, output)
+
+	if v, ok := cache.Get("stackOutput", ck).(string); ok {
+		return v, nil
+	}
+
 	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(name),
 	})
@@ -429,7 +281,13 @@ func (p *Provider) stackOutput(name string, output string) (string, error) {
 
 	for _, o := range res.Stacks[0].Outputs {
 		if *o.OutputKey == output {
-			return *o.OutputValue, nil
+			ov := *o.OutputValue
+
+			if err := cache.Set("stackOutput", ck, ov, 1*time.Minute); err != nil {
+				return "", err
+			}
+
+			return ov, nil
 		}
 	}
 
@@ -437,6 +295,12 @@ func (p *Provider) stackOutput(name string, output string) (string, error) {
 }
 
 func (p *Provider) stackResource(name string, resource string) (string, error) {
+	ck := fmt.Sprintf("%s/%s", name, resource)
+
+	if v, ok := cache.Get("stackResource", ck).(string); ok {
+		return v, nil
+	}
+
 	res, err := p.CloudFormation().DescribeStackResource(&cloudformation.DescribeStackResourceInput{
 		LogicalResourceId: aws.String(resource),
 		StackName:         aws.String(name),
@@ -445,7 +309,13 @@ func (p *Provider) stackResource(name string, resource string) (string, error) {
 		return "", err
 	}
 
-	return *res.StackResourceDetail.PhysicalResourceId, nil
+	r := *res.StackResourceDetail.PhysicalResourceId
+
+	if err := cache.Set("stackResource", ck, r, 1*time.Minute); err != nil {
+		return "", err
+	}
+
+	return r, nil
 }
 
 func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (string, error) {
@@ -546,53 +416,24 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	return *res.TaskDefinition.TaskDefinitionArn, nil
 }
 
-func (p *Provider) taskForPid(app, pid string) (*ecs.Task, error) {
+func (p *Provider) taskForPid(pid string) (*ecs.Task, error) {
 	cluster, err := p.rackResource("RackCluster")
 	if err != nil {
 		return nil, err
 	}
 
-	req := &ecs.ListTasksInput{
+	res, err := p.ECS().DescribeTasks(&ecs.DescribeTasksInput{
 		Cluster: aws.String(cluster),
-		Family:  aws.String(fmt.Sprintf("%s-%s", p.Name, app)),
-	}
-
-	var task *ecs.Task
-
-	err = p.ECS().ListTasksPages(req, func(res *ecs.ListTasksOutput, last bool) bool {
-		for _, arn := range res.TaskArns {
-			parts := strings.Split(*arn, "-")
-			if parts[len(parts)-1] != pid {
-				continue
-			}
-
-			req := &ecs.DescribeTasksInput{
-				Cluster: aws.String(cluster),
-				Tasks:   []*string{arn},
-			}
-
-			res, err := p.ECS().DescribeTasks(req)
-			if err != nil {
-				return false
-			}
-
-			if len(res.Tasks) == 1 {
-				task = res.Tasks[0]
-				return false
-			}
-		}
-
-		return true
+		Tasks:   []*string{aws.String(pid)},
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	if task != nil {
-		return task, nil
+	if len(res.Tasks) < 1 {
+		return nil, fmt.Errorf("could not find task for pid: %s", pid)
 	}
 
-	return nil, fmt.Errorf("could not find task for pid: %s", pid)
+	return res.Tasks[0], nil
 }
 
 func upperName(name string) string {
