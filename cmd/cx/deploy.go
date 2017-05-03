@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/convox/praxis/stdcli"
@@ -31,7 +30,7 @@ func runDeploy(c *cli.Context) error {
 	}
 
 	if a.Status != "running" {
-		return fmt.Errorf("cannot build while app is %s", a.Status)
+		//return fmt.Errorf("cannot build while app is %s", a.Status)
 	}
 
 	build, err := buildDirectory(app, ".", os.Stdout)
