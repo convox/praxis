@@ -100,6 +100,22 @@ func (m *Manifest) applyDefaults() error {
 		}
 	}
 
+	// target should be inhereted for deploy and run if not set explictly
+	for i, w := range m.Workflows {
+		for j, s := range w.Steps {
+			switch s.Type {
+			case "deploy", "run":
+				if s.Target == "" {
+					for k := j - 1; k >= 0; k-- {
+						if w.Steps[k].Target != "" {
+							m.Workflows[i].Steps[j].Target = w.Steps[k].Target
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

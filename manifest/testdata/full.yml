@@ -48,18 +48,18 @@ tables:
 workflows:
   change:
     create:
-      - create: staging/praxis-$branch
-      - build: staging/praxis-$branch
       - test
-      - promote
+      - create: staging/praxis-$branch
+      - deploy
+    update:
+      - test
+      - deploy: staging/praxis-$branch
     close:
       - delete: staging/praxis-$branch
   merge:
     demo:
       - deploy: demo/praxis-demo
     master:
-      - build: staging/praxis-staging
       - test
-      - promote
+      - deploy: staging/praxis-staging
       - copy: production/praxis-production
-      - promote

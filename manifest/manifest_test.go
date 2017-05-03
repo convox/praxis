@@ -128,10 +128,17 @@ func TestManifestLoad(t *testing.T) {
 				Type:    "change",
 				Trigger: "create",
 				Steps: manifest.WorkflowSteps{
-					{Type: "create", Target: "staging/praxis-$branch"},
-					{Type: "build", Target: "staging/praxis-$branch"},
 					{Type: "test"},
-					{Type: "promote"},
+					{Type: "create", Target: "staging/praxis-$branch"},
+					{Type: "deploy", Target: "staging/praxis-$branch"},
+				},
+			},
+			{
+				Type:    "change",
+				Trigger: "update",
+				Steps: manifest.WorkflowSteps{
+					{Type: "test"},
+					{Type: "deploy", Target: "staging/praxis-$branch"},
 				},
 			},
 			{
@@ -145,11 +152,9 @@ func TestManifestLoad(t *testing.T) {
 				Type:    "merge",
 				Trigger: "master",
 				Steps: manifest.WorkflowSteps{
-					{Type: "build", Target: "staging/praxis-staging"},
 					{Type: "test"},
-					{Type: "promote"},
+					{Type: "deploy", Target: "staging/praxis-staging"},
 					{Type: "copy", Target: "production/praxis-production"},
-					{Type: "promote"},
 				},
 			},
 		},
