@@ -48,6 +48,10 @@ func runDeploy(c *cli.Context) error {
 		return err
 	}
 
+	if build.Status == "failed" {
+		return fmt.Errorf("build failed")
+	}
+
 	if err := releaseLogs(app, build.Release, os.Stdout); err != nil {
 		return err
 	}
