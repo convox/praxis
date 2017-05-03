@@ -62,7 +62,7 @@ func AppLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		return err
 	}
 
-	opts := types.AppLogsOptions{
+	opts := types.LogsOptions{
 		Filter: c.Query("filter"),
 		Follow: c.Query("follow") == "true",
 	}
