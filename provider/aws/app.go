@@ -78,7 +78,7 @@ func (p *Provider) AppGet(name string) (*types.App, error) {
 		return app, nil
 	}
 
-	rs, err := p.ReleaseList(name)
+	rs, err := p.ReleaseList(name, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return nil, err
 	}

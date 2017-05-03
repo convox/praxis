@@ -113,29 +113,33 @@ func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error
 	return releaseFromAttributes(id, res.Attributes)
 }
 
-func (p *Provider) ReleaseList(app string) (types.Releases, error) {
+func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
 	domain, err := p.appResource(app, "Releases")
 	if err != nil {
 		return nil, err
 	}
 
+	limit := coalescei(opts.Count, 10)
+
 	req := &simpledb.SelectInput{
 		ConsistentRead:   aws.Bool(true),
-		SelectExpression: aws.String(fmt.Sprintf("select * from `%s` where created is not null order by created desc", domain)),
+		SelectExpression: aws.String(fmt.Sprintf("select * from `%s` where created is not null order by created desc limit %d", domain, limit)),
 	}
 
 	releases := types.Releases{}
 
-	err = p.SimpleDB().SelectPages(req, func(res *simpledb.SelectOutput, last bool) bool {
-		for _, item := range res.Items {
-			if release, err := releaseFromAttributes(*item.Name, item.Attributes); err == nil {
-				releases = append(releases, *release)
-			}
-		}
-		return true
-	})
+	res, err := p.SimpleDB().Select(req)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, item := range res.Items {
+		release, err := p.releaseFromAttributes(*item.Name, item.Attributes)
+		if err != nil {
+			return nil, err
+		}
+
+		releases = append(releases, *release)
 	}
 
 	return releases, nil
