@@ -43,7 +43,7 @@ func Routes(server *api.Server) {
 	auth.Route("key.decrypt", "POST", "/apps/{app}/keys/{key}/decrypt", controllers.KeyDecrypt)
 	auth.Route("key.encrypt", "POST", "/apps/{app}/keys/{key}/encrypt", controllers.KeyEncrypt)
 
-	auth.Route("object.exists", "HEAD", "/apps/{app}/objects/{key:.*}", controllers.ObjectExists)
+	auth.Route("object.exists", "GET", "/apps/{app}/objects/{key:.*}/exists", controllers.ObjectExists)
 	auth.Route("object.fetch", "GET", "/apps/{app}/objects/{key:.*}", controllers.ObjectFetch)
 	auth.Route("object.store", "POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)
 
