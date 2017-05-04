@@ -47,10 +47,16 @@ func runEnv(c *cli.Context) error {
 		return err
 	}
 
-	env, err := Rack.EnvironmentGet(app)
+	rs, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return err
 	}
+
+	if len(rs) < 1 {
+		return nil
+	}
+
+	env := rs[0].Env
 
 	keys := []string{}
 
@@ -85,7 +91,22 @@ func runEnvSet(c *cli.Context) error {
 		return err
 	}
 
-	if err := Rack.EnvironmentSet(app, env); err != nil {
+	cenv := types.Environment{}
+
+	rs, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	if err != nil {
+		return err
+	}
+
+	if len(rs) > 0 {
+		cenv = rs[0].Env
+	}
+
+	for k, v := range env {
+		cenv[k] = v
+	}
+
+	if err := releaseCreate(app, types.ReleaseCreateOptions{Env: cenv}); err != nil {
 		return err
 	}
 
@@ -102,10 +123,23 @@ func runEnvUnset(c *cli.Context) error {
 		return err
 	}
 
-	for _, key := range c.Args() {
-		if err := Rack.EnvironmentUnset(app, key); err != nil {
-			return err
-		}
+	cenv := types.Environment{}
+
+	rs, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	if err != nil {
+		return err
+	}
+
+	if len(rs) > 0 {
+		cenv = rs[0].Env
+	}
+
+	for _, k := range c.Args() {
+		delete(cenv, k)
+	}
+
+	if err := releaseCreate(app, types.ReleaseCreateOptions{Env: cenv}); err != nil {
+		return err
 	}
 
 	return nil

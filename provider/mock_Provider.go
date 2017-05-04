@@ -254,57 +254,6 @@ func (_m *MockProvider) BuildUpdate(app string, id string, opts types.BuildUpdat
 	return r0, r1
 }
 
-// EnvironmentGet provides a mock function with given fields: app
-func (_m *MockProvider) EnvironmentGet(app string) (types.Environment, error) {
-	ret := _m.Called(app)
-
-	var r0 types.Environment
-	if rf, ok := ret.Get(0).(func(string) types.Environment); ok {
-		r0 = rf(app)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(types.Environment)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(app)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// EnvironmentSet provides a mock function with given fields: app, env
-func (_m *MockProvider) EnvironmentSet(app string, env types.Environment) error {
-	ret := _m.Called(app, env)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, types.Environment) error); ok {
-		r0 = rf(app, env)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// EnvironmentUnset provides a mock function with given fields: app, key
-func (_m *MockProvider) EnvironmentUnset(app string, key string) error {
-	ret := _m.Called(app, key)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(app, key)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // FilesDelete provides a mock function with given fields: app, pid, files
 func (_m *MockProvider) FilesDelete(app string, pid string, files []string) error {
 	ret := _m.Called(app, pid, files)
@@ -887,6 +836,29 @@ func (_m *MockProvider) SystemInstall(name string, opts types.SystemInstallOptio
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, types.SystemInstallOptions) error); ok {
 		r1 = rf(name, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SystemLogs provides a mock function with given fields: opts
+func (_m *MockProvider) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
+	ret := _m.Called(opts)
+
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(types.LogsOptions) io.ReadCloser); ok {
+		r0 = rf(opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadCloser)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(types.LogsOptions) error); ok {
+		r1 = rf(opts)
 	} else {
 		r1 = ret.Error(1)
 	}

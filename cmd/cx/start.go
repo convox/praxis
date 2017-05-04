@@ -52,9 +52,20 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	env, err := Rack.EnvironmentGet(app)
+	env := types.Environment{}
+
+	a, err := Rack.AppGet(app)
 	if err != nil {
 		return err
+	}
+
+	if a.Release != "" {
+		r, err := Rack.ReleaseGet(app, a.Release)
+		if err != nil {
+			return err
+		}
+
+		env = r.Env
 	}
 
 	if err := m.Validate(env); err != nil {

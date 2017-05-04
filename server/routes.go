@@ -33,10 +33,6 @@ func Routes(server *api.Server) {
 	auth.Route("build.logs", "GET", "/apps/{app}/builds/{id}/logs", controllers.BuildLogs)
 	auth.Route("build.update", "PUT", "/apps/{app}/builds/{id}", controllers.BuildUpdate)
 
-	auth.Route("environment.delete", "DELETE", "/apps/{app}/environment/{key}", controllers.EnvironmentDelete)
-	auth.Route("environment.get", "GET", "/apps/{app}/environment", controllers.EnvironmentGet)
-	auth.Route("environment.set", "POST", "/apps/{app}/environment", controllers.EnvironmentSet)
-
 	auth.Route("files.delete", "DELETE", "/apps/{app}/processes/{process}/files", controllers.FilesDelete)
 	auth.Route("files.upload", "POST", "/apps/{app}/processes/{process}/files", controllers.FilesUpload)
 
