@@ -437,7 +437,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 			return "", fmt.Errorf("no releases for app: %s", app)
 		}
 
-		opts.Image = fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s:%s.%s", account, p.Region, repo, opts.Service, rs[0].Build)
+		req.ContainerDefinitions[0].Image = aws.String(fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s:%s.%s", account, p.Region, repo, opts.Service, rs[0].Build))
 	}
 
 	if opts.Image != "" {
