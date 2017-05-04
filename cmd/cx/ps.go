@@ -15,6 +15,14 @@ func init() {
 		Flags: []cli.Flag{
 			appFlag,
 		},
+		Subcommands: cli.Commands{
+			cli.Command{
+				Name:        "stop",
+				Description: "stop a process",
+				Usage:       "<pid>",
+				Action:      runPsStop,
+			},
+		},
 	})
 }
 
@@ -36,6 +44,25 @@ func runPs(c *cli.Context) error {
 	}
 
 	t.Print()
+
+	return nil
+}
+
+func runPsStop(c *cli.Context) error {
+	app, err := appName(c, ".")
+	if err != nil {
+		return err
+	}
+
+	if len(c.Args()) < 1 {
+		return stdcli.Usage(c)
+	}
+
+	pid := c.Args()[0]
+
+	if err := Rack.ProcessStop(app, pid); err != nil {
+		return err
+	}
 
 	return nil
 }
