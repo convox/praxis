@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 
-	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
 	shellquote "github.com/kballard/go-shellquote"
@@ -35,7 +34,7 @@ func runExec(c *cli.Context) error {
 	pid := c.Args()[0]
 	command := shellquote.Join(c.Args()[1:]...)
 
-	code, err := Rack.ProcessExec(app, pid, command, types.ProcessExecOptions{Stream: helpers.ReadWriter{Reader: os.Stdin, Writer: os.Stdout}})
+	code, err := Rack.ProcessExec(app, pid, command, types.ProcessExecOptions{Stream: types.Stream{Reader: os.Stdin, Writer: os.Stdout}})
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 
-	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
 	shellquote "github.com/kballard/go-shellquote"
@@ -42,7 +41,7 @@ func runRun(c *cli.Context) error {
 	opts := types.ProcessRunOptions{
 		Command: command,
 		Service: service,
-		Stream:  helpers.ReadWriter{Reader: os.Stdin, Writer: os.Stdout},
+		Stream:  types.Stream{Reader: os.Stdin, Writer: os.Stdout},
 	}
 
 	code, err := Rack.ProcessRun(app, opts)

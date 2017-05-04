@@ -5,11 +5,6 @@ import (
 	"net/http"
 )
 
-type ReadWriter struct {
-	io.Reader
-	io.Writer
-}
-
 func HalfPipe(w io.Writer, r io.Reader) error {
 	defer func() {
 		if c, ok := w.(io.Closer); ok {
