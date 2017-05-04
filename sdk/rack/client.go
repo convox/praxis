@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strings"
 	"time"
 
@@ -87,32 +86,14 @@ func (o *RequestOptions) ContentType() string {
 	return "application/octet-stream"
 }
 
-func (c *Client) Head(path string, opts RequestOptions, out interface{}) error {
+func (c *Client) Head(path string, opts RequestOptions) error {
 	req, err := c.Request("HEAD", path, opts)
 	if err != nil {
 		return err
 	}
 
-	res, err := c.handleRequest(req)
-	if err != nil {
-		return err
-	}
-
-	defer res.Body.Close()
-
-	ov := reflect.ValueOf(out)
-	switch t := out.(type) {
-	case *bool:
-		b := ov.Elem()
-		b.SetBool(false)
-		if res.StatusCode == 200 {
-			b.SetBool(true)
-		}
-	default:
-		return fmt.Errorf("unexpected type %T\n", t)
-	}
-
-	return nil
+	_, err = c.handleRequest(req)
+	return err
 }
 
 func (c *Client) GetStream(path string, opts RequestOptions) (*http.Response, error) {
