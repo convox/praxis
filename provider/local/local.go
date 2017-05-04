@@ -59,12 +59,6 @@ func init() {
 }
 
 func (p *Provider) Init() error {
-	// if os.Getenv("PROVIDER_LOCAL_SKIP_FRONTEND_CHECK") != "true" {
-	//   if err := p.checkFrontend(); err != nil {
-	//     return err
-	//   }
-	// }
-
 	if err := os.MkdirAll(p.Root, 0700); err != nil {
 		return err
 	}
@@ -94,21 +88,22 @@ func (p *Provider) Init() error {
 
 // shutdown cleans up any running resources and exit
 func (p *Provider) shutdown() {
+	log := Logger.At("shutdown").Start()
+
 	cs, err := containersByLabels(map[string]string{
 		"convox.rack": p.Name,
 	})
 	if err != nil {
-		fmt.Printf("shutdown error %s", err)
+		log.Error(err)
 		return
 	}
 
 	for _, id := range cs {
-		if err := exec.Command("docker", "kill", id).Run(); err != nil {
-			fmt.Printf("shutdown error %s", err)
-		}
+		log.Logf("id=%s", id)
+		go exec.Command("docker", "stop", id)
 	}
 
-	os.Exit(1)
+	os.Exit(0)
 }
 
 func (p *Provider) createRootBucket(name string) (*bolt.Bucket, error) {
