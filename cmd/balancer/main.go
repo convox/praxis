@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -59,7 +58,7 @@ func main() {
 		}
 	case "target":
 		if err := handleTarget(protocol, target); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			fmt.Printf("err = %+v\n", err)
 		}
 	default:
 		usage()
@@ -150,7 +149,7 @@ func handleTarget(protocol, target string) error {
 
 		go func() {
 			if err := handleConnection(cn, app, u.Scheme, u.Hostname(), port); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %s\n", err)
+				fmt.Printf("err = %+v\n", err)
 			}
 		}()
 	}
@@ -199,12 +198,14 @@ func handleConnection(cn net.Conn, app string, scheme, host string, port int) er
 
 	out, err := Rack.Proxy(app, ps[0].Id, port, cn)
 	if err != nil {
+		fmt.Printf("proxy err: %s\n", err)
 		return err
 	}
 
 	defer out.Close()
 
 	if err := helpers.HalfPipe(cn, out); err != nil {
+		fmt.Printf("halfpipe err: %s\n", err)
 		return err
 	}
 
