@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -27,14 +25,13 @@ func runResources(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("rs = %+v\n", rs)
-	// t := stdcli.NewTable("NAME", "ENDPOINT")
+	t := stdcli.NewTable("NAME", "TYPE", "ENDPOINT")
 
-	// for _, s := range ss {
-	//   t.AddRow(s.Name, s.Endpoint)
-	// }
+	for _, r := range rs {
+		t.AddRow(r.Name, r.Type, r.Endpoint)
+	}
 
-	// t.Print()
+	t.Print()
 
 	return nil
 }
