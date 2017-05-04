@@ -77,6 +77,8 @@ type Provider interface {
 	ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error)
 	ReleaseLogs(app, id string) (io.ReadCloser, error)
 
+	ResourceList(app string) (types.Resources, error)
+
 	ServiceList(app string) (types.Services, error)
 
 	SystemGet() (*types.System, error)

@@ -1,7 +1,8 @@
 package types
 
 type Service struct {
-	Name     string `json:"name"`
+	Name string `json:"name"`
+
 	Endpoint string `json:"endpoint"`
 }
 
