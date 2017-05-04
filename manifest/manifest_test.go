@@ -1,16 +1,15 @@
 package manifest_test
 
 import (
-	"fmt"
-	"io/ioutil"
 	"testing"
 
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/manifest"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestManifestLoad(t *testing.T) {
-	data, err := testdata("full")
+	data, err := helpers.Testdata("full")
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -173,12 +172,8 @@ func TestManifestLoadInvalid(t *testing.T) {
 	assert.Error(t, err, "yaml: line 3: mapping values are not allowed in this context")
 }
 
-func testdata(name string) ([]byte, error) {
-	return ioutil.ReadFile(fmt.Sprintf("testdata/%s.yml", name))
-}
-
 func testdataManifest(name string) (*manifest.Manifest, error) {
-	data, err := testdata(name)
+	data, err := helpers.Testdata(name)
 	if err != nil {
 		return nil, err
 	}
