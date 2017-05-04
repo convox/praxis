@@ -20,6 +20,9 @@ func formationHelpers() template.FuncMap {
 		"resource": func(s string) string {
 			return upperName(s)
 		},
+		"safe": func(s string) template.HTML {
+			return template.HTML(s)
+		},
 		"upper": func(s string) string {
 			return strings.ToUpper(s)
 		},
