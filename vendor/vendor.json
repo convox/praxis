@@ -34,18 +34,6 @@
 			"revisionTime": "2015-12-04T14:14:43Z"
 		},
 		{
-			"checksumSHA1": "KmjnydoAbofMieIWm+it5OWERaM=",
-			"path": "github.com/alecthomas/template",
-			"revision": "a0175ee3bccc567396460bf5acd36800cb10c49c",
-			"revisionTime": "2016-04-05T07:15:01Z"
-		},
-		{
-			"checksumSHA1": "3wt0pTXXeS+S93unwhGoLIyGX/Q=",
-			"path": "github.com/alecthomas/template/parse",
-			"revision": "a0175ee3bccc567396460bf5acd36800cb10c49c",
-			"revisionTime": "2016-04-05T07:15:01Z"
-		},
-		{
 			"checksumSHA1": "MzeBnl/ZISBkyu2fJxtkJ8qcK5k=",
 			"path": "github.com/aws/aws-sdk-go",
 			"revision": "984e0dce0a464c7906d1526e635bf7841bc2e7c3",
@@ -302,12 +290,6 @@
 			"path": "github.com/convox/logger",
 			"revision": "83dac67db9513d027318b06248a27d373c29ff5c",
 			"revisionTime": "2016-08-25T18:52:19Z"
-		},
-		{
-			"checksumSHA1": "qoBYtIYr1pvp7x6W4jIRZkUKVrQ=",
-			"path": "github.com/convox/rack/cmd/convox/helpers",
-			"revision": "e53d96eec534a1dd0b83f2b45e2b2bdf352d967c",
-			"revisionTime": "2017-03-13T13:44:41Z"
 		},
 		{
 			"checksumSHA1": "jqSVRDK7dGg6E/NikVq1Kw6gdbA=",
