@@ -93,8 +93,6 @@ func (p *Provider) BuildGet(app, id string) (*types.Build, error) {
 		return nil, err
 	}
 
-	fmt.Printf("res = %+v\n", res)
-
 	return p.buildFromAttributes(id, res.Attributes)
 }
 
@@ -117,9 +115,12 @@ func (p *Provider) BuildList(app string) (types.Builds, error) {
 	builds := make(types.Builds, len(res.Items))
 
 	for i, item := range res.Items {
-		if build, err := p.buildFromAttributes(*item.Name, item.Attributes); err == nil {
-			builds[i] = *build
+		build, err := p.buildFromAttributes(*item.Name, item.Attributes)
+		if err != nil {
+			return nil, err
 		}
+
+		builds[i] = *build
 	}
 
 	return builds, nil

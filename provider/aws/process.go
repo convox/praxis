@@ -42,8 +42,6 @@ func (p *Provider) ProcessExec(app, pid, command string, opts types.ProcessExecO
 		host = fmt.Sprintf("http://%s:2376", *ei.PublicIpAddress)
 	}
 
-	fmt.Printf("host = %+v\n", host)
-
 	dc, err := docker.NewClient(host)
 	if err != nil {
 		return 0, err
@@ -171,8 +169,6 @@ func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
 	}
 
 	stream := fmt.Sprintf("convox/%s/%s", *t.Containers[0].Name, pid)
-
-	fmt.Printf("stream = %+v\n", stream)
 
 	r, w := io.Pipe()
 
