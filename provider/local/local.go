@@ -5,9 +5,9 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"syscall"
 	"time"
 
@@ -98,10 +98,16 @@ func (p *Provider) shutdown() {
 		return
 	}
 
+	var wg sync.WaitGroup
+
 	for _, id := range cs {
 		log.Logf("id=%s", id)
-		go exec.Command("docker", "stop", id)
+
+		wg.Add(1)
+		go p.containerStopAsync(id, &wg)
 	}
+
+	wg.Wait()
 
 	os.Exit(0)
 }
