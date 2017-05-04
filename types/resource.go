@@ -1,9 +1,10 @@
 package types
 
 type Resource struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Type   string `json:"type"`
+	Name string `json:"name"`
+
+	Endpoint string `json:"endpoint"`
+	Type     string `json:"type"`
 }
 
 type Resources []Resource
