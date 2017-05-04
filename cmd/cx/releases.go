@@ -122,6 +122,33 @@ func notReleaseStatus(app, id, status string) func() (bool, error) {
 	}
 }
 
+func releaseCreate(app string, opts types.ReleaseCreateOptions) error {
+	r, err := Rack.ReleaseCreate(app, opts)
+	if err != nil {
+		return err
+	}
+
+	logs, err := Rack.ReleaseLogs(app, r.Id)
+	if err != nil {
+		return err
+	}
+
+	if err := helpers.HalfPipe(os.Stdout, logs); err != nil {
+		return err
+	}
+
+	r, err = Rack.ReleaseGet(app, r.Id)
+	if err != nil {
+		return err
+	}
+
+	if r.Status != "complete" {
+		return fmt.Errorf("release failed")
+	}
+
+	return nil
+}
+
 func releaseLogs(app string, id string, w io.Writer) error {
 	if err := tickWithTimeout(2*time.Second, 5*time.Minute, notReleaseStatus(app, id, "created")); err != nil {
 		return err

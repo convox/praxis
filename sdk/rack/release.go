@@ -1,6 +1,7 @@
 package rack
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"strconv"
@@ -9,10 +10,15 @@ import (
 )
 
 func (c *Client) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (release *types.Release, err error) {
+	data, err := json.Marshal(opts.Env)
+	if err != nil {
+		return nil, err
+	}
+
 	ro := RequestOptions{
 		Params: Params{
 			"build": opts.Build,
-			"env":   fmt.Sprintf("%v", opts.Env),
+			"env":   string(data),
 		},
 	}
 
@@ -27,7 +33,7 @@ func (c *Client) ReleaseGet(app, id string) (release *types.Release, err error) 
 }
 
 func (c *Client) ReleaseList(app string, opts types.ReleaseListOptions) (releases types.Releases, err error) {
-	ro := RequestOptions{}
+	ro := RequestOptions{Query: Query{}}
 
 	if opts.Count > 0 {
 		ro.Query["count"] = strconv.Itoa(opts.Count)

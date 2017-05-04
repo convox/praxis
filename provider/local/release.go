@@ -25,7 +25,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		r.Build = opts.Build
 	}
 
-	if len(opts.Env) > 0 {
+	if opts.Env != nil {
 		r.Env = opts.Env
 	}
 

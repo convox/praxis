@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"net/http"
 	"sort"
 	"strconv"
@@ -11,17 +12,28 @@ import (
 
 func ReleaseCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
-	build := c.Form("build")
-	env := map[string]string{}
 
 	if _, err := Provider.AppGet(app); err != nil {
 		return err
 	}
 
-	release, err := Provider.ReleaseCreate(app, types.ReleaseCreateOptions{
-		Build: build,
-		Env:   env,
-	})
+	opts := types.ReleaseCreateOptions{}
+
+	if b := c.Form("build"); b != "" {
+		opts.Build = b
+	}
+
+	if e := c.Form("env"); e != "" {
+		var env types.Environment
+
+		if err := json.Unmarshal([]byte(e), &env); err != nil {
+			return err
+		}
+
+		opts.Env = env
+	}
+
+	release, err := Provider.ReleaseCreate(app, opts)
 	if err != nil {
 		return err
 	}
