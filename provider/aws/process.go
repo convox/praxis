@@ -248,7 +248,21 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 }
 
 func (p *Provider) ProcessStop(app, pid string) error {
-	return fmt.Errorf("unimplemented")
+	cluster, err := p.rackResource("RackCluster")
+	if err != nil {
+		return err
+	}
+
+	_, err = p.ECS().StopTask(&ecs.StopTaskInput{
+		Cluster: aws.String(cluster),
+		Reason:  aws.String("ProcessStop"),
+		Task:    aws.String(pid),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *Provider) fetchTaskDefinition(arn string) (*ecs.TaskDefinition, error) {
