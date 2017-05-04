@@ -3,6 +3,7 @@ package local
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"text/template"
@@ -42,6 +43,10 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 	}
 
 	return "https://localhost:5443", nil
+}
+
+func (p *Provider) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("unimplemented")
 }
 
 func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {

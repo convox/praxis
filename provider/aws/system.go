@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -86,6 +87,19 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 	}
 
 	return p.stackOutput(name, "Endpoint")
+}
+
+func (p *Provider) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
+	group, err := p.rackResource("RackLogs")
+	if err != nil {
+		return nil, err
+	}
+
+	r, w := io.Pipe()
+
+	go p.subscribeLogs(group, "", opts, w)
+
+	return r, nil
 }
 
 func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {

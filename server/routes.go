@@ -70,6 +70,7 @@ func Routes(server *api.Server) {
 	auth.Route("service.list", "GET", "/apps/{app}/services", controllers.ServiceList)
 
 	auth.Route("system.get", "GET", "/system", controllers.SystemGet)
+	auth.Route("system.logs", "GET", "/system/logs", controllers.SystemLogs)
 	auth.Route("system.update", "POST", "/system", controllers.SystemUpdate)
 
 	auth.Route("table.get", "GET", "/apps/{app}/tables/{table}", controllers.TableGet)
