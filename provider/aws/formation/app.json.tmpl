@@ -197,7 +197,7 @@
               { "Name": "{{ upper . }}_URL", "Value": { "Fn::GetAtt": [ "Resource{{resource . }}", "Outputs.Url" ] } },
             {{ end }}
             {{ range $k, $v := $.Env }}
-              { "Name": "{{$k}}", "Value": "{{$v}}" },
+              { "Name": "{{ $k }}", "Value": "{{ safe $v }}" },
             {{ end }}
             { "Ref": "AWS::NoValue" }
           ],
