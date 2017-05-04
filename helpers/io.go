@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -22,11 +21,11 @@ func HalfPipe(w io.Writer, r io.Reader) error {
 
 	for {
 		n, err := r.Read(buf)
-		fmt.Printf("n = %+v\n", n)
-		fmt.Printf("err = %+v\n", err)
 		if n > 0 {
 			if _, err := w.Write(buf[0:n]); err != nil {
-				return err
+				if err != io.ErrClosedPipe {
+					return err
+				}
 			}
 			if f, ok := w.(http.Flusher); ok {
 				f.Flush()
