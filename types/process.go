@@ -21,6 +21,7 @@ type Processes []Process
 
 type ProcessExecOptions struct {
 	Height int
+	Stream io.ReadWriter
 	Width  int
 }
 

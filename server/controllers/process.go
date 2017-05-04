@@ -11,6 +11,48 @@ import (
 	"github.com/convox/praxis/types"
 )
 
+func ProcessExec(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+	pid := c.Var("pid")
+
+	command := c.Header("Command")
+	height := c.Header("Height")
+	width := c.Header("Width")
+
+	opts := types.ProcessExecOptions{
+		Stream: types.Stream{Reader: r.Body, Writer: w},
+	}
+
+	if height != "" {
+		h, err := strconv.Atoi(height)
+		if err != nil {
+			return err
+		}
+
+		opts.Height = h
+	}
+
+	if width != "" {
+		w, err := strconv.Atoi(width)
+		if err != nil {
+			return err
+		}
+
+		opts.Width = w
+	}
+
+	w.Header().Add("Trailer", "Exit-Code")
+
+	code, err := Provider.ProcessExec(app, pid, command, opts)
+	if err != nil {
+		return err
+	}
+
+	w.Header().Set("Exit-Code", fmt.Sprintf("%d", code))
+
+	return err
+}
+
 func ProcessGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	pid := c.Var("pid")

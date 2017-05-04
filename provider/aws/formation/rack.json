@@ -1,5 +1,8 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
+  "Conditions": {
+    "BlankInstanceKey": { "Fn::Equals": [ { "Ref": "InstanceKey" }, "" ] }
+  },
   "Mappings": {
     "Constants": {
       "Values": {
@@ -88,6 +91,10 @@
     }
   },
   "Parameters": {
+    "InstanceKey": {
+      "Default": "",
+      "Type": "String"
+    },
     "InstanceSize": {
       "Default": "t2.micro",
       "Type": "String"
@@ -150,6 +157,7 @@
         "ImageId": { "Fn::FindInMap": [ "RegionConfig", { "Ref": "AWS::Region" }, "Ami" ] },
         "InstanceMonitoring": true,
         "InstanceType": { "Ref": "InstanceSize" },
+        "KeyName": { "Fn::If": [ "BlankInstanceKey", { "Ref": "AWS::NoValue" }, { "Ref": "InstanceKey" } ] },
         "PlacementTenancy" : "default",
         "SecurityGroups": [ { "Ref": "InstancesSecurity" } ],
         "UserData": { "Fn::Base64":
@@ -162,6 +170,7 @@
             "echo ECS_CLUSTER=", { "Ref": "RackCluster" }, " >> /etc/ecs/ecs.config\n",
             "echo ECS_ENGINE_AUTH_TYPE=docker >> /etc/ecs/ecs.config\n",
             "echo 'OPTIONS=\"${OPTIONS} --log-opt max-file=2 --log-opt max-size=50m --host=unix:///var/run/docker.sock --host=0.0.0.0:2376\"' >> /etc/sysconfig/docker\n",
+            "service docker reload\n",
             "echo -e '/var/log/docker {\\n  rotate 7\\n  daily\\n  nocompress\\n  copytruncate\\n}' >> /etc/logrotate.d/docker\n",
             "/opt/aws/bin/cfn-signal --stack ", { "Ref": "AWS::StackName" }, " --region ", { "Ref": "AWS::Region" }, " --resource Instances\n"
           ] ] }

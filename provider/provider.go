@@ -55,7 +55,7 @@ type Provider interface {
 	// ObjectList(prefix string) ([]string, error)
 	ObjectStore(app, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error)
 
-	// ProcessExec(app, pid, command string, stream io.ReadWriter, opts structs.ProcessExecOptions) error
+	ProcessExec(app, pid, command string, opts types.ProcessExecOptions) (int, error)
 	ProcessGet(app, pid string) (*types.Process, error)
 	ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error)
 	ProcessLogs(app, pid string) (io.ReadCloser, error)

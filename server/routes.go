@@ -47,11 +47,12 @@ func Routes(server *api.Server) {
 	auth.Route("object.fetch", "GET", "/apps/{app}/objects/{key:.*}", controllers.ObjectFetch)
 	auth.Route("object.store", "POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)
 
+	auth.Route("process.exec", "POST", "/apps/{app}/processes/{pid}/exec", controllers.ProcessExec)
 	auth.Route("process.get", "GET", "/apps/{app}/processes/{pid}", controllers.ProcessGet)
 	auth.Route("process.logs", "GET", "/apps/{app}/processes/{pid}/logs", controllers.ProcessLogs)
 	auth.Route("process.list", "GET", "/apps/{app}/processes", controllers.ProcessList)
 	auth.Route("process.run", "POST", "/apps/{app}/processes/run", controllers.ProcessRun)
-	auth.Route("process.start", "POST", "/apps/{app}/processes/start", controllers.ProcessStart)
+	auth.Route("process.start", "POST", "/apps/{app}/processes", controllers.ProcessStart)
 	auth.Route("process.stop", "DELETE", "/apps/{app}/processes/{pid}", controllers.ProcessStop)
 
 	auth.Route("proxy", "POST", "/apps/{app}/processes/{process}/proxy/{port}", controllers.Proxy)
