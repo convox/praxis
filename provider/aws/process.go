@@ -154,7 +154,7 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 	return pss, nil
 }
 
-func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
+func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.ReadCloser, error) {
 	group, err := p.appResource(app, "Logs")
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
 
 	r, w := io.Pipe()
 
-	go p.subscribeLogs(group, stream, types.LogsOptions{Follow: true}, w)
+	go p.subscribeLogs(group, stream, opts, w)
 
 	return r, nil
 }

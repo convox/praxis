@@ -107,9 +107,7 @@ func (p *Provider) AppRegistry(app string) (*types.Registry, error) {
 }
 
 func (p *Provider) processLogs(app string, ps types.Process, opts types.LogsOptions, w io.Writer) {
-	// TODO: use opts
-
-	r, err := p.ProcessLogs(app, ps.Id)
+	r, err := p.ProcessLogs(app, ps.Id, opts)
 	if err != nil {
 		w.Write([]byte(fmt.Sprintf("error: %s\n", err)))
 		return

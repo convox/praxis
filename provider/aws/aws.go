@@ -278,7 +278,11 @@ func (p *Provider) subscribeLogs(group, stream string, opts types.LogsOptions, w
 				pp := strings.Split(parts[2], "-")
 				ts := time.Unix(*e.Timestamp/1000, *e.Timestamp%1000*1000).UTC()
 
-				fmt.Fprintf(w, "%s %s/%s/%s %s\n", ts.Format(printableTime), parts[0], parts[1], pp[len(pp)-1], *e.Message)
+				if opts.Prefix {
+					fmt.Fprintf(w, "%s %s/%s/%s %s\n", ts.Format(printableTime), parts[0], parts[1], pp[len(pp)-1], *e.Message)
+				} else {
+					fmt.Fprintf(w, "%s\n", *e.Message)
+				}
 			}
 		}
 

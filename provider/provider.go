@@ -58,7 +58,7 @@ type Provider interface {
 	ProcessExec(app, pid, command string, opts types.ProcessExecOptions) (int, error)
 	ProcessGet(app, pid string) (*types.Process, error)
 	ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error)
-	ProcessLogs(app, pid string) (io.ReadCloser, error)
+	ProcessLogs(app, pid string, opts types.LogsOptions) (io.ReadCloser, error)
 	ProcessRun(app string, opts types.ProcessRunOptions) (int, error)
 	ProcessStart(app string, opts types.ProcessRunOptions) (string, error)
 	ProcessStop(app, pid string) error
