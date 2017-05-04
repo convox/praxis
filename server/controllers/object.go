@@ -18,7 +18,13 @@ func ObjectExists(w http.ResponseWriter, r *http.Request, c *api.Context) error 
 		return err
 	}
 
-	return c.RenderJSON(exists)
+	status := http.StatusNotFound
+	if exists {
+		status = http.StatusOK
+	}
+
+	w.WriteHeader(status)
+	return nil
 }
 
 func ObjectFetch(w http.ResponseWriter, r *http.Request, c *api.Context) error {
