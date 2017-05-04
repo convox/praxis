@@ -447,16 +447,14 @@ func (_m *MockProvider) ObjectStore(app string, key string, r io.Reader, opts ty
 }
 
 // ProcessExec provides a mock function with given fields: app, pid, command, opts
-func (_m *MockProvider) ProcessExec(app string, pid string, command string, opts types.ProcessExecOptions) (io.ReadWriteCloser, error) {
+func (_m *MockProvider) ProcessExec(app string, pid string, command string, opts types.ProcessExecOptions) (int, error) {
 	ret := _m.Called(app, pid, command, opts)
 
-	var r0 io.ReadWriteCloser
-	if rf, ok := ret.Get(0).(func(string, string, string, types.ProcessExecOptions) io.ReadWriteCloser); ok {
+	var r0 int
+	if rf, ok := ret.Get(0).(func(string, string, string, types.ProcessExecOptions) int); ok {
 		r0 = rf(app, pid, command, opts)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(io.ReadWriteCloser)
-		}
+		r0 = ret.Get(0).(int)
 	}
 
 	var r1 error
