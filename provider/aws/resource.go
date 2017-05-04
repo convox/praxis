@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
@@ -42,23 +43,19 @@ func (p *Provider) ResourceList(app string) (types.Resources, error) {
 			return nil, err
 		}
 
-		url, err := p.stackOutput(stack, "Url")
+		e, err := p.stackOutput(stack, "Url")
 		if err != nil {
 			return nil, err
 		}
 
-		fmt.Printf("i = %+v\n", i)
-		fmt.Printf("stack = %+v\n", stack)
-		fmt.Printf("url = %+v\n", url)
-
-		// rs[i] = types.Resource{
-		//   Name:     r.Name,
-		//   Endpoint: url,
-		//   Type:     r.Type,
-		// }
+		rs[i] = types.Resource{
+			Name:     r.Name,
+			Endpoint: e,
+			Type:     r.Type,
+		}
 	}
 
-	fmt.Printf("rs = %+v\n", rs)
+	sort.Slice(rs, func(i, j int) bool { return rs[i].Name < rs[j].Name })
 
-	return nil, fmt.Errorf("unimplemented")
+	return rs, nil
 }
