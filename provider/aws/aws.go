@@ -417,7 +417,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		})
 	}
 
-	if opts.Service != "" {
+	if opts.Service != "" && opts.Image == "" {
 		account, err := p.rackOutput("Account")
 		if err != nil {
 			return "", err
@@ -434,12 +434,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		}
 
 		if len(rs) < 1 {
-			r, err := p.releaseFork(app)
-			if err != nil {
-				return "", err
-			}
-
-			rs = append(rs, *r)
+			return "", fmt.Errorf("no releases for app: %s", app)
 		}
 
 		req.ContainerDefinitions[0].Image = aws.String(fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s:%s.%s", account, p.Region, repo, opts.Service, rs[0].Build))
