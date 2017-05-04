@@ -90,15 +90,10 @@ type Provider interface {
 	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
 	// SystemUpdate(opts types.SystemUpdateOptions) error
 
-	TableCreate(app, name string, opts types.TableCreateOptions) error
 	TableGet(app, table string) (*types.Table, error)
 	TableList(app string) (types.Tables, error)
+	TableQuery(app, table, query string) (types.TableRows, error)
 	TableTruncate(app, table string) error
-	TableRowDelete(app, table string, key string, opts types.TableRowDeleteOptions) error
-	TableRowGet(app, table, key string, opts types.TableRowGetOptions) (*types.TableRow, error)
-	TableRowStore(app, table string, attrs types.TableRow) (string, error)
-	TableRowsDelete(app, table string, key []string, opts types.TableRowDeleteOptions) error
-	TableRowsGet(app, table string, key []string, opts types.TableRowGetOptions) (types.TableRows, error)
 }
 
 // FromEnv returns a new Provider from env vars

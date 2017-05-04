@@ -173,12 +173,6 @@ func (p *Provider) releasePromote(app, release string) error {
 		return err
 	}
 
-	for _, t := range m.Tables {
-		if err := p.TableCreate(app, t.Name, types.TableCreateOptions{Indexes: t.Indexes}); err != nil {
-			return err
-		}
-	}
-
 	for _, t := range m.Timers {
 		opts := types.TimerCreateOptions{
 			Command:  t.Command,

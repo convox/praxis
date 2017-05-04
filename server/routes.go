@@ -76,15 +76,9 @@ func Routes(server *api.Server) {
 	auth.Route("system.get", "GET", "/system", controllers.SystemGet)
 	auth.Route("system.update", "POST", "/system", controllers.SystemUpdate)
 
-	auth.Route("table.create", "POST", "/apps/{app}/tables/{table}", controllers.TableCreate)
 	auth.Route("table.get", "GET", "/apps/{app}/tables/{table}", controllers.TableGet)
 	auth.Route("table.list", "GET", "/apps/{app}/tables", controllers.TableList)
 	auth.Route("table.truncate", "POST", "/apps/{app}/tables/{table}/truncate", controllers.TableTruncate)
-	auth.Route("table.row.delete", "DELETE", "/apps/{app}/tables/{table}/indexes/{index}/{key}", controllers.TableRowDelete)
-	auth.Route("table.row.get", "GET", "/apps/{app}/tables/{table}/indexes/{index}/{key}", controllers.TableRowGet)
-	auth.Route("table.row.store", "POST", "/apps/{app}/tables/{table}/rows", controllers.TableRowStore)
-	auth.Route("table.rows.delete", "POST", "/apps/{app}/tables/{table}/indexes/{index}/batch/remove", controllers.TableRowsDelete)
-	auth.Route("table.rows.get", "POST", "/apps/{app}/tables/{table}/indexes/{index}/batch", controllers.TableRowsGet)
 }
 
 func authenticate(password string) api.Middleware {
