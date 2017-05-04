@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -30,6 +31,8 @@ func (s Stream) Write(data []byte) (int, error) {
 	// }
 
 	n, err := s.Writer.Write(data)
+	fmt.Printf("n = %+v\n", n)
+	fmt.Printf("err = %+v\n", err)
 	if err != nil {
 		return n, err
 	}
