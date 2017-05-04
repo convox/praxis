@@ -56,5 +56,14 @@ func runDeploy(c *cli.Context) error {
 		return err
 	}
 
+	r, err := Rack.ReleaseGet(app, build.Release)
+	if err != nil {
+		return err
+	}
+
+	if r.Status != "complete" {
+		return fmt.Errorf("deploy failed")
+	}
+
 	return nil
 }

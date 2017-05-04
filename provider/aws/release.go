@@ -31,7 +31,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		r.Build = opts.Build
 	}
 
-	if len(opts.Env) > 0 {
+	if opts.Env != nil {
 		r.Env = opts.Env
 	}
 
@@ -53,6 +53,18 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		return nil, err
 	}
 
+	group, err := p.appResource(app, "Logs")
+	if err != nil {
+		return nil, err
+	}
+
+	stream := fmt.Sprintf("convox/release/%s", r.Id)
+
+	topic, err := p.rackResource("NotificationTopic")
+	if err != nil {
+		return nil, err
+	}
+
 	tp := map[string]interface{}{
 		"App":      a,
 		"Env":      r.Env,
@@ -65,6 +77,8 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 	if err != nil {
 		return nil, err
 	}
+
+	// fmt.Printf("string(data) = %+v\n", string(data))
 
 	domain, err := p.rackOutput("Domain")
 	if err != nil {
@@ -84,13 +98,51 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		return nil, err
 	}
 
-	fmt.Printf("string(data) = %+v\n", string(data))
+	// p.writeLogf(group, stream, "creating changeset: %s", r.Id)
+
+	// _, err = p.CloudFormation().CreateChangeSet(&cloudformation.CreateChangeSetInput{
+	//   Capabilities:     []*string{aws.String("CAPABILITY_IAM")},
+	//   ChangeSetName:    aws.String(r.Id),
+	//   ChangeSetType:    aws.String("UPDATE"),
+	//   ClientToken:      aws.String(r.Id),
+	//   Description:      aws.String(fmt.Sprintf("Release %s (Build %s)", r.Id, r.Build)),
+	//   Parameters:       params,
+	//   NotificationARNs: []*string{aws.String(topic)},
+	//   StackName:        aws.String(stack),
+	//   TemplateBody:     aws.String(string(data)),
+	// })
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	// err = p.CloudFormation().WaitUntilChangeSetCreateComplete(&cloudformation.DescribeChangeSetInput{
+	//   ChangeSetName: aws.String(r.Id),
+	//   StackName:     aws.String(stack),
+	// })
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	// p.writeLogf(group, stream, "executing changeset: %s", r.Id)
+
+	// _, err = p.CloudFormation().ExecuteChangeSet(&cloudformation.ExecuteChangeSetInput{
+	//   ChangeSetName:      aws.String(r.Id),
+	//   ClientRequestToken: aws.String(r.Id),
+	//   StackName:          aws.String(stack),
+	// })
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	p.writeLogf(group, stream, "Updating CloudFormation Stack: %s", stack)
 
 	_, err = p.CloudFormation().UpdateStack(&cloudformation.UpdateStackInput{
-		Capabilities: []*string{aws.String("CAPABILITY_IAM")},
-		Parameters:   params,
-		StackName:    aws.String(fmt.Sprintf("%s-%s", p.Name, app)),
-		TemplateBody: aws.String(string(data)),
+		Capabilities:       []*string{aws.String("CAPABILITY_IAM")},
+		ClientRequestToken: aws.String(r.Id),
+		Parameters:         params,
+		NotificationARNs:   []*string{aws.String(topic)},
+		StackName:          aws.String(stack),
+		TemplateBody:       aws.String(string(data)),
 	})
 	if err != nil {
 		return nil, err
@@ -149,12 +201,36 @@ func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types
 }
 
 func (p *Provider) ReleaseLogs(app, id string) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("unimplemented")
+	group, err := p.appResource(app, "Logs")
+	if err != nil {
+		return nil, err
+	}
+
+	stream := fmt.Sprintf("convox/release/%s", id)
+
+	r, w := io.Pipe()
+
+	go p.subscribeLogsCallback(group, stream, types.LogsOptions{Follow: true}, w, func() bool {
+		r, err := p.ReleaseGet(app, id)
+		if err != nil {
+			return false
+		}
+
+		switch r.Status {
+		case "complete", "failed":
+			return false
+		}
+
+		return true
+	})
+
+	return r, nil
 }
 
 func (p *Provider) releaseFromAttributes(id string, attrs []*simpledb.Attribute) (*types.Release, error) {
 	release := &types.Release{
-		Id: id,
+		Env: types.Environment{},
+		Id:  id,
 	}
 
 	// get app first so we can use it later
@@ -231,10 +307,10 @@ func (p *Provider) releaseStore(release *types.Release) error {
 	}
 
 	attrs := []*simpledb.ReplaceableAttribute{
-		{Name: aws.String("app"), Value: aws.String(release.App)},
-		{Name: aws.String("build"), Value: aws.String(release.Build)},
-		{Name: aws.String("created"), Value: aws.String(release.Created.Format(sortableTime))},
-		{Name: aws.String("status"), Value: aws.String(release.Status)},
+		{Replace: aws.Bool(true), Name: aws.String("app"), Value: aws.String(release.App)},
+		{Replace: aws.Bool(true), Name: aws.String("build"), Value: aws.String(release.Build)},
+		{Replace: aws.Bool(true), Name: aws.String("created"), Value: aws.String(release.Created.Format(sortableTime))},
+		{Replace: aws.Bool(true), Name: aws.String("status"), Value: aws.String(release.Status)},
 	}
 
 	if len(release.Env) > 0 {

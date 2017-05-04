@@ -73,7 +73,17 @@ func FromEnv() (*Provider, error) {
 		}
 	}
 
+	if err := p.Init(); err != nil {
+		return nil, err
+	}
+
 	return p, nil
+}
+
+func (p *Provider) Init() error {
+	go p.workers()
+
+	return nil
 }
 
 func (p *Provider) CloudFormation() *cloudformation.CloudFormation {
@@ -235,7 +245,54 @@ func (p *Provider) rackResource(resource string) (string, error) {
 	return p.stackResource(p.Name, resource)
 }
 
+func (p *Provider) writeLogf(group, stream, format string, args ...interface{}) error {
+	req := &cloudwatchlogs.PutLogEventsInput{
+		LogGroupName:  aws.String(group),
+		LogStreamName: aws.String(stream),
+		LogEvents: []*cloudwatchlogs.InputLogEvent{
+			&cloudwatchlogs.InputLogEvent{
+				Message:   aws.String(fmt.Sprintf(format, args...)),
+				Timestamp: aws.Int64(time.Now().UTC().UnixNano() / 1000000),
+			},
+		},
+	}
+
+	for {
+		res, err := p.CloudWatchLogs().PutLogEvents(req)
+		switch awsError(err) {
+		// if the log stream doesnt exist, create it
+		case "ResourceNotFoundException":
+			_, err := p.CloudWatchLogs().CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
+				LogGroupName:  aws.String(group),
+				LogStreamName: aws.String(stream),
+			})
+			if err != nil {
+				return err
+			}
+			continue
+		// need to set the sequence token
+		case "DataAlreadyAcceptedException":
+			fmt.Println("DataAlready")
+			fmt.Printf("res = %+v\n", res)
+			req.SequenceToken = res.NextSequenceToken
+			continue
+		case "InvalidSequenceTokenException":
+			if ae, ok := err.(awserr.Error); ok {
+				parts := strings.Split(ae.Message(), " ")
+				req.SequenceToken = aws.String(parts[len(parts)-1])
+				continue
+			}
+		}
+
+		return err
+	}
+}
+
 func (p *Provider) subscribeLogs(group, stream string, opts types.LogsOptions, w io.WriteCloser) error {
+	return p.subscribeLogsCallback(group, stream, opts, w, nil)
+}
+
+func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOptions, w io.WriteCloser, fn func() bool) error {
 	defer w.Close()
 
 	req := &cloudwatchlogs.FilterLogEventsInput{
@@ -288,6 +345,12 @@ func (p *Provider) subscribeLogs(group, stream string, opts types.LogsOptions, w
 
 		if !opts.Follow {
 			break
+		}
+
+		if fn != nil {
+			if !fn() {
+				return nil
+			}
 		}
 
 		time.Sleep(1 * time.Second)

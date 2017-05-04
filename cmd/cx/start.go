@@ -114,7 +114,7 @@ func runStart(c *cli.Context) error {
 	}
 
 	switch r.Status {
-	case "created", "promoting", "complete":
+	case "created", "running", "complete":
 	case "failed":
 		return fmt.Errorf("release failed: %s", r.Error)
 	default:
@@ -125,7 +125,7 @@ func runStart(c *cli.Context) error {
 		go watchChanges(m, app, s.Name, ch)
 	}
 
-	logs, err := Rack.AppLogs(app, types.LogsOptions{})
+	logs, err := Rack.AppLogs(app, types.LogsOptions{Follow: true})
 	if err != nil {
 		return err
 	}
