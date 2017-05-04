@@ -103,7 +103,21 @@ func (p *Provider) ProcessExec(app, pid, command string, opts types.ProcessExecO
 }
 
 func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
-	return nil, fmt.Errorf("unimplemented")
+	t, err := p.taskForPid(pid)
+	if err != nil {
+		return nil, err
+	}
+
+	ps, err := p.processFromTask(app, t)
+	if err != nil {
+		return nil, err
+	}
+
+	if ps.App != app {
+		return nil, fmt.Errorf("process not found: %s\n", pid)
+	}
+
+	return ps, nil
 }
 
 func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error) {
