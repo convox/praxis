@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 	"time"
 
@@ -48,6 +49,10 @@ func (o *RequestOptions) Querystring() string {
 func (o *RequestOptions) Reader() (io.Reader, error) {
 	if o.Body != nil && len(o.Params) > 0 {
 		return nil, fmt.Errorf("cannot specify both Body and Params")
+	}
+
+	if o.Body == nil && len(o.Params) == 0 {
+		return nil, nil
 	}
 
 	if o.Body != nil {
@@ -95,7 +100,19 @@ func (c *Client) Head(path string, opts RequestOptions, out interface{}) error {
 
 	defer res.Body.Close()
 
-	return unmarshalReader(res.Body, out)
+	ov := reflect.ValueOf(out)
+	switch t := out.(type) {
+	case *bool:
+		b := ov.Elem()
+		b.SetBool(false)
+		if res.StatusCode == 200 {
+			b.SetBool(true)
+		}
+	default:
+		return fmt.Errorf("unexpected type %T\n", t)
+	}
+
+	return nil
 }
 
 func (c *Client) GetStream(path string, opts RequestOptions) (*http.Response, error) {
