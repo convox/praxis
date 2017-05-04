@@ -922,20 +922,6 @@ func (_m *MockProvider) SystemUpdate(opts types.SystemUpdateOptions) error {
 	return r0
 }
 
-// TableCreate provides a mock function with given fields: app, name, opts
-func (_m *MockProvider) TableCreate(app string, name string, opts types.TableCreateOptions) error {
-	ret := _m.Called(app, name, opts)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, types.TableCreateOptions) error); ok {
-		r0 = rf(app, name, opts)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // TableGet provides a mock function with given fields: app, table
 func (_m *MockProvider) TableGet(app string, table string) (*types.Table, error) {
 	ret := _m.Called(app, table)
@@ -982,85 +968,13 @@ func (_m *MockProvider) TableList(app string) (types.Tables, error) {
 	return r0, r1
 }
 
-// TableRowDelete provides a mock function with given fields: app, table, key, opts
-func (_m *MockProvider) TableRowDelete(app string, table string, key string, opts types.TableRowDeleteOptions) error {
-	ret := _m.Called(app, table, key, opts)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, string, types.TableRowDeleteOptions) error); ok {
-		r0 = rf(app, table, key, opts)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// TableRowGet provides a mock function with given fields: app, table, key, opts
-func (_m *MockProvider) TableRowGet(app string, table string, key string, opts types.TableRowGetOptions) (*types.TableRow, error) {
-	ret := _m.Called(app, table, key, opts)
-
-	var r0 *types.TableRow
-	if rf, ok := ret.Get(0).(func(string, string, string, types.TableRowGetOptions) *types.TableRow); ok {
-		r0 = rf(app, table, key, opts)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.TableRow)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string, types.TableRowGetOptions) error); ok {
-		r1 = rf(app, table, key, opts)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// TableRowStore provides a mock function with given fields: app, table, attrs
-func (_m *MockProvider) TableRowStore(app string, table string, attrs types.TableRow) (string, error) {
-	ret := _m.Called(app, table, attrs)
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func(string, string, types.TableRow) string); ok {
-		r0 = rf(app, table, attrs)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, types.TableRow) error); ok {
-		r1 = rf(app, table, attrs)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// TableRowsDelete provides a mock function with given fields: app, table, key, opts
-func (_m *MockProvider) TableRowsDelete(app string, table string, key []string, opts types.TableRowDeleteOptions) error {
-	ret := _m.Called(app, table, key, opts)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, []string, types.TableRowDeleteOptions) error); ok {
-		r0 = rf(app, table, key, opts)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// TableRowsGet provides a mock function with given fields: app, table, key, opts
-func (_m *MockProvider) TableRowsGet(app string, table string, key []string, opts types.TableRowGetOptions) (types.TableRows, error) {
-	ret := _m.Called(app, table, key, opts)
+// TableQuery provides a mock function with given fields: app, table, query
+func (_m *MockProvider) TableQuery(app string, table string, query string) (types.TableRows, error) {
+	ret := _m.Called(app, table, query)
 
 	var r0 types.TableRows
-	if rf, ok := ret.Get(0).(func(string, string, []string, types.TableRowGetOptions) types.TableRows); ok {
-		r0 = rf(app, table, key, opts)
+	if rf, ok := ret.Get(0).(func(string, string, string) types.TableRows); ok {
+		r0 = rf(app, table, query)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(types.TableRows)
@@ -1068,8 +982,8 @@ func (_m *MockProvider) TableRowsGet(app string, table string, key []string, opt
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, []string, types.TableRowGetOptions) error); ok {
-		r1 = rf(app, table, key, opts)
+	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = rf(app, table, query)
 	} else {
 		r1 = ret.Error(1)
 	}
