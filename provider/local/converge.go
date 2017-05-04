@@ -114,7 +114,7 @@ func (p *Provider) converge(app string) error {
 
 		if !found {
 			log.Successf("action=kill id=%s", rc)
-			exec.Command("docker", "kill", rc).Run()
+			exec.Command("docker", "stop", rc).Run()
 		}
 	}
 
@@ -123,8 +123,11 @@ func (p *Provider) converge(app string) error {
 }
 
 func (p *Provider) convergePrune() error {
+	log := Logger.At("converge.prune").Start()
+
 	apps, err := p.AppList()
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -132,6 +135,7 @@ func (p *Provider) convergePrune() error {
 		"convox.rack": p.Name,
 	})
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -143,6 +147,7 @@ func (p *Provider) convergePrune() error {
 			"convox.app":  a.Name,
 		})
 		if err != nil {
+			log.Error(err)
 			return err
 		}
 
@@ -153,7 +158,8 @@ func (p *Provider) convergePrune() error {
 
 	for _, c := range all {
 		if !appc[c] {
-			fmt.Printf("extra: %s\n", c)
+			log.Successf("action=kill id=%s", c)
+			exec.Command("docker", "stop", c).Run()
 		}
 	}
 
