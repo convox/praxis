@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"os/user"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/convox/praxis/frontend"
 	"github.com/convox/praxis/provider"
@@ -57,6 +59,28 @@ func init() {
 						Name:  "version",
 						Usage: "rack version",
 						Value: "latest",
+					},
+				},
+			},
+			cli.Command{
+				Name:        "logs",
+				Description: "show rack logs",
+				Action:      runRackLogs,
+				Flags: []cli.Flag{
+					appFlag,
+					cli.StringFlag{
+						Name:  "filter",
+						Usage: "filter logs",
+						Value: "",
+					},
+					cli.BoolFlag{
+						Name:  "follow, f",
+						Usage: "stream logs continuously",
+					},
+					cli.StringFlag{
+						Name:  "since",
+						Usage: "how far back to retrieve logs",
+						Value: "2m",
 					},
 				},
 			},
@@ -175,6 +199,31 @@ func runRackInstall(c *cli.Context) error {
 	case "local":
 	default:
 		fmt.Printf("RACK_URL=%s\n", u.String())
+	}
+
+	return nil
+}
+
+func runRackLogs(c *cli.Context) error {
+	since, err := time.ParseDuration(c.String("since"))
+	if err != nil {
+		return err
+	}
+
+	opts := types.LogsOptions{
+		Filter: c.String("filter"),
+		Follow: c.Bool("follow"),
+		Prefix: true,
+		Since:  time.Now().Add(-1 * since),
+	}
+
+	logs, err := Rack.SystemLogs(opts)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(os.Stdout, logs); err != nil {
+		return err
 	}
 
 	return nil

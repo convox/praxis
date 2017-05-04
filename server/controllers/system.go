@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/convox/api"
 	"github.com/convox/praxis/types"
@@ -14,6 +16,36 @@ func SystemGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	}
 
 	return c.RenderJSON(system)
+}
+
+func SystemLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	opts := types.LogsOptions{
+		Filter: c.Query("filter"),
+		Follow: c.Query("follow") == "true",
+		Prefix: c.Query("prefix") == "true",
+	}
+
+	if since := c.Query("since"); since != "" {
+		t, err := strconv.Atoi(since)
+		if err != nil {
+			return err
+		}
+
+		opts.Since = time.Unix(int64(t), 0)
+	}
+
+	logs, err := Provider.SystemLogs(opts)
+	if err != nil {
+		return err
+	}
+
+	w.WriteHeader(200)
+
+	if err := stream(w, logs); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func SystemUpdate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
