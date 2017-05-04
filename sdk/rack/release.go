@@ -27,7 +27,7 @@ func (c *Client) ReleaseGet(app, id string) (release *types.Release, err error) 
 }
 
 func (c *Client) ReleaseList(app string, opts types.ReleaseListOptions) (releases types.Releases, err error) {
-	ro := RequestOptions{}
+	ro := RequestOptions{Query: Query{}}
 
 	if opts.Count > 0 {
 		ro.Query["count"] = strconv.Itoa(opts.Count)

@@ -147,7 +147,7 @@ func (p *Provider) releasePromote(app, release string) error {
 		return nil
 	}
 
-	r.Status = "promoting"
+	r.Status = "running"
 
 	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, release), r); err != nil {
 		return err

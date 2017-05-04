@@ -46,7 +46,7 @@ func runReleases(c *cli.Context) error {
 		return err
 	}
 
-	releases, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	releases, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 10})
 	if err != nil {
 		return err
 	}

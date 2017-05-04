@@ -65,6 +65,7 @@ func AppLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	opts := types.LogsOptions{
 		Filter: c.Query("filter"),
 		Follow: c.Query("follow") == "true",
+		Prefix: c.Query("prefix") == "true",
 	}
 
 	if since := c.Query("since"); since != "" {
