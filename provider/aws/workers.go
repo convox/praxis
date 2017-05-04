@@ -70,9 +70,6 @@ func (p *Provider) workerQueues() error {
 				return err
 			}
 
-			rs := msg["ResourceStatus"]
-			fmt.Printf("rs = %+v\n", rs)
-
 			switch msg["ResourceStatus"] {
 			case "UPDATE_IN_PROGRESS":
 				r.Status = "running"

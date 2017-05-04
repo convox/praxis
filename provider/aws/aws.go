@@ -272,8 +272,6 @@ func (p *Provider) writeLogf(group, stream, format string, args ...interface{}) 
 			continue
 		// need to set the sequence token
 		case "DataAlreadyAcceptedException":
-			fmt.Println("DataAlready")
-			fmt.Printf("res = %+v\n", res)
 			req.SequenceToken = res.NextSequenceToken
 			continue
 		case "InvalidSequenceTokenException":
