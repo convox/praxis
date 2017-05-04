@@ -90,7 +90,12 @@ func ProcessLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	pid := c.Var("pid")
 
-	logs, err := Provider.ProcessLogs(app, pid)
+	opts := types.LogsOptions{
+		Follow: c.Query("follow") == "true",
+		Prefix: c.Query("prefix") == "true",
+	}
+
+	logs, err := Provider.ProcessLogs(app, pid, opts)
 	if err != nil {
 		return err
 	}

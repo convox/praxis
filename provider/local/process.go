@@ -60,7 +60,7 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 	return processList(filters, false)
 }
 
-func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
+func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.ReadCloser, error) {
 	_, err := p.ProcessGet(app, pid)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,15 @@ func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
 
 	r, w := io.Pipe()
 
-	cmd := exec.Command("docker", "logs", "-f", pid)
+	args := []string{"logs"}
+
+	if opts.Follow {
+		args = append(args, "-f")
+	}
+
+	args = append(args, pid)
+
+	cmd := exec.Command("docker", args...)
 
 	cmd.Stdout = w
 	cmd.Stderr = w

@@ -513,13 +513,13 @@ func (_m *MockProvider) ProcessList(app string, opts types.ProcessListOptions) (
 	return r0, r1
 }
 
-// ProcessLogs provides a mock function with given fields: app, pid
-func (_m *MockProvider) ProcessLogs(app string, pid string) (io.ReadCloser, error) {
-	ret := _m.Called(app, pid)
+// ProcessLogs provides a mock function with given fields: app, pid, opts
+func (_m *MockProvider) ProcessLogs(app string, pid string, opts types.LogsOptions) (io.ReadCloser, error) {
+	ret := _m.Called(app, pid, opts)
 
 	var r0 io.ReadCloser
-	if rf, ok := ret.Get(0).(func(string, string) io.ReadCloser); ok {
-		r0 = rf(app, pid)
+	if rf, ok := ret.Get(0).(func(string, string, types.LogsOptions) io.ReadCloser); ok {
+		r0 = rf(app, pid, opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(io.ReadCloser)
@@ -527,8 +527,8 @@ func (_m *MockProvider) ProcessLogs(app string, pid string) (io.ReadCloser, erro
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(app, pid)
+	if rf, ok := ret.Get(1).(func(string, string, types.LogsOptions) error); ok {
+		r1 = rf(app, pid, opts)
 	} else {
 		r1 = ret.Error(1)
 	}

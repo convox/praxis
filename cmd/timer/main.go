@@ -66,7 +66,7 @@ func run() error {
 			return
 		}
 
-		r, err := Rack.ProcessLogs(flagApp, pid)
+		r, err := Rack.ProcessLogs(flagApp, pid, types.LogsOptions{Follow: true})
 		if err != nil {
 			ch <- err
 			return

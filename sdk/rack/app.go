@@ -38,6 +38,7 @@ func (c *Client) AppLogs(app string, opts types.LogsOptions) (io.ReadCloser, err
 		Query: Query{
 			"filter": opts.Filter,
 			"follow": fmt.Sprintf("%t", opts.Follow),
+			"prefix": fmt.Sprintf("%t", opts.Prefix),
 		},
 	}
 
