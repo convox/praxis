@@ -134,7 +134,7 @@ func (p *Provider) BuildLogs(app, id string) (io.ReadCloser, error) {
 
 	switch build.Status {
 	case "running":
-		return p.ProcessLogs(app, build.Process)
+		return p.ProcessLogs(app, build.Process, types.LogsOptions{Follow: true})
 	default:
 		return p.ObjectFetch(app, fmt.Sprintf("convox/builds/%s/log", id))
 	}

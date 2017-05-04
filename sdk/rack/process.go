@@ -53,7 +53,7 @@ func (c *Client) ProcessList(app string, opts types.ProcessListOptions) (ps type
 	return
 }
 
-func (c *Client) ProcessLogs(app, pid string) (io.ReadCloser, error) {
+func (c *Client) ProcessLogs(app, pid string, opts types.LogsOptions) (io.ReadCloser, error) {
 	res, err := c.GetStream(fmt.Sprintf("/apps/%s/processes/%s/logs", app, pid), RequestOptions{})
 	if err != nil {
 		return nil, err
