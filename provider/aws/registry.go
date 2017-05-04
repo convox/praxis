@@ -23,11 +23,50 @@ func (p *Provider) RegistryAdd(hostname, username, password string) (*types.Regi
 }
 
 func (p *Provider) RegistryList() (types.Registries, error) {
-	return types.Registries{}, nil
+	domain, err := p.rackResource("RackRegistries")
+	if err != nil {
+		return nil, err
+	}
+
+	req := &simpledb.SelectInput{
+		ConsistentRead:   aws.Bool(true),
+		SelectExpression: aws.String(fmt.Sprintf("select * from `%s`", domain)),
+	}
+
+	res, err := p.SimpleDB().Select(req)
+	if err != nil {
+		return nil, err
+	}
+
+	rs := make(types.Registries, len(res.Items))
+
+	for i, item := range res.Items {
+		r, err := registryFromAttributes(*item.Name, item.Attributes)
+		if err != nil {
+			return nil, err
+		}
+
+		rs[i] = *r
+	}
+
+	return rs, nil
 }
 
 func (p *Provider) RegistryRemove(hostname string) error {
-	return fmt.Errorf("unimplemented")
+	domain, err := p.rackResource("RackRegistries")
+	if err != nil {
+		return err
+	}
+
+	_, err = p.SimpleDB().DeleteAttributes(&simpledb.DeleteAttributesInput{
+		DomainName: aws.String(domain),
+		ItemName:   aws.String(hostname),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func registryFromAttributes(hostname string, attrs []*simpledb.Attribute) (*types.Registry, error) {
