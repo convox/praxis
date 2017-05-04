@@ -27,17 +27,8 @@ type Provider interface {
 	BuildList(app string) (types.Builds, error)
 	BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*types.Build, error)
 
-	// CertificateCreate(pub, key, chain string) (*structs.Certificate, error)
-	// CertificateDelete(id string) error
-	// CertificateGenerate(domains []string) (*structs.Certificate, error)
-	// CertificateList() (structs.Certificates, error)
-
 	FilesDelete(app, pid string, files []string) error
 	FilesUpload(app, pid string, r io.Reader) error
-
-	// FormationList(app string) (structs.Formation, error)
-	// FormationGet(app, process string) (*structs.ProcessFormation, error)
-	// FormationSave(app string, pf *structs.ProcessFormation) error
 
 	// InstanceList() (structs.Instances, error)
 	// InstanceTerminate(id string) error
@@ -79,12 +70,9 @@ type Provider interface {
 
 	SystemGet() (*types.System, error)
 	SystemInstall(name string, opts types.SystemInstallOptions) (string, error)
+	SystemLogs(opts types.LogsOptions) (io.ReadCloser, error)
 	SystemUninstall(name string, opts types.SystemInstallOptions) error
 	SystemUpdate(opts types.SystemUpdateOptions) error
-
-	// SystemLogs() (io.ReadCloser, error)
-	// SystemProcesses(opts structs.SystemProcessesOptions) (structs.Processes, error)
-	// SystemUpdate(opts types.SystemUpdateOptions) error
 
 	TableGet(app, table string) (*types.Table, error)
 	TableList(app string) (types.Tables, error)

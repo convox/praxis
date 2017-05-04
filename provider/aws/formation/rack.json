@@ -306,6 +306,36 @@
         "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
       }
     },
+    "NotificationQueue": {
+      "Type": "AWS::SQS::Queue"
+    },
+    "NotificationQueuePolicy": {
+      "Type": "AWS::SQS::QueuePolicy",
+      "Properties": {
+        "Queues": [ { "Ref": "NotificationQueue" } ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": { "AWS": "*" },
+              "Action": "sqs:SendMessage",
+              "Resource": { "Fn::GetAtt": [ "NotificationQueue", "Arn" ] },
+              "Condition": { "ArnEquals": { "aws:SourceArn": { "Ref": "NotificationTopic" } } }
+            }
+          ]
+        }
+      }
+    },
+    "NotificationTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "DisplayName": { "Fn::Sub": "${AWS::StackName}-events" },
+        "Subscription": [
+          { "Protocol": "sqs", "Endpoint": { "Fn::GetAtt": [ "NotificationQueue", "Arn" ] } }
+        ]
+      }
+    },
     "RackCluster": {
       "Type": "AWS::ECS::Cluster"
     },
