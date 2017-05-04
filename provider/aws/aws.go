@@ -193,6 +193,40 @@ func humanStatus(status string) string {
 	}
 }
 
+func (p *Provider) containerInstance(arn string) (*ecs.ContainerInstance, error) {
+	cluster, err := p.rackResource("RackCluster")
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := p.ECS().DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
+		Cluster:            aws.String(cluster),
+		ContainerInstances: []*string{aws.String(arn)},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(res.ContainerInstances) < 1 {
+		return nil, fmt.Errorf("could not find container instance: %s", arn)
+	}
+
+	return res.ContainerInstances[0], nil
+}
+
+func (p *Provider) ec2Instance(id string) (*ec2.Instance, error) {
+	res, err := p.EC2().DescribeInstances(&ec2.DescribeInstancesInput{
+		InstanceIds: []*string{aws.String(id)},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Reservations) < 1 || len(res.Reservations[0].Instances) < 1 {
+		return nil, fmt.Errorf("could not find ec2 instance: %s", id)
+	}
+
+	return res.Reservations[0].Instances[0], nil
+}
+
 func (p *Provider) rackOutput(output string) (string, error) {
 	return p.stackOutput(p.Name, output)
 }
@@ -348,6 +382,10 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		req.ContainerDefinitions[0].Command = []*string{aws.String("sh"), aws.String("-c"), aws.String(opts.Command)}
 	}
 
+	if opts.Stream != nil {
+		req.ContainerDefinitions[0].Command = []*string{aws.String("sleep"), aws.String("3600")}
+	}
+
 	for k, v := range opts.Environment {
 		req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
 			Name:  aws.String(k),
@@ -377,6 +415,29 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 			Name:  aws.String(k),
 			Value: aws.String(v),
 		})
+	}
+
+	if opts.Service != "" {
+		account, err := p.rackOutput("Account")
+		if err != nil {
+			return "", err
+		}
+
+		repo, err := p.appResource(app, "Repository")
+		if err != nil {
+			return "", err
+		}
+
+		rs, err := p.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+		if err != nil {
+			return "", err
+		}
+
+		if len(rs) < 1 {
+			return "", fmt.Errorf("no releases for app: %s", app)
+		}
+
+		opts.Image = fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s:%s.%s", account, p.Region, repo, opts.Service, rs[0].Build)
 	}
 
 	if opts.Image != "" {

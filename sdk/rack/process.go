@@ -7,8 +7,35 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
+
+func (c *Client) ProcessExec(app, pid, command string, opts types.ProcessExecOptions) (int, error) {
+	ro := RequestOptions{
+		Body: opts.Stream,
+		Headers: Headers{
+			"Command": command,
+		},
+	}
+
+	res, err := c.PostStream(fmt.Sprintf("/apps/%s/processes/%s/exec", app, pid), ro)
+	if err != nil {
+		return 0, err
+	}
+
+	defer res.Body.Close()
+
+	if err := helpers.HalfPipe(opts.Stream, res.Body); err != nil {
+		return 0, err
+	}
+
+	if code, err := strconv.Atoi(res.Trailer.Get("Exit-Code")); err == nil {
+		return code, nil
+	}
+
+	return 0, nil
+}
 
 func (c *Client) ProcessGet(app, pid string) (ps *types.Process, err error) {
 	err = c.Get(fmt.Sprintf("/apps/%s/processes/%s", app, pid), RequestOptions{}, &ps)
@@ -84,7 +111,7 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 
 	defer res.Body.Close()
 
-	if _, err := io.Copy(opts.Stream, res.Body); err != nil {
+	if err := helpers.HalfPipe(opts.Stream, res.Body); err != nil {
 		return 0, err
 	}
 
@@ -130,7 +157,7 @@ func (c *Client) ProcessStart(app string, opts types.ProcessRunOptions) (string,
 
 	var pid string
 
-	if err := c.Post(fmt.Sprintf("/apps/%s/processes/start", app), ro, &pid); err != nil {
+	if err := c.Post(fmt.Sprintf("/apps/%s/processes", app), ro, &pid); err != nil {
 		return "", err
 	}
 

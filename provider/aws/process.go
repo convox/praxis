@@ -3,6 +3,7 @@ package aws
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"sort"
 	"strings"
@@ -11,11 +12,94 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/convox/praxis/types"
+	docker "github.com/fsouza/go-dockerclient"
 	shellquote "github.com/kballard/go-shellquote"
 )
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+}
+
+func (p *Provider) ProcessExec(app, pid, command string, opts types.ProcessExecOptions) (int, error) {
+	t, err := p.taskForPid(pid)
+	if err != nil {
+		return 0, err
+	}
+
+	ci, err := p.containerInstance(*t.ContainerInstanceArn)
+	if err != nil {
+		return 0, err
+	}
+
+	ei, err := p.ec2Instance(*ci.Ec2InstanceId)
+	if err != nil {
+		return 0, err
+	}
+
+	host := fmt.Sprintf("http://%s:2376", *ei.PrivateIpAddress)
+
+	if p.Development {
+		host = fmt.Sprintf("http://%s:2376", *ei.PublicIpAddress)
+	}
+
+	fmt.Printf("host = %+v\n", host)
+
+	dc, err := docker.NewClient(host)
+	if err != nil {
+		return 0, err
+	}
+
+	cs, err := dc.ListContainers(docker.ListContainersOptions{
+		Filters: map[string][]string{
+			"label": {fmt.Sprintf("com.amazonaws.ecs.task-arn=%s", *t.TaskArn)},
+		},
+	})
+	if err != nil {
+		return 0, err
+	}
+	if len(cs) < 1 {
+		return 0, fmt.Errorf("could not find container for pid: %s", pid)
+	}
+
+	eres, err := dc.CreateExec(docker.CreateExecOptions{
+		AttachStdin:  true,
+		AttachStdout: true,
+		AttachStderr: true,
+		Tty:          true,
+		Cmd:          []string{"sh", "-c", command},
+		Container:    cs[0].ID,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	success := make(chan struct{})
+
+	go func() {
+		<-success
+		dc.ResizeExecTTY(eres.ID, opts.Height, opts.Width)
+		success <- struct{}{}
+	}()
+
+	err = dc.StartExec(eres.ID, docker.StartExecOptions{
+		Detach:       false,
+		Tty:          true,
+		InputStream:  ioutil.NopCloser(opts.Stream),
+		OutputStream: opts.Stream,
+		ErrorStream:  opts.Stream,
+		RawTerminal:  true,
+		Success:      success,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	ires, err := dc.InspectExec(eres.ID)
+	if err != nil {
+		return 0, err
+	}
+
+	return ires.ExitCode, nil
 }
 
 func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
@@ -84,7 +168,49 @@ func (p *Provider) ProcessLogs(app, pid string) (io.ReadCloser, error) {
 }
 
 func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
-	return 0, fmt.Errorf("unimplemented")
+	cluster, err := p.rackResource("RackCluster")
+	if err != nil {
+		return 0, err
+	}
+
+	pid, err := p.ProcessStart(app, opts)
+	if err != nil {
+		return 0, err
+	}
+
+	treq := &ecs.DescribeTasksInput{
+		Cluster: aws.String(cluster),
+		Tasks:   []*string{aws.String(pid)},
+	}
+
+	if opts.Stream != nil {
+		if err := p.ECS().WaitUntilTasksRunning(treq); err != nil {
+			return 0, err
+		}
+
+		return p.ProcessExec(app, pid, opts.Command, types.ProcessExecOptions{
+			Height: opts.Height,
+			Stream: opts.Stream,
+			Width:  opts.Width,
+		})
+	}
+
+	if err := p.ECS().WaitUntilTasksStopped(treq); err != nil {
+		return 0, err
+	}
+
+	tres, err := p.ECS().DescribeTasks(treq)
+	if err != nil {
+		return 0, err
+	}
+	if len(tres.Tasks) != 1 {
+		return 0, fmt.Errorf("unable to find process")
+	}
+	if len(tres.Tasks[0].Containers) != 1 {
+		return 0, fmt.Errorf("no container for pid: %s", pid)
+	}
+
+	return int(*tres.Tasks[0].Containers[0].ExitCode), nil
 }
 
 func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
@@ -100,22 +226,25 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 
 	req := &ecs.RunTaskInput{
 		Cluster:        aws.String(cluster),
-		StartedBy:      aws.String(opts.Name),
 		TaskDefinition: aws.String(td),
+	}
+
+	if opts.Name != "" {
+		req.StartedBy = aws.String(opts.Name)
 	}
 
 	res, err := p.ECS().RunTask(req)
 	if err != nil {
 		return "", err
 	}
-
 	if len(res.Tasks) != 1 {
 		return "", fmt.Errorf("unable to start process")
 	}
 
 	parts := strings.Split(*res.Tasks[0].TaskArn, "/")
+	pid := parts[len(parts)-1]
 
-	return parts[len(parts)-1], nil
+	return pid, nil
 }
 
 func (p *Provider) ProcessStop(app, pid string) error {

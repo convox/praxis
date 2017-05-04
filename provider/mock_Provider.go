@@ -446,6 +446,29 @@ func (_m *MockProvider) ObjectStore(app string, key string, r io.Reader, opts ty
 	return r0, r1
 }
 
+// ProcessExec provides a mock function with given fields: app, pid, command, opts
+func (_m *MockProvider) ProcessExec(app string, pid string, command string, opts types.ProcessExecOptions) (io.ReadWriteCloser, error) {
+	ret := _m.Called(app, pid, command, opts)
+
+	var r0 io.ReadWriteCloser
+	if rf, ok := ret.Get(0).(func(string, string, string, types.ProcessExecOptions) io.ReadWriteCloser); ok {
+		r0 = rf(app, pid, command, opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadWriteCloser)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string, types.ProcessExecOptions) error); ok {
+		r1 = rf(app, pid, command, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ProcessGet provides a mock function with given fields: app, pid
 func (_m *MockProvider) ProcessGet(app string, pid string) (*types.Process, error) {
 	ret := _m.Called(app, pid)

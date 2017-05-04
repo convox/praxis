@@ -16,6 +16,10 @@ import (
 	shellquote "github.com/kballard/go-shellquote"
 )
 
+func (p *Provider) ProcessExec(app, pid, command string, opts types.ProcessExecOptions) (int, error) {
+	return 0, fmt.Errorf("unimplemented")
+}
+
 func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
 	data, err := exec.Command("docker", "inspect", pid, "--format", "{{.ID}}").CombinedOutput()
 	if err != nil {
