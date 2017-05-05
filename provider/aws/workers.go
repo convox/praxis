@@ -74,6 +74,7 @@ func (p *Provider) workerQueues() error {
 			case "UPDATE_IN_PROGRESS":
 				r.Status = "running"
 			case "UPDATE_COMPLETE":
+				p.writeLogf(group, stream, "release promoted: %s", msg["ClientRequestToken"])
 				r.Status = "complete"
 			}
 

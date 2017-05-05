@@ -5,12 +5,18 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/convox/praxis/manifest"
 	shellquote "github.com/kballard/go-shellquote"
 )
 
+var convergeLock sync.Mutex
+
 func (p *Provider) converge(app string) error {
+	convergeLock.Lock()
+	defer convergeLock.Unlock()
+
 	log := Logger.At("converge").Namespace("app=%s", app).Start()
 
 	a, err := p.AppGet(app)
@@ -72,8 +78,10 @@ func (p *Provider) converge(app string) error {
 
 		cs[i].Id = id
 
-		if err := p.containerRegister(cs[i]); err != nil {
-			return err
+		if c.Hostname != "" {
+			if err := p.containerRegister(cs[i]); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -113,6 +121,7 @@ func (p *Provider) converge(app string) error {
 		}
 
 		if !found {
+			p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, r.Id), []byte(fmt.Sprintf("stopping: %s\n", rc)))
 			log.Successf("action=kill id=%s", rc)
 			exec.Command("docker", "stop", rc).Run()
 		}
@@ -123,6 +132,9 @@ func (p *Provider) converge(app string) error {
 }
 
 func (p *Provider) convergePrune() error {
+	convergeLock.Lock()
+	defer convergeLock.Unlock()
+
 	log := Logger.At("converge.prune").Start()
 
 	apps, err := p.AppList()

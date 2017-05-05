@@ -50,6 +50,23 @@ func (p *Provider) containerConverge(c container, app, release string) (string, 
 
 	switch len(ids) {
 	case 0:
+		suffix := ""
+
+		if c.Hostname != "" {
+			scheme := "tcp"
+
+			switch c.Port.Host {
+			case 443:
+				scheme = "https"
+			case 5432:
+				scheme = "postgres"
+			}
+
+			suffix = fmt.Sprintf(" (%s://%s:%d)", scheme, c.Hostname, c.Port.Host)
+		}
+
+		p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, release), []byte(fmt.Sprintf("starting: %s%s\n", c.Name, suffix)))
+
 		i, err := p.containerStart(c, app, release)
 		if err != nil {
 			return "", err

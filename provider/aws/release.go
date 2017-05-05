@@ -134,7 +134,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 	//   return nil, err
 	// }
 
-	p.writeLogf(group, stream, "Updating CloudFormation Stack: %s", stack)
+	p.writeLogf(group, stream, "updating: %s", stack)
 
 	_, err = p.CloudFormation().UpdateStack(&cloudformation.UpdateStackInput{
 		Capabilities:       []*string{aws.String("CAPABILITY_IAM")},
