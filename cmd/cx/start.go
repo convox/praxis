@@ -116,7 +116,7 @@ func runStart(c *cli.Context) error {
 	switch r.Status {
 	case "created", "running", "complete":
 	case "failed":
-		return fmt.Errorf("release failed: %s", r.Error)
+		return fmt.Errorf("release failed")
 	default:
 		return fmt.Errorf("unknown release status: %s", r.Status)
 	}

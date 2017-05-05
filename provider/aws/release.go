@@ -200,7 +200,7 @@ func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types
 	return releases, nil
 }
 
-func (p *Provider) ReleaseLogs(app, id string) (io.ReadCloser, error) {
+func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadCloser, error) {
 	group, err := p.appResource(app, "Logs")
 	if err != nil {
 		return nil, err
@@ -210,7 +210,7 @@ func (p *Provider) ReleaseLogs(app, id string) (io.ReadCloser, error) {
 
 	r, w := io.Pipe()
 
-	go p.subscribeLogsCallback(group, stream, types.LogsOptions{Follow: true}, w, func() bool {
+	go p.subscribeLogsCallback(group, stream, opts, w, func() bool {
 		r, err := p.ReleaseGet(app, id)
 		if err != nil {
 			return false
