@@ -17,7 +17,7 @@ func TestReleaseCreateGet(t *testing.T) {
 
 	opts := types.ReleaseCreateOptions{
 		Build: "BTEST",
-		Env: map[string]string{
+		Env: types.Environment{
 			"APP": "app",
 			"FOO": "bar",
 		},
@@ -44,26 +44,26 @@ func TestReleaseList(t *testing.T) {
 	}
 
 	p.ReleaseCreate("app", types.ReleaseCreateOptions{Build: "B1"})
-	p.ReleaseCreate("app", types.ReleaseCreateOptions{Env: map[string]string{"FOO": "bar"}})
+	p.ReleaseCreate("app", types.ReleaseCreateOptions{Env: types.Environment{"FOO": "bar"}})
 	p.ReleaseCreate("app", types.ReleaseCreateOptions{Build: "B2"})
 	p.ReleaseCreate("app", types.ReleaseCreateOptions{Build: "B3"})
-	p.ReleaseCreate("app", types.ReleaseCreateOptions{Env: map[string]string{"FOO": "baz"}})
+	p.ReleaseCreate("app", types.ReleaseCreateOptions{Env: types.Environment{"FOO": "baz"}})
 	p.ReleaseCreate("app", types.ReleaseCreateOptions{Build: "B4"})
 
 	rs, err := p.ReleaseList("app", types.ReleaseListOptions{})
 
 	if assert.NoError(t, err) && assert.Len(t, rs, 6) {
 		assert.Equal(t, "B4", rs[0].Build)
-		assert.Equal(t, map[string]string{"FOO": "baz"}, rs[0].Env)
+		assert.Equal(t, types.Environment{"FOO": "baz"}, rs[0].Env)
 		assert.Equal(t, "B3", rs[1].Build)
-		assert.Equal(t, map[string]string{"FOO": "baz"}, rs[1].Env)
+		assert.Equal(t, types.Environment{"FOO": "baz"}, rs[1].Env)
 		assert.Equal(t, "B3", rs[2].Build)
-		assert.Equal(t, map[string]string{"FOO": "bar"}, rs[2].Env)
+		assert.Equal(t, types.Environment{"FOO": "bar"}, rs[2].Env)
 		assert.Equal(t, "B2", rs[3].Build)
-		assert.Equal(t, map[string]string{"FOO": "bar"}, rs[3].Env)
+		assert.Equal(t, types.Environment{"FOO": "bar"}, rs[3].Env)
 		assert.Equal(t, "B1", rs[4].Build)
-		assert.Equal(t, map[string]string{"FOO": "bar"}, rs[4].Env)
+		assert.Equal(t, types.Environment{"FOO": "bar"}, rs[4].Env)
 		assert.Equal(t, "B1", rs[5].Build)
-		assert.Equal(t, map[string]string(nil), rs[5].Env)
+		assert.Equal(t, types.Environment{}, rs[5].Env)
 	}
 }
