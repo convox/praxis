@@ -43,8 +43,20 @@ func (c *Client) ReleaseList(app string, opts types.ReleaseListOptions) (release
 	return
 }
 
-func (c *Client) ReleaseLogs(app, id string) (io.ReadCloser, error) {
-	res, err := c.GetStream(fmt.Sprintf("/apps/%s/releases/%s/logs", app, id), RequestOptions{})
+func (c *Client) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadCloser, error) {
+	ro := RequestOptions{
+		Query: Query{
+			"filter": opts.Filter,
+			"follow": fmt.Sprintf("%t", opts.Follow),
+			"prefix": fmt.Sprintf("%t", opts.Prefix),
+		},
+	}
+
+	if !opts.Since.IsZero() {
+		ro.Query["since"] = strconv.Itoa(int(opts.Since.UTC().Unix()))
+	}
+
+	res, err := c.GetStream(fmt.Sprintf("/apps/%s/releases/%s/logs", app, id), ro)
 	if err != nil {
 		return nil, err
 	}

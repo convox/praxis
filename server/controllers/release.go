@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/convox/api"
 	"github.com/convox/praxis/types"
@@ -96,7 +97,22 @@ func ReleaseLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		return err
 	}
 
-	logs, err := Provider.ReleaseLogs(app, id)
+	opts := types.LogsOptions{
+		Filter: c.Query("filter"),
+		Follow: c.Query("follow") == "true",
+		Prefix: c.Query("prefix") == "true",
+	}
+
+	if since := c.Query("since"); since != "" {
+		t, err := strconv.Atoi(since)
+		if err != nil {
+			return err
+		}
+
+		opts.Since = time.Unix(int64(t), 0)
+	}
+
+	logs, err := Provider.ReleaseLogs(app, id, opts)
 	if err != nil {
 		return err
 	}

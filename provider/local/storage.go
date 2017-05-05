@@ -156,14 +156,16 @@ func (p *Provider) storageStore(key string, v interface{}) error {
 	})
 }
 
-func (p *Provider) storageLogRead(key string, fn func(at time.Time, entry []byte)) error {
+func (p *Provider) storageLogRead(key string, since time.Time, fn func(at time.Time, entry []byte)) error {
 	return p.storageBucket(key, func(bucket *bolt.Bucket) error {
 		return bucket.ForEach(func(k, v []byte) error {
 			at, err := time.Parse(sortableTime, string(k))
 			if err != nil {
 				return err
 			}
-			fn(at, v)
+			if at.After(since) {
+				fn(at, v)
+			}
 			return nil
 		})
 	})
