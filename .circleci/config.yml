@@ -4,8 +4,6 @@ jobs:
       - image: convox/test
       - image: convox/praxis:latest
     working_directory: /go/src/github.com/convox/praxis
-    environment:
-      RACK_URL: https://rack:3000
     steps:
       - setup_remote_docker
       - checkout
