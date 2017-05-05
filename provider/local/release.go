@@ -36,9 +36,10 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 	if !p.Test {
 		go func() {
 			if err := p.releasePromote(app, r.Id); err != nil {
-				r.Error = err.Error()
+				p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, r.Id), []byte(fmt.Sprintf("error: %s\n", err)))
 				r.Status = "failed"
 			} else {
+				p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, r.Id), []byte(fmt.Sprintf("release promoted: %s\n", r.Id)))
 				r.Status = "complete"
 			}
 
@@ -51,6 +52,11 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 
 func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
 	err = p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), &release)
+
+	if release.Env == nil {
+		release.Env = types.Environment{}
+	}
+
 	return
 }
 
