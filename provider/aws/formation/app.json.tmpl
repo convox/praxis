@@ -212,10 +212,10 @@
             }
           },
           "Memory": "{{ .Scale.Memory }}",
-          "Name": "{{ .Name }}",
           {{ with .Port.Port }}
-            "PortMappings": [ { "ContainerPort": "{{ . }}", "Protocol": "tcp" } ]
+            "PortMappings": [ { "ContainerPort": "{{ . }}", "Protocol": "tcp" } ],
           {{ end }}
+          "Name": "{{ .Name }}"
         } ],
         "Family": { "Fn::Sub": "${AWS::StackName}-{{ .Name }}" },
         "TaskRoleArn": { "Ref": "Role" },
