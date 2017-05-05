@@ -19,12 +19,12 @@ import (
 func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error) {
 	a, err := p.AppGet(app)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("APP GET: %s", err)
 	}
 
 	r, err := p.releaseFork(app)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("releaseFork: %s", err)
 	}
 
 	if opts.Build != "" {
@@ -36,7 +36,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 	}
 
 	if err := p.releaseStore(r); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("releaseStore: %s", err)
 	}
 
 	if r.Build == "" {
@@ -45,7 +45,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 
 	b, err := p.BuildGet(app, r.Build)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("BuildGet: %s", err)
 	}
 
 	m, err := manifest.Load([]byte(b.Manifest))
@@ -63,12 +63,12 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 
 	data, err := formationTemplate("app", tp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("formationTemplate: %s", err)
 	}
 
 	domain, err := p.rackOutput("Domain")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rackOutput: %s", err)
 	}
 
 	updates := map[string]string{
@@ -81,7 +81,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 
 	params, err := p.cloudformationUpdateParameters(stack, data, updates)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cloudformationUpdateParameters: %s", err)
 	}
 
 	fmt.Printf("string(data) = %+v\n", string(data))
@@ -93,7 +93,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		TemplateBody: aws.String(string(data)),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("UpdateStack: %s", err)
 	}
 
 	return r, nil

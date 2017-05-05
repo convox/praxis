@@ -194,7 +194,7 @@ func release() error {
 }
 
 func fail(err error) {
-	fmt.Fprintf(w, "build error: %s\n ----------------- build error", err)
+	fmt.Fprintf(w, "build error: %s\n", err)
 
 	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Ended: time.Now(), Status: "failed"}); err != nil {
 		fmt.Fprintf(w, "error: could not update build: %s\n", err)
