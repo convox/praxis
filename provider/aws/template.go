@@ -46,12 +46,13 @@ func formationTemplate(name string, data interface{}) ([]byte, error) {
 
 	var v interface{}
 
+	fmt.Printf("buf.String() = %+v\n", buf.String())
 	if err := json.Unmarshal(buf.Bytes(), &v); err != nil {
 		switch t := err.(type) {
 		case *json.SyntaxError:
-			return nil, jsonSyntaxError(t, buf.Bytes())
+			return nil, fmt.Errorf("%s \n\n\n\n\n %s", jsonSyntaxError(t, buf.Bytes()), buf.String())
 		}
-		return nil, fmt.Errorf("%s \n\n\n\n %s", err, buf.String())
+		return nil, err
 	}
 
 	return json.MarshalIndent(v, "", "  ")
