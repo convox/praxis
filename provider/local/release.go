@@ -82,7 +82,7 @@ func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types
 	return releases, nil
 }
 
-func (p *Provider) ReleaseLogs(app, id string) (io.ReadCloser, error) {
+func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadCloser, error) {
 	key := fmt.Sprintf("apps/%s/releases/%s/log", app, id)
 
 	r, err := p.ReleaseGet(app, id)
@@ -90,23 +90,48 @@ func (p *Provider) ReleaseLogs(app, id string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	switch r.Status {
-	case "complete", "failed":
-	default:
-		p.waitForRelease(app, id, nil)
+	for {
+		if r.Status != "created" {
+			break
+		}
+
+		r, err = p.ReleaseGet(app, id)
+		if err != nil {
+			return nil, err
+		}
+
+		time.Sleep(1 * time.Second)
 	}
 
 	lr, lw := io.Pipe()
 
 	go func() {
 		defer lw.Close()
-		p.storageLogRead(key, func(at time.Time, entry []byte) {
-			lw.Write(entry)
-		})
+
+		var since time.Time
+
+		for {
+			time.Sleep(200 * time.Millisecond)
+
+			p.storageLogRead(key, since, func(at time.Time, entry []byte) {
+				since = at
+				lw.Write(entry)
+			})
+
+			if !opts.Follow {
+				break
+			}
+
+			r, err := p.ReleaseGet(app, id)
+			if err != nil {
+				continue
+			}
+
+			if r.Status == "complete" || r.Status == "failed" {
+				break
+			}
+		}
 	}()
-	if err != nil {
-		return nil, err
-	}
 
 	return lr, nil
 }
@@ -192,23 +217,4 @@ func (p *Provider) releasePromote(app, release string) error {
 	}
 
 	return nil
-}
-
-func (p *Provider) waitForRelease(app, id string, fn func()) {
-	for {
-		time.Sleep(1 * time.Second)
-
-		r, err := p.ReleaseGet(app, id)
-		if err != nil {
-			continue
-		}
-
-		if r.Status == "complete" || r.Status == "failed" {
-			break
-		}
-	}
-
-	if fn != nil {
-		fn()
-	}
 }

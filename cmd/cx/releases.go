@@ -35,6 +35,23 @@ func init() {
 				Description: "release logs",
 				Usage:       "<id>",
 				Action:      runReleasesLogs,
+				Flags: []cli.Flag{
+					appFlag,
+					cli.StringFlag{
+						Name:  "filter",
+						Usage: "filter logs",
+						Value: "",
+					},
+					cli.BoolFlag{
+						Name:  "follow, f",
+						Usage: "stream logs continuously",
+					},
+					cli.StringFlag{
+						Name:  "since",
+						Usage: "how far back to retrieve logs",
+						Value: "2m",
+					},
+				},
 			},
 		},
 	})
@@ -96,7 +113,19 @@ func runReleasesLogs(c *cli.Context) error {
 		return err
 	}
 
-	logs, err := Rack.ReleaseLogs(app, id)
+	since, err := time.ParseDuration(c.String("since"))
+	if err != nil {
+		return err
+	}
+
+	opts := types.LogsOptions{
+		Filter: c.String("filter"),
+		Follow: c.Bool("follow"),
+		Prefix: true,
+		Since:  time.Now().Add(-1 * since),
+	}
+
+	logs, err := Rack.ReleaseLogs(app, id, opts)
 	if err != nil {
 		return err
 	}
@@ -128,12 +157,7 @@ func releaseCreate(app string, opts types.ReleaseCreateOptions) error {
 		return err
 	}
 
-	logs, err := Rack.ReleaseLogs(app, r.Id)
-	if err != nil {
-		return err
-	}
-
-	if err := helpers.HalfPipe(os.Stdout, logs); err != nil {
+	if err := releaseLogs(app, r.Id, os.Stdout); err != nil {
 		return err
 	}
 
@@ -154,12 +178,12 @@ func releaseLogs(app string, id string, w io.Writer) error {
 		return err
 	}
 
-	logs, err := Rack.ReleaseLogs(app, id)
+	logs, err := Rack.ReleaseLogs(app, id, types.LogsOptions{Follow: true})
 	if err != nil {
 		return err
 	}
 
-	if _, err := io.Copy(w, logs); err != nil {
+	if err := helpers.HalfPipe(w, logs); err != nil {
 		return err
 	}
 
