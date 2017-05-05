@@ -51,7 +51,7 @@ func formationTemplate(name string, data interface{}) ([]byte, error) {
 		case *json.SyntaxError:
 			return nil, jsonSyntaxError(t, buf.Bytes())
 		}
-		return nil, err
+		return nil, fmt.Errorf("%s \n\n\n\n %s", err, buf.String())
 	}
 
 	return json.MarshalIndent(v, "", "  ")
