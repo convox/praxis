@@ -729,13 +729,13 @@ func (_m *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (type
 	return r0, r1
 }
 
-// ReleaseLogs provides a mock function with given fields: app, id
-func (_m *Provider) ReleaseLogs(app string, id string) (io.ReadCloser, error) {
-	ret := _m.Called(app, id)
+// ReleaseLogs provides a mock function with given fields: app, id, opts
+func (_m *MockProvider) ReleaseLogs(app string, id string, opts types.LogsOptions) (io.ReadCloser, error) {
+	ret := _m.Called(app, id, opts)
 
 	var r0 io.ReadCloser
-	if rf, ok := ret.Get(0).(func(string, string) io.ReadCloser); ok {
-		r0 = rf(app, id)
+	if rf, ok := ret.Get(0).(func(string, string, types.LogsOptions) io.ReadCloser); ok {
+		r0 = rf(app, id, opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(io.ReadCloser)
@@ -743,8 +743,8 @@ func (_m *Provider) ReleaseLogs(app string, id string) (io.ReadCloser, error) {
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(app, id)
+	if rf, ok := ret.Get(1).(func(string, string, types.LogsOptions) error); ok {
+		r1 = rf(app, id, opts)
 	} else {
 		r1 = ret.Error(1)
 	}
