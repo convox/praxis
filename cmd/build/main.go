@@ -82,15 +82,15 @@ func main() {
 	}
 
 	if err := auth(); err != nil {
-		fail(err)
+		fail(fmt.Errorf("AUTH ERR: %s", err))
 	}
 
 	if err := build(); err != nil {
-		fail(err)
+		fail(fmt.Errorf("BUILD ERR: %s", err))
 	}
 
 	if err := release(); err != nil {
-		fail(err)
+		fail(fmt.Errorf("RELEASE ERR: %s", err))
 	}
 }
 
@@ -122,7 +122,7 @@ func auth() error {
 
 func build() error {
 	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Started: time.Now(), Status: "running"}); err != nil {
-		return err
+		return fmt.Errorf("BuildUpdate %s", err)
 	}
 
 	tmp, err := ioutil.TempDir("", "")
@@ -139,7 +139,7 @@ func build() error {
 
 	r, err := Rack.ObjectFetch(flagApp, u.Path)
 	if err != nil {
-		return err
+		return fmt.Errorf("ObjectFetch %s", err)
 	}
 
 	if err := archive.Untar(r, tmp, &archive.TarOptions{Compression: archive.Gzip}); err != nil {
@@ -159,7 +159,7 @@ func build() error {
 	}
 
 	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Manifest: string(data)}); err != nil {
-		return err
+		return fmt.Errorf("BuildUpdate %s", err)
 	}
 
 	opts := manifest.BuildOptions{
@@ -170,7 +170,7 @@ func build() error {
 	}
 
 	if err := m.Build(flagPrefix, flagId, opts); err != nil {
-		return err
+		return fmt.Errorf("Build %s", err)
 	}
 
 	return nil
@@ -179,22 +179,22 @@ func build() error {
 func release() error {
 	release, err := Rack.ReleaseCreate(flagApp, types.ReleaseCreateOptions{Build: flagId})
 	if err != nil {
-		return err
+		return fmt.Errorf("ReleaseCreate %s", err)
 	}
 
 	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Ended: time.Now(), Release: release.Id, Status: "complete"}); err != nil {
-		return err
+		return fmt.Errorf("BuildUpdate %s", err)
 	}
 
 	if _, err := Rack.ObjectStore(flagApp, fmt.Sprintf("convox/builds/%s/log", flagId), &output, types.ObjectStoreOptions{}); err != nil {
-		return err
+		return fmt.Errorf("ObjectStore %s", err)
 	}
 
 	return nil
 }
 
 func fail(err error) {
-	fmt.Fprintf(w, "build error: %s\n", err)
+	fmt.Fprintf(w, "build error: %s\n ----------------- build error", err)
 
 	if _, err := Rack.BuildUpdate(flagApp, flagId, types.BuildUpdateOptions{Ended: time.Now(), Status: "failed"}); err != nil {
 		fmt.Fprintf(w, "error: could not update build: %s\n", err)
