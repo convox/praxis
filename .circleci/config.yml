@@ -2,14 +2,12 @@ jobs:
   build:
     docker:
       - image: convox/test
+      - image: convox/praxis:latest
     working_directory: /go/src/github.com/convox/praxis
+    environment:
+      RACK_URL: https://rack:3000
     steps:
       - setup_remote_docker
       - checkout
-      - run: docker build -t convox/praxis:${CIRCLE_BUILD_NUM} .
       - run: go install ./cmd/cx
-      - run:
-          background: true
-          command: cx rack start ${CIRCLE_BUILD_NUM} --frontend=none
-      - run: sleep 2
-      - run: docker run -it --link convox -e PASSWORD= -e RACK_URL=https://convox:3000 -e VERSION=${CIRCLE_BUILD_NUM} convox/praxis:${CIRCLE_BUILD_NUM} cx test
+      - run: cx test
