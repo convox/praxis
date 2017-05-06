@@ -29,7 +29,7 @@ lint:
 	bin/lint
 
 mocks:
-	make -C provider mocks
+	make -C types mocks
 
 release:
 	docker build -t convox/praxis:$(VERSION) .
