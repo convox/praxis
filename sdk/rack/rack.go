@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/convox/praxis/provider"
+	"github.com/convox/praxis/types"
 )
 
 const (
@@ -12,10 +12,10 @@ const (
 )
 
 type Mock struct {
-	provider.MockProvider
+	types.MockProvider
 }
 
-type Rack provider.Provider
+type Rack types.Provider
 
 func New(endpoint string) (Rack, error) {
 	u, err := url.Parse(coalesce(endpoint, "https://localhost:5443"))

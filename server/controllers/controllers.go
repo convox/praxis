@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/convox/praxis/provider"
+	"github.com/convox/praxis/types"
 )
 
 const (
@@ -15,7 +16,7 @@ const (
 )
 
 var (
-	Provider provider.Provider
+	Provider types.Provider
 )
 
 func Init() error {
