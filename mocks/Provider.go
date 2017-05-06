@@ -730,7 +730,7 @@ func (_m *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (type
 }
 
 // ReleaseLogs provides a mock function with given fields: app, id, opts
-func (_m *MockProvider) ReleaseLogs(app string, id string, opts types.LogsOptions) (io.ReadCloser, error) {
+func (_m *Provider) ReleaseLogs(app string, id string, opts types.LogsOptions) (io.ReadCloser, error) {
 	ret := _m.Called(app, id, opts)
 
 	var r0 io.ReadCloser

@@ -56,7 +56,7 @@ type Provider interface {
 	ReleaseCreate(app string, opts ReleaseCreateOptions) (*Release, error)
 	ReleaseGet(app, id string) (*Release, error)
 	ReleaseList(app string, opts ReleaseListOptions) (Releases, error)
-	ReleaseLogs(app, id string) (io.ReadCloser, error)
+	ReleaseLogs(app, id string, opts LogsOptions) (io.ReadCloser, error)
 
 	ResourceList(app string) (Resources, error)
 
