@@ -11,10 +11,6 @@ const (
 	sortableTime = "20060102.150405.000000000"
 )
 
-type Mock struct {
-	types.MockProvider
-}
-
 type Rack types.Provider
 
 func New(endpoint string) (Rack, error) {

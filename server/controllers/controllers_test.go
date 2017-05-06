@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/convox/praxis/mocks"
 	"github.com/convox/praxis/server"
 	"github.com/convox/praxis/server/controllers"
-	"github.com/convox/praxis/types"
 )
 
-func mockServer() (*httptest.Server, *types.MockProvider) {
-	mp := &types.MockProvider{}
+func mockServer() (*httptest.Server, *mocks.Provider) {
+	mp := &mocks.Provider{}
 	controllers.Provider = mp
 
 	s := server.New()

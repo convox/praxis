@@ -29,7 +29,9 @@ lint:
 	bin/lint
 
 mocks:
-	make -C types mocks
+	go get -u github.com/vektra/mockery/.../
+	rm -rf mocks
+	mockery -all -dir types
 
 release:
 	docker build -t convox/praxis:$(VERSION) .
