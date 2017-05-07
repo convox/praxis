@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -11,9 +12,9 @@ import (
 )
 
 type Context struct {
-	logger   *logger.Logger
-	request  *http.Request
-	response http.ResponseWriter
+	logger  *logger.Logger
+	request *http.Request
+	writer  io.Writer
 }
 
 func (c *Context) Form(name string) string {
@@ -73,10 +74,15 @@ func (c *Context) RenderJSON(v interface{}) error {
 		return err
 	}
 
-	if _, err := c.response.Write(data); err != nil {
+	if _, err := c.writer.Write(data); err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func (c *Context) RenderOK() error {
+	fmt.Fprintf(c.writer, "ok\n")
 	return nil
 }
 

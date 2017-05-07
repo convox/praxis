@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/convox/api"
+	"github.com/convox/praxis/api"
 )
 
 func TableGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {

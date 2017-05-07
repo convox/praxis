@@ -3,7 +3,7 @@ package controllers
 import (
 	"net/http"
 
-	"github.com/convox/api"
+	"github.com/convox/praxis/api"
 )
 
 func RegistryAdd(w http.ResponseWriter, r *http.Request, c *api.Context) error {

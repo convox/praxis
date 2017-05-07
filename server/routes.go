@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/convox/api"
+	"github.com/convox/praxis/api"
 	"github.com/convox/praxis/server/controllers"
 )
 

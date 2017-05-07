@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/convox/api"
+	"github.com/convox/praxis/api"
 )
 
 func FilesDelete(w http.ResponseWriter, r *http.Request, c *api.Context) error {
