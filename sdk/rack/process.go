@@ -19,20 +19,20 @@ func (c *Client) ProcessExec(app, pid, command string, opts types.ProcessExecOpt
 		},
 	}
 
-	res, err := c.PostStream(fmt.Sprintf("/apps/%s/processes/%s/exec", app, pid), ro)
+	r, err := c.Stream(fmt.Sprintf("/apps/%s/processes/%s/exec", app, pid), ro)
 	if err != nil {
 		return 0, err
 	}
 
-	defer res.Body.Close()
+	defer r.Close()
 
-	if err := helpers.HalfPipe(opts.Stream, res.Body); err != nil {
+	if err := helpers.HalfPipe(opts.Stream, r); err != nil {
 		return 0, err
 	}
 
-	if code, err := strconv.Atoi(res.Trailer.Get("Exit-Code")); err == nil {
-		return code, nil
-	}
+	// if code, err := strconv.Atoi(res.Trailer.Get("Exit-Code")); err == nil {
+	//   return code, nil
+	// }
 
 	return 0, nil
 }

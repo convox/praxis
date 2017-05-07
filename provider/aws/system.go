@@ -102,6 +102,14 @@ func (p *Provider) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
 	return r, nil
 }
 
+func (p *Provider) SystemOptions() (map[string]string, error) {
+	options := map[string]string{
+		"streaming": "websocket",
+	}
+
+	return options, nil
+}
+
 func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {
 	_, err := p.CloudFormation().DeleteStack(&cloudformation.DeleteStackInput{
 		StackName: aws.String(name),

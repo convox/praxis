@@ -15,7 +15,9 @@ func (s Stream) Read(data []byte) (int, error) {
 		return 0, io.EOF
 	}
 
-	return s.Reader.Read(data)
+	n, err := s.Reader.Read(data)
+
+	return n, err
 }
 
 func (s Stream) Write(data []byte) (int, error) {
@@ -34,9 +36,27 @@ func (s Stream) Write(data []byte) (int, error) {
 		return n, err
 	}
 
-	if f, ok := s.Writer.(http.Flusher); ok {
-		f.Flush()
+	if n > 0 {
+		if f, ok := s.Writer.(http.Flusher); ok {
+			go f.Flush()
+		}
 	}
 
 	return n, err
+}
+
+func (s Stream) Close() error {
+	if c, ok := s.Writer.(io.Closer); ok {
+		if err := c.Close(); err != nil {
+			return err
+		}
+	}
+
+	if c, ok := s.Reader.(io.Closer); ok {
+		if err := c.Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -65,6 +65,7 @@ type Provider interface {
 	SystemGet() (*System, error)
 	SystemInstall(name string, opts SystemInstallOptions) (string, error)
 	SystemLogs(opts LogsOptions) (io.ReadCloser, error)
+	SystemOptions() (map[string]string, error)
 	SystemUninstall(name string, opts SystemInstallOptions) error
 	SystemUpdate(opts SystemUpdateOptions) error
 

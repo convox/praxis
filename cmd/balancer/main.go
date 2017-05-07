@@ -149,7 +149,7 @@ func handleTarget(protocol, target string) error {
 
 		go func() {
 			if err := handleConnection(cn, app, u.Scheme, u.Hostname(), port); err != nil {
-				fmt.Printf("err = %+v\n", err)
+				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 			}
 		}()
 	}
