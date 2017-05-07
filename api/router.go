@@ -2,8 +2,12 @@ package api
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 
+	"golang.org/x/net/websocket"
+
+	"github.com/convox/praxis/types"
 	"github.com/gorilla/mux"
 )
 
@@ -18,6 +22,11 @@ func (rt *Router) Route(name, method, path string, fn HandlerFunc) {
 	rt.Handle(path, rt.api(name, fn)).Methods(method)
 }
 
+func (rt *Router) Stream(name, path string, fn StreamFunc) {
+	rt.Handle(path, rt.streamWebsocket(name, fn)).Methods("GET").Headers("Connection", "Upgrade")
+	rt.Handle(path, rt.streamHTTP2(name, fn)).Methods("POST")
+}
+
 func (rt *Router) Use(mw Middleware) {
 	rt.Middleware = append(rt.Middleware, mw)
 }
@@ -29,6 +38,27 @@ func (rt *Router) UseHandlerFunc(fn http.HandlerFunc) {
 			return gn(w, r, c)
 		}
 	})
+}
+
+func (rt *Router) streamHTTP2(at string, fn StreamFunc) http.HandlerFunc {
+	return rt.api(at, func(w http.ResponseWriter, r *http.Request, c *Context) error {
+		return fn(types.Stream{Reader: r.Body, Writer: w}, c)
+	})
+}
+
+func (rt *Router) streamWebsocket(at string, fn StreamFunc) websocket.Handler {
+	return func(ws *websocket.Conn) {
+		c, err := rt.context(at, ws, ws.Request())
+		if err != nil {
+			fmt.Printf("err = %+v\n", err)
+			return
+		}
+
+		if err := fn(ws, c); err != nil {
+			fmt.Printf("err = %+v\n", err)
+			return
+		}
+	}
 }
 
 func (rt *Router) api(at string, fn HandlerFunc) http.HandlerFunc {
@@ -70,16 +100,16 @@ func (rt *Router) api(at string, fn HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (rt *Router) context(name string, w http.ResponseWriter, r *http.Request) (*Context, error) {
+func (rt *Router) context(name string, w io.Writer, r *http.Request) (*Context, error) {
 	id, err := Key(12)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Context{
-		logger:   rt.Server.Logger.Namespace("id=%s route=%s", id, name),
-		request:  r,
-		response: w,
+		logger:  rt.Server.Logger.Namespace("id=%s route=%s", id, name),
+		request: r,
+		writer:  w,
 	}, nil
 }
 

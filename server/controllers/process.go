@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/convox/api"
+	"github.com/convox/praxis/api"
 	"github.com/convox/praxis/types"
 )
 

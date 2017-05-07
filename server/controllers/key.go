@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/convox/api"
+	"github.com/convox/praxis/api"
 )
 
 func KeyDecrypt(w http.ResponseWriter, r *http.Request, c *api.Context) error {

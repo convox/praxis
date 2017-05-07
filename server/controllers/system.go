@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/convox/api"
+	"github.com/convox/praxis/api"
 	"github.com/convox/praxis/types"
 )
 
@@ -46,6 +46,15 @@ func SystemLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	}
 
 	return nil
+}
+
+func SystemOptions(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	options, err := Provider.SystemOptions()
+	if err != nil {
+		return err
+	}
+
+	return c.RenderJSON(options)
 }
 
 func SystemUpdate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
