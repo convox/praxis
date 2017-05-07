@@ -865,6 +865,29 @@ func (_m *Provider) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
 	return r0, r1
 }
 
+// SystemOptions provides a mock function with given fields:
+func (_m *Provider) SystemOptions() (map[string]string, error) {
+	ret := _m.Called()
+
+	var r0 map[string]string
+	if rf, ok := ret.Get(0).(func() map[string]string); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SystemUninstall provides a mock function with given fields: name, opts
 func (_m *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {
 	ret := _m.Called(name, opts)
