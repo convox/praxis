@@ -49,6 +49,14 @@ func (p *Provider) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("unimplemented")
 }
 
+func (p *Provider) SystemOptions() (map[string]string, error) {
+	options := map[string]string{
+		"streaming": "http2",
+	}
+
+	return options, nil
+}
+
 func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {
 	launcherRemove("convox.frontend")
 	launcherRemove("convox.rack")

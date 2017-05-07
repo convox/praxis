@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 	"github.com/convox/praxis/types"
 )
 
-func ProcessExec(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+func ProcessExec(rw io.ReadWriteCloser, c *api.Context) error {
 	app := c.Var("app")
 	pid := c.Var("pid")
 
@@ -20,7 +21,7 @@ func ProcessExec(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	width := c.Header("Width")
 
 	opts := types.ProcessExecOptions{
-		Stream: types.Stream{Reader: r.Body, Writer: w},
+		Stream: rw,
 	}
 
 	if height != "" {
@@ -41,14 +42,23 @@ func ProcessExec(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		opts.Width = w
 	}
 
-	w.Header().Add("Trailer", "Exit-Code")
+	// if r.ProtoAtLeast(2, 0) {
+	//   w.Header().Add("Trailer", "Exit-Code")
+	// }
 
 	code, err := Provider.ProcessExec(app, pid, command, opts)
 	if err != nil {
 		return err
 	}
 
-	w.Header().Set("Exit-Code", fmt.Sprintf("%d", code))
+	fmt.Printf("code = %+v\n", code)
+
+	// if r.ProtoAtLeast(2, 0) {
+	//   w.Header().Set("Exit-Code", fmt.Sprintf("%d", code))
+	// } else {
+	//   fmt.Fprintf(opts.Stream, "SOMEUUID: %d\n", code)
+	//   fmt.Fprintf(w, "SOMEUUID: %d\n", code)
+	// }
 
 	return err
 }

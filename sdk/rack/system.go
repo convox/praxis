@@ -38,6 +38,11 @@ func (c *Client) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
 	return res.Body, nil
 }
 
+func (c *Client) SystemOptions() (options map[string]string, err error) {
+	err = c.Options("/system", RequestOptions{}, &options)
+	return
+}
+
 func (c *Client) SystemUninstall(name string, opts types.SystemInstallOptions) error {
 	return fmt.Errorf("unimplemented")
 }

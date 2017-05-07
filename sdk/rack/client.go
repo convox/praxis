@@ -14,7 +14,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/convox/praxis/helpers"
+
 	"golang.org/x/net/http2"
+	"golang.org/x/net/websocket"
 )
 
 type Client struct {
@@ -86,6 +89,58 @@ func (o *RequestOptions) ContentType() string {
 	return "application/octet-stream"
 }
 
+func (c *Client) Stream(path string, opts RequestOptions) (io.ReadCloser, error) {
+	so, err := c.SystemOptions()
+	if err != nil {
+		return nil, err
+	}
+
+	switch so["streaming"] {
+	case "websocket":
+		u, err := url.Parse(fmt.Sprintf("wss://%s%s?%s", c.Endpoint.Host, path, opts.Querystring()))
+		if err != nil {
+			return nil, err
+		}
+
+		r, err := opts.Reader()
+		if err != nil {
+			return nil, err
+		}
+
+		config := &websocket.Config{
+			Header:   http.Header{},
+			Location: u,
+			Origin:   u,
+			Version:  websocket.ProtocolVersionHybi13,
+			TlsConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+
+		for k, v := range opts.Headers {
+			config.Header.Set(k, v)
+		}
+
+		ws, err := websocket.DialConfig(config)
+		if err != nil {
+			return nil, err
+		}
+
+		go helpers.HalfPipe(ws, r)
+
+		return ws, nil
+	case "http2":
+		res, err := c.PostStream(path, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		return res.Body, nil
+	default:
+		return nil, fmt.Errorf("unknown streaming type: %s", so["streaming"])
+	}
+}
+
 func (c *Client) Head(path string, opts RequestOptions) error {
 	req, err := c.Request("HEAD", path, opts)
 	if err != nil {
@@ -93,7 +148,22 @@ func (c *Client) Head(path string, opts RequestOptions) error {
 	}
 
 	_, err = c.handleRequest(req)
+
 	return err
+}
+
+func (c *Client) Options(path string, opts RequestOptions, out interface{}) error {
+	req, err := c.Request("OPTIONS", path, opts)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.handleRequest(req)
+	if err != nil {
+		return err
+	}
+
+	return unmarshalReader(res.Body, out)
 }
 
 func (c *Client) GetStream(path string, opts RequestOptions) (*http.Response, error) {
