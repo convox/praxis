@@ -27,7 +27,7 @@ workflows:
       - create: staging/praxis-$branch
       - deploy: staging/praxis-$branch
     update:
-      - test
+      - test: staging
       - deploy: staging/praxis-$branch
     close:
       - delete: staging/praxis-$branch
