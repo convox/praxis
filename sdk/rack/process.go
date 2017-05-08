@@ -104,8 +104,6 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 		ro.Headers["Width"] = strconv.Itoa(opts.Width)
 	}
 
-	fmt.Printf("ro = %+v\n", ro)
-
 	r, err := c.Stream(fmt.Sprintf("/apps/%s/processes/run", app), ro)
 	if err != nil {
 		return 0, err
