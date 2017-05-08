@@ -29,7 +29,7 @@ func (p *Provider) autoscale() error {
 	}
 
 	for {
-		time.Sleep(5 * time.Second)
+		time.Sleep(1 * time.Minute)
 
 		hres, err := p.AutoScaling().DescribeScalingActivities(&autoscaling.DescribeScalingActivitiesInput{
 			AutoScalingGroupName: aws.String(asg),
