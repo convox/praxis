@@ -28,7 +28,7 @@ func (p *Provider) workerAutoscale() error {
 	}
 
 	for {
-		time.Sleep(1 * time.Minute)
+		time.Sleep(5 * time.Second)
 
 		hres, err := p.AutoScaling().DescribeScalingActivities(&autoscaling.DescribeScalingActivitiesInput{
 			AutoScalingGroupName: aws.String(asg),
@@ -84,6 +84,9 @@ func (p *Provider) workerAutoscale() error {
 			}
 		}
 
+		bump := false
+		fits := true
+
 		for _, s := range ss {
 			for _, d := range s.Deployments {
 				td, err := p.fetchTaskDefinition(*d.TaskDefinition)
@@ -92,10 +95,37 @@ func (p *Provider) workerAutoscale() error {
 					continue
 				}
 
+				if *d.Status == "PRIMARY" {
+					for _, cd := range td.ContainerDefinitions {
+						if *cd.Cpu > single["CPU"] || *cd.Memory > single["MEMORY"] {
+							fmt.Printf("ns=provider.aws at=autoscale error=%q\n", fmt.Sprintf("instance type too small for %s", *s.ServiceName))
+							fits = false
+						}
+					}
+				}
+
 				for _, cd := range td.ContainerDefinitions {
 					if d.DesiredCount != nil && cd.Cpu != nil && cd.Memory != nil {
 						scheduled["CPU"] += (*d.DesiredCount * *cd.Cpu)
 						scheduled["MEMORY"] += (*d.DesiredCount * *cd.Memory)
+					}
+				}
+			}
+
+			if fits {
+				for _, e := range s.Events {
+					if strings.Index(*e.Message, "steady state") > -1 {
+						fmt.Printf("ns=provider.aws at=autoscale service=%s state=steady\n", *s.ServiceName)
+						break
+					}
+
+					if strings.Index(*e.Message, "has insufficient") > -1 && e.CreatedAt.Before(scaled) {
+						fmt.Printf("e = %+v\n", e)
+						fmt.Printf("single = %+v\n", single)
+
+						fmt.Printf("ns=provider.aws at=autoscale service=%s state=insufficient\n", *s.ServiceName)
+						bump = true
+						break
 					}
 				}
 			}
@@ -125,23 +155,6 @@ func (p *Provider) workerAutoscale() error {
 			desired = needed
 		}
 
-		bump := false
-
-		for _, s := range ss {
-			for _, e := range s.Events {
-				if strings.Index(*e.Message, "steady state") > -1 {
-					fmt.Printf("ns=provider.aws at=autoscale service=%s state=steady\n", *s.ServiceName)
-					break
-				}
-
-				if strings.Index(*e.Message, "has insufficient") > -1 && e.CreatedAt.Before(scaled) {
-					fmt.Printf("ns=provider.aws at=autoscale service=%s state=insufficient\n", *s.ServiceName)
-					bump = true
-					break
-				}
-			}
-		}
-
 		if desired <= current && bump {
 			desired = current + 1
 		}
@@ -169,6 +182,7 @@ func (p *Provider) workerAutoscale() error {
 
 			fmt.Printf("ns=provider.aws at=autoscale scale=%d status=success\n", desired)
 		}
+
 	}
 }
 
