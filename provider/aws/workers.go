@@ -43,7 +43,7 @@ func (p *Provider) autoscale() error {
 			continue
 		}
 		if hres.Activities[0].EndTime == nil {
-			fmt.Printf("ns=provider.aws at=autoscale error=%q\n", "scaling")
+			fmt.Printf("ns=provider.aws at=autoscale error=%q\n", "in progress")
 			continue
 		}
 
