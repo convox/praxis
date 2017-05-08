@@ -294,11 +294,14 @@ func runRackUninstall(c *cli.Context) error {
 }
 
 func runRackUpdate(c *cli.Context) error {
-	if len(c.Args()) < 1 {
-		return stdcli.Usage(c)
+	version, err := latestVersion()
+	if err != nil {
+		return err
 	}
 
-	version := c.Args()[0]
+	if len(c.Args()) > 0 {
+		version = c.Args()[0]
+	}
 
 	opts := types.SystemUpdateOptions{
 		Output:  os.Stdout,
