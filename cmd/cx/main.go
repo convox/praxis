@@ -2,12 +2,16 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
+	homedir "github.com/mitchellh/go-homedir"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -43,17 +47,18 @@ func main() {
 		runVersion(c)
 	})
 
-	if Version != "dev" {
-		if v, err := latestVersion(); err == nil && v > Version {
-			if e, err := os.Executable(); err == nil {
-				exec.Command(e, "update", v).Start()
-			}
-		}
-	}
+	ch := make(chan error)
+
+	go autoUpdate(ch)
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
+	}
+
+	if err := <-ch; err != nil {
+		// fmt.Fprintf(os.Stderr, "error: autoupdate: %v\n", err)
+		// os.Exit(1)
 	}
 }
 
@@ -68,6 +73,52 @@ func appName(c *cli.Context, dir string) (string, error) {
 	}
 
 	return filepath.Base(abs), nil
+}
+
+func autoUpdate(ch chan error) {
+	var updated time.Time
+
+	home, err := homedir.Dir()
+	if err != nil {
+		ch <- err
+		return
+	}
+
+	setting := filepath.Join(home, ".convox", "updated")
+
+	if data, err := ioutil.ReadFile(setting); err == nil {
+		up, err := time.Parse(helpers.SortableTime, string(data))
+		if err != nil {
+			ch <- err
+			return
+		}
+		updated = up
+	}
+
+	if updated.After(time.Now().UTC().Add(-1 * time.Hour)) {
+		time.Sleep(1 * time.Second)
+		ch <- nil
+		return
+	}
+
+	os.MkdirAll(filepath.Dir(setting), 0755)
+	ioutil.WriteFile(setting, []byte(time.Now().UTC().Format(helpers.SortableTime)), 0644)
+
+	ex, err := os.Executable()
+	if err != nil {
+		ch <- err
+		return
+	}
+
+	v, err := latestVersion()
+	if err != nil {
+		ch <- err
+		return
+	}
+
+	exec.Command(ex, "update", v).Start()
+
+	ch <- nil
 }
 
 func errorExit(fn cli.ActionFunc, code int) cli.ActionFunc {
