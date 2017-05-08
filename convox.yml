@@ -23,7 +23,7 @@ services:
 workflows:
   change:
     create:
-      - test
+      - test: staging
       - create: staging/praxis-$branch
       - deploy: staging/praxis-$branch
     update:
@@ -35,6 +35,6 @@ workflows:
     demo:
       - deploy: demo/praxis-demo
     master:
-      - test
+      - test: staging
       - app: staging/praxis-release
       - run: bin/release
