@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/convox/praxis/sdk/rack"
@@ -41,6 +42,14 @@ func main() {
 	stdcli.VersionPrinter(func(c *cli.Context) {
 		runVersion(c)
 	})
+
+	if Version != "dev" {
+		if v, err := latestVersion(); err == nil && v > Version {
+			if e, err := os.Executable(); err == nil {
+				exec.Command(e, "update", v).Start()
+			}
+		}
+	}
 
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
