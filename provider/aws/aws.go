@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
@@ -84,6 +85,10 @@ func (p *Provider) Init() error {
 	go p.workers()
 
 	return nil
+}
+
+func (p *Provider) AutoScaling() *autoscaling.AutoScaling {
+	return autoscaling.New(p.Session, p.Config)
 }
 
 func (p *Provider) CloudFormation() *cloudformation.CloudFormation {
@@ -203,6 +208,44 @@ func humanStatus(status string) string {
 	}
 }
 
+func (p *Provider) clusterServices() ([]*ecs.Service, error) {
+	cluster, err := p.rackResource("RackCluster")
+	if err != nil {
+		return nil, err
+	}
+
+	req := &ecs.ListServicesInput{
+		Cluster: aws.String(cluster),
+	}
+
+	ss := []*ecs.Service{}
+
+	for {
+		res, err := p.ECS().ListServices(req)
+		if err != nil {
+			return nil, err
+		}
+
+		sres, err := p.ECS().DescribeServices(&ecs.DescribeServicesInput{
+			Cluster:  aws.String(cluster),
+			Services: res.ServiceArns,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		ss = append(ss, sres.Services...)
+
+		if res.NextToken == nil {
+			break
+		}
+
+		req.NextToken = res.NextToken
+	}
+
+	return ss, nil
+}
+
 func (p *Provider) containerInstance(arn string) (*ecs.ContainerInstance, error) {
 	cluster, err := p.rackResource("RackCluster")
 	if err != nil {
@@ -221,6 +264,44 @@ func (p *Provider) containerInstance(arn string) (*ecs.ContainerInstance, error)
 	}
 
 	return res.ContainerInstances[0], nil
+}
+
+func (p *Provider) containerInstances() ([]*ecs.ContainerInstance, error) {
+	cluster, err := p.rackResource("RackCluster")
+	if err != nil {
+		return nil, err
+	}
+
+	ii := []*ecs.ContainerInstance{}
+
+	req := &ecs.ListContainerInstancesInput{
+		Cluster: aws.String(cluster),
+	}
+
+	for {
+		res, err := p.ECS().ListContainerInstances(req)
+		if err != nil {
+			return nil, err
+		}
+
+		ires, err := p.ECS().DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
+			Cluster:            aws.String(cluster),
+			ContainerInstances: res.ContainerInstanceArns,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		ii = append(ii, ires.ContainerInstances...)
+
+		if res.NextToken == nil {
+			break
+		}
+
+		req.NextToken = res.NextToken
+	}
+
+	return ii, nil
 }
 
 func (p *Provider) ec2Instance(id string) (*ec2.Instance, error) {
@@ -415,6 +496,25 @@ func (p *Provider) stackResource(name string, resource string) (string, error) {
 	}
 
 	return r, nil
+}
+
+func (p *Provider) fetchTaskDefinition(arn string) (*ecs.TaskDefinition, error) {
+	if v, ok := cache.Get("taskDefinition", arn).(*ecs.TaskDefinition); ok {
+		return v, nil
+	}
+
+	res, err := p.ECS().DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: aws.String(arn),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cache.Set("taskDefinition", arn, res.TaskDefinition, 24*time.Hour); err != nil {
+		return nil, err
+	}
+
+	return res.TaskDefinition, nil
 }
 
 func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (string, error) {

@@ -275,17 +275,6 @@ func (p *Provider) ProcessStop(app, pid string) error {
 	return nil
 }
 
-func (p *Provider) fetchTaskDefinition(arn string) (*ecs.TaskDefinition, error) {
-	res, err := p.ECS().DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
-		TaskDefinition: aws.String(arn),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return res.TaskDefinition, nil
-}
-
 func (p *Provider) processFromTask(app string, t *ecs.Task) (*types.Process, error) {
 	ap := strings.Split(*t.TaskArn, "/")
 	id := ap[len(ap)-1]
