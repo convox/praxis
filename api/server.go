@@ -2,7 +2,6 @@ package api
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"net/http"
 
@@ -48,8 +47,6 @@ func (s *Server) Route(name, method, path string, fn HandlerFunc) {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("w = %+v\n", w)
-	fmt.Printf("r = %+v\n", r)
 	s.Router.ServeHTTP(w, r)
 }
 
