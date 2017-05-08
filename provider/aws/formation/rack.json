@@ -180,7 +180,7 @@
     "Instances": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "Properties" : {
-        "Cooldown": "90",
+        "Cooldown": "180",
         "DesiredCapacity": "2",
         "HealthCheckType": "EC2",
         "HealthCheckGracePeriod": "120",
