@@ -3,7 +3,6 @@ package aws
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -16,13 +15,13 @@ import (
 type queueHandler func(body string) error
 
 func (p *Provider) workers() {
-	go helpers.PrintError(p.autoscale())
-	go helpers.PrintError(p.workerQueues())
+	go helpers.AsyncError(p.workerAutoscale)
+	go helpers.AsyncError(p.workerQueues)
 
 	select {}
 }
 
-func (p *Provider) autoscale() error {
+func (p *Provider) workerAutoscale() error {
 	asg, err := p.rackResource("Instances")
 	if err != nil {
 		return err
@@ -174,12 +173,20 @@ func (p *Provider) autoscale() error {
 }
 
 func (p *Provider) workerQueues() error {
-	queue, err := p.rackResource("NotificationQueue")
-	if err != nil {
-		return err
-	}
+	for {
+		time.Sleep(5 * time.Second)
 
-	return p.subscribeQueue(queue, p.handleNotifications)
+		queue, err := p.rackResource("NotificationQueue")
+		if err != nil {
+			fmt.Printf("ns=provider.aws at=queues error=%q\n", err)
+			continue
+		}
+
+		if err := p.subscribeQueue(queue, p.handleNotifications); err != nil {
+			fmt.Printf("ns=provider.aws at=queues error=%q\n", err)
+			continue
+		}
+	}
 }
 
 func (p *Provider) handleNotifications(body string) error {
@@ -240,6 +247,11 @@ func (p *Provider) handleNotifications(body string) error {
 }
 
 func (p *Provider) subscribeQueue(queue string, fn queueHandler) error {
+	parts := strings.Split(queue, "/")
+	name := parts[len(parts)-1]
+
+	fmt.Printf("ns=provider.aws at=queues queue=%s action=subscribe\n", name)
+
 	for {
 		res, err := p.SQS().ReceiveMessage(&sqs.ReceiveMessageInput{
 			QueueUrl:              aws.String(queue),
@@ -253,9 +265,11 @@ func (p *Provider) subscribeQueue(queue string, fn queueHandler) error {
 			return err
 		}
 
+		fmt.Printf("ns=provider.aws at=queues queue=%s receive=%d\n", name, len(res.Messages))
+
 		for _, m := range res.Messages {
 			if err := fn(*m.Body); err != nil {
-				fmt.Fprintf(os.Stderr, "processQueue %s handler error: %s\n", queue, err)
+				fmt.Printf("ns=provider.aws at=queues queue=%s error=%q\n", name, err)
 			}
 
 			_, err := p.SQS().DeleteMessage(&sqs.DeleteMessageInput{
@@ -263,7 +277,7 @@ func (p *Provider) subscribeQueue(queue string, fn queueHandler) error {
 				ReceiptHandle: m.ReceiptHandle,
 			})
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "processQueue DeleteMessage error: %s\n", err)
+				fmt.Printf("ns=provider.aws at=queues queue=%s action=delete error=%q\n", name, err)
 			}
 		}
 	}
