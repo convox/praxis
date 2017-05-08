@@ -23,7 +23,7 @@ func (rt *Router) Route(name, method, path string, fn HandlerFunc) {
 }
 
 func (rt *Router) Stream(name, path string, fn StreamFunc) {
-	rt.Handle(path, rt.streamWebsocket(name, fn)).Methods("GET")
+	rt.Handle(path, rt.streamWebsocket(name, fn)).Methods("GET").Headers("Upgrade", "websocket")
 	rt.Handle(path, rt.streamHTTP2(name, fn)).Methods("POST")
 }
 
