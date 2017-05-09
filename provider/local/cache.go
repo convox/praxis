@@ -8,8 +8,6 @@ import (
 	"github.com/convox/praxis/types"
 )
 
-var cacheBuffer = make(map[string]interface{})
-
 func (p *Provider) CacheFetch(app, cache, key string) (map[string]string, error) {
 	collection := fmt.Sprintf("%s-%s-%s", app, cache, key)
 
