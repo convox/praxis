@@ -2,24 +2,24 @@ services:
   rack:
     build: .
     command:
-      development: rerun -watch . -build github.com/convox/praxis/cmd/rack
+      development: env DEVELOPMENT=true rerun -watch . -build github.com/convox/praxis/cmd/rack
       test: make test
     environment:
       - AWS_REGION=
       - AWS_ACCESS_KEY_ID=
       - AWS_SECRET_ACCESS_KEY=
-      - DEVELOPMENT=false
       - NAME=dev
       - PASSWORD=
-      - PROVIDER=local
+      - PROVIDER=
+      - VERSION=
     port: https:3000
     scale:
       count: 1
       memory: 256
     test: make test
     volumes:
+      - /var/convox
       - /var/run/docker.sock:/var/run/docker.sock
-      - /var/convox:/var/convox
 workflows:
   change:
     create:
