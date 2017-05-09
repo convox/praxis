@@ -253,6 +253,36 @@ func (_m *Provider) BuildUpdate(app string, id string, opts types.BuildUpdateOpt
 	return r0, r1
 }
 
+// CacheFetch provides a mock function with given fields: app, cache, key
+func (_m *Provider) CacheFetch(app string, cache string, key string) map[string]string {
+	ret := _m.Called(app, cache, key)
+
+	var r0 map[string]string
+	if rf, ok := ret.Get(0).(func(string, string, string) map[string]string); ok {
+		r0 = rf(app, cache, key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]string)
+		}
+	}
+
+	return r0
+}
+
+// CacheStore provides a mock function with given fields: app, cache, key, attrs, opts
+func (_m *Provider) CacheStore(app string, cache string, key string, attrs map[string]string, opts types.CacheStoreOptions) error {
+	ret := _m.Called(app, cache, key, attrs, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, string, map[string]string, types.CacheStoreOptions) error); ok {
+		r0 = rf(app, cache, key, attrs, opts)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // FilesDelete provides a mock function with given fields: app, pid, files
 func (_m *Provider) FilesDelete(app string, pid string, files []string) error {
 	ret := _m.Called(app, pid, files)

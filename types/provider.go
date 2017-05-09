@@ -20,6 +20,9 @@ type Provider interface {
 	BuildList(app string) (Builds, error)
 	BuildUpdate(app, id string, opts BuildUpdateOptions) (*Build, error)
 
+	CacheFetch(app, cache, key string) map[string]string
+	CacheStore(app, cache, key string, attrs map[string]string, opts CacheStoreOptions) error
+
 	FilesDelete(app, pid string, files []string) error
 	FilesUpload(app, pid string, r io.Reader) error
 
