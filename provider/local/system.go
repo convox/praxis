@@ -57,7 +57,36 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 }
 
 func (p *Provider) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("unimplemented")
+	r, w := io.Pipe()
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
+	args := []string{"logs"}
+
+	if opts.Follow {
+		args = append(args, "-f")
+	}
+
+	args = append(args, hostname)
+
+	cmd := exec.Command("docker", args...)
+
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+
+	go func() {
+		defer w.Close()
+		cmd.Wait()
+	}()
+
+	return r, nil
 }
 
 func (p *Provider) SystemOptions() (map[string]string, error) {
