@@ -120,9 +120,6 @@ func (p *Provider) workerAutoscale() error {
 					}
 
 					if strings.Index(*e.Message, "has insufficient") > -1 && e.CreatedAt.Before(scaled) {
-						fmt.Printf("e = %+v\n", e)
-						fmt.Printf("single = %+v\n", single)
-
 						fmt.Printf("ns=provider.aws at=autoscale service=%s state=insufficient\n", *s.ServiceName)
 						bump = true
 						break
