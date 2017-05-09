@@ -119,6 +119,9 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 
 	if ee, ok := err.(*exec.ExitError); ok {
 		if status, ok := ee.Sys().(syscall.WaitStatus); ok {
+			if opts.Stream != nil {
+				fmt.Fprintf(opts.Stream, "exit: %d", status.ExitStatus())
+			}
 			return status.ExitStatus(), nil
 		}
 	}
