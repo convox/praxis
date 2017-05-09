@@ -56,6 +56,15 @@ func (p *Provider) AppGet(name string) (*types.App, error) {
 		return nil, err
 	}
 
+	rs, err := p.ReleaseList(name, types.ReleaseListOptions{Count: 1})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rs) > 0 {
+		app.Release = rs[0].Id
+	}
+
 	return &app, nil
 }
 
