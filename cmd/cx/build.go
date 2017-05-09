@@ -94,7 +94,7 @@ func runBuildsLogs(c *cli.Context) error {
 	return nil
 }
 
-func buildDirectory(app, dir string, w io.Writer) (*types.Build, error) {
+func buildDirectory(app, dir string, opts types.BuildCreateOptions, w io.Writer) (*types.Build, error) {
 	if _, err := Rack.AppGet(app); err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func buildDirectory(app, dir string, w io.Writer) (*types.Build, error) {
 
 	fmt.Fprintf(w, "starting build: ")
 
-	build, err := Rack.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key), types.BuildCreateOptions{})
+	build, err := Rack.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key), opts)
 	if err != nil {
 		return nil, err
 	}

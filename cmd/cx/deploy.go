@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/convox/praxis/stdcli"
+	"github.com/convox/praxis/types"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -34,7 +35,7 @@ func runDeploy(c *cli.Context) error {
 		return fmt.Errorf("cannot build while app is %s", a.Status)
 	}
 
-	build, err := buildDirectory(app, ".", os.Stdout)
+	build, err := buildDirectory(app, ".", types.BuildCreateOptions{}, os.Stdout)
 	if err != nil {
 		return err
 	}

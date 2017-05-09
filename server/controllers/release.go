@@ -34,6 +34,10 @@ func ReleaseCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error
 		opts.Env = env
 	}
 
+	if s, err := strconv.Atoi(c.Form("stage")); err == nil {
+		opts.Stage = s
+	}
+
 	release, err := Provider.ReleaseCreate(app, opts)
 	if err != nil {
 		return err

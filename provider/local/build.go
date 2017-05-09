@@ -51,6 +51,7 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 			"BUILD_APP":    app,
 			"BUILD_AUTH":   base64.StdEncoding.EncodeToString(auth),
 			"BUILD_PREFIX": fmt.Sprintf("%s/%s", p.Name, app),
+			"BUILD_STAGE":  fmt.Sprintf("%d", opts.Stage),
 		},
 		Name:    fmt.Sprintf("%s-build-%s", app, id),
 		Image:   sys.Image,

@@ -49,7 +49,7 @@ func (p *Provider) converge(app string) error {
 
 	cs := []container{}
 
-	c, err := p.balancerContainers(m.Balancers, app, r.Id)
+	c, err := p.balancerContainers(m.Balancers, app, r.Id, r.Stage)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (p *Provider) converge(app string) error {
 
 	cs = append(cs, c...)
 
-	c, err = p.serviceContainers(m.Services, app, r.Id)
+	c, err = p.serviceContainers(m.Services, app, r.Id, r.Stage)
 	if err != nil {
 		return err
 	}
@@ -205,8 +205,13 @@ func resourceVolumes(app, kind, name string) ([]string, error) {
 	return []string{}, fmt.Errorf("unknown resource type: %s", kind)
 }
 
-func (p *Provider) balancerContainers(balancers manifest.Balancers, app, release string) ([]container, error) {
+func (p *Provider) balancerContainers(balancers manifest.Balancers, app, release string, stage int) ([]container, error) {
 	cs := []container{}
+
+	// don't run balancers in test stage
+	if stage == manifest.StageTest {
+		return cs, nil
+	}
 
 	sys, err := p.SystemGet()
 	if err != nil {
@@ -289,8 +294,13 @@ func (p *Provider) resourceContainers(resources manifest.Resources, app, release
 	return cs, nil
 }
 
-func (p *Provider) serviceContainers(services manifest.Services, app, release string) ([]container, error) {
+func (p *Provider) serviceContainers(services manifest.Services, app, release string, stage int) ([]container, error) {
 	cs := []container{}
+
+	// don't run background services in test stage
+	if stage == manifest.StageTest {
+		return cs, nil
+	}
 
 	sys, err := p.SystemGet()
 	if err != nil {
@@ -336,7 +346,20 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 			})
 		}
 
-		cmd, err := shellquote.Split(s.Command.Production)
+		var command string
+
+		switch stage {
+		case manifest.StageDevelopment:
+			command = s.Command.Development
+		case manifest.StageTest:
+			return nil, fmt.Errorf("can not run background services in test")
+		case manifest.StageProduction:
+			command = s.Command.Production
+		default:
+			return nil, fmt.Errorf("unknown stage: %d", stage)
+		}
+
+		cmd, err := shellquote.Split(command)
 		if err != nil {
 			return nil, err
 		}
