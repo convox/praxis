@@ -18,7 +18,7 @@ func FromType(t string) (types.Provider, error) {
 	switch t {
 	case "aws":
 		return aws.FromEnv()
-	case "local":
+	case "local", "":
 		return local.FromEnv()
 	default:
 		return nil, fmt.Errorf("invalid provider type: %s", t)
