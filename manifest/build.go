@@ -74,17 +74,9 @@ func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
 				return err
 			}
 
-			if err := opts.dockerq("create", "--name", name, hash); err != nil {
-				return err
-			}
-
-			if err := opts.dockerq("cp", fmt.Sprintf("%s:/var/cache/build", name), filepath.Join(opts.Cache, hash)); err != nil {
-				return err
-			}
-
-			if err := opts.dockerq("rm", name); err != nil {
-				return err
-			}
+			opts.dockerq("create", "--name", name, hash)
+			opts.dockerq("cp", fmt.Sprintf("%s:/var/cache/build", name), filepath.Join(opts.Cache, hash))
+			opts.dockerq("rm", name)
 		}
 	}
 
