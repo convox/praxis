@@ -182,7 +182,6 @@ func (p *Provider) workerAutoscale() error {
 
 			fmt.Printf("ns=provider.aws at=autoscale scale=%d status=success\n", desired)
 		}
-
 	}
 }
 
