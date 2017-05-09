@@ -85,6 +85,10 @@ func (m *Manifest) Validate(env types.Environment) error {
 
 func (m *Manifest) applyDefaults() error {
 	for i, s := range m.Services {
+		if s.Build.Path == "" && s.Image == "" {
+			m.Services[i].Build.Path = "."
+		}
+
 		if s.Health.Path == "" {
 			m.Services[i].Health.Path = "/"
 		}
