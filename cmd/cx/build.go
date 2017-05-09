@@ -11,7 +11,6 @@ import (
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
 	"github.com/docker/docker/builder/dockerignore"
-	"github.com/docker/docker/pkg/archive"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -158,8 +157,10 @@ func buildLogs(build *types.Build, w io.Writer) error {
 	return nil
 }
 
-func createTarball(base string) (io.ReadCloser, error) {
-	sym, err := filepath.EvalSymlinks(base)
+func createTarball(dir string) (io.ReadCloser, error) {
+	excludes := []string{}
+
+	sym, err := filepath.EvalSymlinks(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -169,25 +170,15 @@ func createTarball(base string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	includes := []string{"."}
-	excludes := []string{}
-
 	if fd, err := os.Open(filepath.Join(abs, ".dockerignore")); err == nil {
-		e, err := dockerignore.ReadAll(fd)
-		if err != nil {
+		if e, err := dockerignore.ReadAll(fd); err != nil {
 			return nil, err
+		} else {
+			excludes = e
 		}
-
-		excludes = e
 	}
 
-	options := &archive.TarOptions{
-		Compression:     archive.Gzip,
-		ExcludePatterns: excludes,
-		IncludeFiles:    includes,
-	}
-
-	return archive.TarWithOptions(sym, options)
+	return helpers.CreateTarball(dir, helpers.TarballOptions{Excludes: excludes})
 }
 
 func notBuildStatus(app, id, status string) func() (bool, error) {

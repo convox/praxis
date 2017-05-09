@@ -13,10 +13,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/convox/praxis/types"
 	"github.com/docker/docker/builder/dockerignore"
 )
 
 type BuildOptions struct {
+	Cache  string
 	Push   string
 	Root   string
 	Stdout io.Writer
@@ -52,8 +54,37 @@ func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
 	}
 
 	for hash, b := range builds {
+		if opts.Cache != "" {
+			lcd := filepath.Join(opts.Root, b.Path, ".cache", "build")
+
+			exec.Command("mkdir", "-p", lcd).Run()
+			exec.Command("rm", "-rf", lcd).Run()
+			exec.Command("cp", "-a", filepath.Join(opts.Cache, hash), lcd).Run()
+		}
+
 		if err := build(b, hash, opts); err != nil {
 			return err
+		}
+
+		if opts.Cache != "" {
+			exec.Command("rm", "-rf", filepath.Join(opts.Cache, "*")).Run()
+
+			name, err := types.Key(32)
+			if err != nil {
+				return err
+			}
+
+			if err := opts.dockerq("create", "--name", name, hash); err != nil {
+				return err
+			}
+
+			if err := opts.dockerq("cp", fmt.Sprintf("%s:/var/cache/build", name), filepath.Join(opts.Cache, hash)); err != nil {
+				return err
+			}
+
+			if err := opts.dockerq("rm", name); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -289,4 +320,8 @@ func (o BuildOptions) docker(args ...string) error {
 	cmd.Stderr = o.Stderr
 
 	return cmd.Run()
+}
+
+func (o BuildOptions) dockerq(args ...string) error {
+	return exec.Command("docker", args...).Run()
 }
