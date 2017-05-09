@@ -70,7 +70,7 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 			{Key: aws.String("Name"), Value: aws.String(name)},
 			{Key: aws.String("System"), Value: aws.String("convox")},
 			{Key: aws.String("Type"), Value: aws.String("rack")},
-			{Key: aws.String("Version"), Value: aws.String(version)},
+			{Key: aws.String("Version"), Value: aws.String(opts.Version)},
 		},
 		TemplateURL: aws.String(template),
 	})
