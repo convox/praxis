@@ -115,7 +115,9 @@ func (p *Provider) AppRegistry(app string) (*types.Registry, error) {
 	return registry, nil
 }
 
-func (p *Provider) processLogs(app string, ps types.Process, opts types.LogsOptions, w io.Writer) {
+func (p *Provider) processLogs(app string, ps types.Process, opts types.LogsOptions, w io.WriteCloser) {
+	defer w.Close()
+
 	r, err := p.ProcessLogs(app, ps.Id, opts)
 	if err != nil {
 		w.Write([]byte(fmt.Sprintf("error: %s\n", err)))
