@@ -3,10 +3,19 @@ package local
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
-func (p *Provider) workers() {
+func (p *Provider) Workers() {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sig
+		p.shutdown()
+	}()
+
 	converge := time.Tick(5 * time.Second)
 
 	for {

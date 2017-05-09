@@ -5,7 +5,6 @@ import (
 )
 
 type Provider interface {
-	// AppCancel(name string) error
 	AppCreate(name string) (*App, error)
 	AppDelete(name string) error
 	AppGet(name string) (*App, error)
@@ -73,4 +72,6 @@ type Provider interface {
 	TableList(app string) (Tables, error)
 	TableQuery(app, table, query string) (TableRows, error)
 	TableTruncate(app, table string) error
+
+	Workers()
 }
