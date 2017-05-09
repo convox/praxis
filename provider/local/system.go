@@ -6,6 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"os/user"
 	"text/template"
 	"time"
 
@@ -34,6 +36,15 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 		return "", err
 	}
 
+	u, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+
+	if u.Uid != "0" {
+		return "", fmt.Errorf("must be root to install a local rack")
+	}
+
 	if err := launcherInstall("convox.frontend", cx, "rack", "frontend"); err != nil {
 		return "", err
 	}
@@ -60,6 +71,9 @@ func (p *Provider) SystemOptions() (map[string]string, error) {
 func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {
 	launcherRemove("convox.frontend")
 	launcherRemove("convox.rack")
+
+	exec.Command("launchctl", "remove", "convox.frontend").Run()
+	exec.Command("launchctl", "remove", "convox.rack").Run()
 
 	return nil
 }
