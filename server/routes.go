@@ -33,6 +33,9 @@ func Routes(server *api.Server) {
 	auth.Route("build.logs", "GET", "/apps/{app}/builds/{id}/logs", controllers.BuildLogs)
 	auth.Route("build.update", "PUT", "/apps/{app}/builds/{id}", controllers.BuildUpdate)
 
+	auth.Route("cache.fetch", "GET", "/apps/{app}/caches/{cache}/{key}", controllers.CacheFetch)
+	auth.Route("cache.store", "POST", "/apps/{app}/caches/{cache}/{key}", controllers.CacheStore)
+
 	auth.Route("files.delete", "DELETE", "/apps/{app}/processes/{process}/files", controllers.FilesDelete)
 	auth.Route("files.upload", "POST", "/apps/{app}/processes/{process}/files", controllers.FilesUpload)
 

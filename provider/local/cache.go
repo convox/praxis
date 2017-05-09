@@ -10,15 +10,15 @@ import (
 
 var cacheBuffer = make(map[string]interface{})
 
-func (p *Provider) CacheFetch(app, cache, key string) map[string]string {
+func (p *Provider) CacheFetch(app, cache, key string) (map[string]string, error) {
 	collection := fmt.Sprintf("%s-%s-%s", app, cache, key)
 
 	attrs, ok := lcache.Get(collection, key).(map[string]string)
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("invalid cache item type")
 	}
 
-	return attrs
+	return attrs, nil
 }
 
 func (p *Provider) CacheStore(app, cache, key string, attrs map[string]string, opts types.CacheStoreOptions) error {

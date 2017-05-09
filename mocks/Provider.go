@@ -254,7 +254,7 @@ func (_m *Provider) BuildUpdate(app string, id string, opts types.BuildUpdateOpt
 }
 
 // CacheFetch provides a mock function with given fields: app, cache, key
-func (_m *Provider) CacheFetch(app string, cache string, key string) map[string]string {
+func (_m *Provider) CacheFetch(app string, cache string, key string) (map[string]string, error) {
 	ret := _m.Called(app, cache, key)
 
 	var r0 map[string]string
@@ -266,7 +266,14 @@ func (_m *Provider) CacheFetch(app string, cache string, key string) map[string]
 		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = rf(app, cache, key)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // CacheStore provides a mock function with given fields: app, cache, key, attrs, opts
