@@ -54,8 +54,11 @@ func (p *Provider) SystemGet() (*types.System, error) {
 }
 
 func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (string, error) {
-	version := coalesce(opts.Version, "latest")
-	template := fmt.Sprintf(RackFormation, version)
+	if opts.Version == "" {
+		return "", fmt.Errorf("must specify a version to install")
+	}
+
+	template := fmt.Sprintf(RackFormation, opts.Version)
 
 	_, err := p.CloudFormation().CreateStack(&cloudformation.CreateStackInput{
 		Capabilities: []*string{aws.String("CAPABILITY_IAM")},
