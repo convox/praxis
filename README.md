@@ -64,23 +64,9 @@ Runs on your laptop (or any single node). Great for development and CI.
 
 A fault-tolerant, highly scalable architecture built on modern AWS services such as ECS, ALB, and Lambda.
 
-### Implementation
+### API
 
-Praxis utilizes the best underlying infrastructure at each provider to implement a primitive. Some examples:
-
-#### Cache
-
-| Provider     | Implementation           |
-|--------------|--------------------------|
-| **Local**    | *convox/redis* container |
-| **AWS**      | ElastiCache              |
-
-#### Queue
-
-| Provider     | Implementation  |
-|--------------|-----------------|
-| **Local**    | in-memory FIFO  |
-| **AWS**      | SQS             |
+[TODO: API Docs]()
 
 ## INSTALLATION
 
@@ -112,12 +98,9 @@ Praxis utilizes the best underlying infrastructure at each provider to implement
 
 #### Create a convox.yml
 
-    $ cd ~/myapp
-    $ vi convox.yml
+[TODO: Reference Docs]()
 
-###### Examples
-
-  * [rails](https://gist.github.com/ddollar/4c2368dbb7058652cfe758affd2208b2)
+See also the `examples/` directory of this repo.
 
 #### Create an application
 
@@ -133,15 +116,13 @@ Praxis utilizes the best underlying infrastructure at each provider to implement
 
 ## UPDATING
 
-Get the latest version from https://github.com/convox/praxis/releases
-
 #### CLI
 
-    $ cx update VERSION
+    The `cx` CLI will automatically keep itself up to date.
     
 #### Rack
 
-    $ cx rack update VERSION
+    $ cx rack update [version]
 
 ## COPYRIGHT
 
