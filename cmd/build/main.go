@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/types"
@@ -173,7 +174,33 @@ func build() error {
 		return err
 	}
 
+	cache, err := ioutil.TempDir("", "")
+	if err != nil {
+		return err
+	}
+
+	ce, err := Rack.ObjectExists(flagApp, "convox/cache/build")
+	if err != nil {
+		return err
+	}
+
+	if ce {
+		fmt.Fprintf(w, "restoring cache\n")
+
+		cr, err := Rack.ObjectFetch(flagApp, "convox/cache/build")
+		if err != nil {
+			return err
+		}
+
+		defer cr.Close()
+
+		if err := helpers.ExtractTarball(cr, cache); err != nil {
+			return err
+		}
+	}
+
 	opts := manifest.BuildOptions{
+		Cache:  cache,
 		Push:   flagPush,
 		Root:   tmp,
 		Stdout: w,
@@ -181,6 +208,19 @@ func build() error {
 	}
 
 	if err := m.Build(flagPrefix, flagId, opts); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(w, "saving cache\n")
+
+	tgz, err := helpers.CreateTarball(cache, helpers.TarballOptions{})
+	if err != nil {
+		return err
+	}
+
+	defer tgz.Close()
+
+	if _, err := Rack.ObjectStore(flagApp, "convox/cache/build", tgz, types.ObjectStoreOptions{}); err != nil {
 		return err
 	}
 
