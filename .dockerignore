@@ -1,4 +1,5 @@
 .env
 .git
 cmd/cx/pkg
+examples
 rack
