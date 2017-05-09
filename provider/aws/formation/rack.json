@@ -91,6 +91,14 @@
     }
   },
   "Parameters": {
+    "InstanceCountMin": {
+      "Default": "2",
+      "Type": "Number"
+    },
+    "InstanceCountMax": {
+      "Default": "10",
+      "Type": "Number"
+    },
     "InstanceKey": {
       "Default": "",
       "Type": "String"
@@ -185,8 +193,8 @@
         "HealthCheckType": "EC2",
         "HealthCheckGracePeriod": "120",
         "LaunchConfigurationName" : { "Ref": "InstancesConfig" },
-        "MinSize" : "2",
-        "MaxSize" : "1000",
+        "MinSize" : { "Ref": "InstanceCountMin" },
+        "MaxSize" : { "Ref": "InstanceCountMax" },
         "MetricsCollection": [ { "Granularity": "1Minute" } ],
         "Tags": [ { "Key": "Name", "Value": { "Ref": "AWS::StackName" }, "PropagateAtLaunch": "true" } ],
         "VPCZoneIdentifier": [
