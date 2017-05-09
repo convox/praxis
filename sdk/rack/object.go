@@ -12,7 +12,7 @@ import (
 
 func (c *Client) ObjectExists(app, key string) (bool, error) {
 	err := c.Head(fmt.Sprintf("/apps/%s/objects/%s", app, key), RequestOptions{})
-	if strings.Index(err.Error(), "404") > -1 {
+	if err != nil && strings.Index(err.Error(), "404") > -1 {
 		return false, nil
 	}
 	if err != nil {
