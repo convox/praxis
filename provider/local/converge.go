@@ -336,7 +336,7 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 			})
 		}
 
-		cmd, err := shellquote.Split(s.Command.Production)
+		cmd, err := shellquote.Split(s.Command.Development)
 		if err != nil {
 			return nil, err
 		}
