@@ -180,7 +180,9 @@
             "echo 'OPTIONS=\"${OPTIONS} --log-opt max-file=2 --log-opt max-size=50m --host=unix:///var/run/docker.sock --host=0.0.0.0:2376\"' >> /etc/sysconfig/docker\n",
             "service docker reload\n",
             "echo -e '/var/log/docker {\\n  rotate 7\\n  daily\\n  nocompress\\n  copytruncate\\n}' >> /etc/logrotate.d/docker\n",
-            "/opt/aws/bin/cfn-signal --stack ", { "Ref": "AWS::StackName" }, " --region ", { "Ref": "AWS::Region" }, " --resource Instances\n"
+            "/opt/aws/bin/cfn-signal --stack ", { "Ref": "AWS::StackName" }, " --region ", { "Ref": "AWS::Region" }, " --resource Instances\n",
+            "docker pull convox/golang\n",
+            "docker pull convox/rails\n"
           ] ] }
         }
       }
