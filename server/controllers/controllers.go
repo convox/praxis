@@ -27,6 +27,8 @@ func Init() error {
 
 	Provider = p
 
+	go p.Workers()
+
 	return nil
 }
 

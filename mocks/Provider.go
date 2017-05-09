@@ -998,3 +998,8 @@ func (_m *Provider) TableTruncate(app string, table string) error {
 
 	return r0
 }
+
+// Workers provides a mock function with given fields:
+func (_m *Provider) Workers() {
+	_m.Called()
+}

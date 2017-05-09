@@ -14,7 +14,7 @@ import (
 
 type queueHandler func(body string) error
 
-func (p *Provider) workers() {
+func (p *Provider) Workers() {
 	go helpers.AsyncError(p.workerAutoscale)
 	go helpers.AsyncError(p.workerQueues)
 

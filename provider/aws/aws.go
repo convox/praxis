@@ -74,17 +74,7 @@ func FromEnv() (*Provider, error) {
 		}
 	}
 
-	if err := p.Init(); err != nil {
-		return nil, err
-	}
-
 	return p, nil
-}
-
-func (p *Provider) Init() error {
-	go p.workers()
-
-	return nil
 }
 
 func (p *Provider) AutoScaling() *autoscaling.AutoScaling {

@@ -5,10 +5,8 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -73,15 +71,6 @@ func (p *Provider) Init() error {
 	if _, err := p.createRootBucket("rack"); err != nil {
 		return err
 	}
-
-	go p.workers()
-
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-sig
-		p.shutdown()
-	}()
 
 	return nil
 }
