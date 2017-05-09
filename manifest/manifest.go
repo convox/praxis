@@ -11,6 +11,12 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+const (
+	StageProduction  = 0
+	StageDevelopment = iota
+	StageTest        = iota
+)
+
 type Manifest struct {
 	Balancers Balancers
 	Keys      Keys

@@ -20,6 +20,7 @@ type Builds []Build
 type BuildCreateOptions struct {
 	Cache    bool
 	Manifest string
+	Stage    int
 }
 
 type BuildUpdateOptions struct {

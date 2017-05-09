@@ -80,7 +80,7 @@ func runStart(c *cli.Context) error {
 
 	bw := types.Stream{Writer: m.Writer("build", os.Stdout)}
 
-	b, err := buildDirectory(app, ".", bw)
+	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment}, bw)
 	if err != nil {
 		return err
 	}

@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/convox/praxis/manifest"
@@ -27,6 +28,7 @@ var (
 	flagManifest string
 	flagPrefix   string
 	flagPush     string
+	flagStage    int
 	flagUrl      string
 
 	output bytes.Buffer
@@ -51,6 +53,7 @@ func main() {
 	fs.StringVar(&flagManifest, "manifest", "convox.yml", "path to manifest")
 	fs.StringVar(&flagPrefix, "prefix", "", "image prefix")
 	fs.StringVar(&flagPush, "push", "", "push after build")
+	fs.IntVar(&flagStage, "stage", 0, "release stage")
 	fs.StringVar(&flagUrl, "url", "", "source url")
 
 	if err := fs.Parse(os.Args[1:]); err != nil {
@@ -75,6 +78,14 @@ func main() {
 
 	if v := os.Getenv("BUILD_PUSH"); v != "" {
 		flagPush = v
+	}
+
+	if v := os.Getenv("BUILD_STAGE"); v != "" {
+		s, err := strconv.Atoi(v)
+		if err != nil {
+			fail(err)
+		}
+		flagStage = s
 	}
 
 	if v := os.Getenv("BUILD_URL"); v != "" {
@@ -177,7 +188,7 @@ func build() error {
 }
 
 func release() error {
-	release, err := Rack.ReleaseCreate(flagApp, types.ReleaseCreateOptions{Build: flagId})
+	release, err := Rack.ReleaseCreate(flagApp, types.ReleaseCreateOptions{Build: flagId, Stage: flagStage})
 	if err != nil {
 		return err
 	}
