@@ -178,11 +178,17 @@ func runRackInstall(c *cli.Context) error {
 		return err
 	}
 
+	version := c.String("version")
+
+	if v, _ := latestVersion(); v != "" {
+		version = v
+	}
+
 	endpoint, err := p.SystemInstall(name, types.SystemInstallOptions{
 		Color:    true,
 		Output:   os.Stdout,
 		Password: password,
-		Version:  c.String("version"),
+		Version:  version,
 	})
 	if err != nil {
 		return err
