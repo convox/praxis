@@ -5,13 +5,20 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"strings"
 
 	"github.com/convox/praxis/types"
 )
 
 func (c *Client) ObjectExists(app, key string) (bool, error) {
 	err := c.Head(fmt.Sprintf("/apps/%s/objects/%s", app, key), RequestOptions{})
-	return err == nil, err
+	if strings.Index(err.Error(), "404") > -1 {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (c *Client) ObjectFetch(app string, key string) (io.ReadCloser, error) {
