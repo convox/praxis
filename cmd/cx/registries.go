@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -31,6 +29,7 @@ func init() {
 			},
 			cli.Command{
 				Name:        "remove",
+				Aliases:     []string{"rm"},
 				Description: "remove a registry",
 				Action:      runRegistriesRemove,
 				Usage:       "<hostname>",
@@ -45,7 +44,13 @@ func runRegistries(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("registries = %+v\n", registries)
+	t := stdcli.NewTable("HOSTNAME", "USERNAME")
+
+	for _, r := range registries {
+		t.AddRow(r.Hostname, r.Username)
+	}
+
+	t.Print()
 
 	return nil
 }
@@ -59,9 +64,13 @@ func runRegistriesAdd(c *cli.Context) error {
 	username := c.String("username")
 	password := c.String("password")
 
+	stdcli.Startf("adding <name>%s</name>", hostname)
+
 	if _, err := Rack.RegistryAdd(hostname, username, password); err != nil {
-		return err
+		return stdcli.Error(err)
 	}
+
+	stdcli.OK()
 
 	return nil
 }
@@ -73,5 +82,13 @@ func runRegistriesRemove(c *cli.Context) error {
 
 	hostname := c.Args()[0]
 
-	return Rack.RegistryRemove(hostname)
+	stdcli.Startf("removing <name>%s</name>", hostname)
+
+	if err := Rack.RegistryRemove(hostname); err != nil {
+		return stdcli.Error(err)
+	}
+
+	stdcli.OK()
+
+	return nil
 }

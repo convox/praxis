@@ -309,14 +309,23 @@ func runRackUpdate(c *cli.Context) error {
 		version = c.Args()[0]
 	}
 
+	s, err := Rack.SystemGet()
+	if err != nil {
+		return err
+	}
+
 	opts := types.SystemUpdateOptions{
 		Output:  os.Stdout,
 		Version: version,
 	}
 
+	stdcli.Startf("updating <name>%s</name> to <version>%s</version>", s.Name, opts.Version)
+
 	if err := Rack.SystemUpdate(opts); err != nil {
-		return err
+		return stdcli.Error(err)
 	}
+
+	stdcli.OK()
 
 	return nil
 }

@@ -19,6 +19,7 @@ func init() {
 			},
 			cli.Command{
 				Name:        "delete",
+				Aliases:     []string{"rm"},
 				Description: "delete an application",
 				Usage:       "<name>",
 				Action:      runAppsDelete,
@@ -58,7 +59,7 @@ func runAppsCreate(c *cli.Context) error {
 
 	name := c.Args()[0]
 
-	stdcli.Startf("creating <app>%s</app>", name)
+	stdcli.Startf("creating <name>%s</name>", name)
 
 	_, err := Rack.AppCreate(name)
 	if err != nil {
@@ -77,7 +78,7 @@ func runAppsDelete(c *cli.Context) error {
 
 	name := c.Args()[0]
 
-	stdcli.Startf("deleting <app>%s</app>", name)
+	stdcli.Startf("deleting <name>%s</name>", name)
 
 	if err := Rack.AppDelete(name); err != nil {
 		return stdcli.Error(err)
