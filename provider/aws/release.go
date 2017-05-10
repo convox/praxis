@@ -159,7 +159,7 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 		return err
 	}
 
-	m, err := manifest.Load([]byte(b.Manifest))
+	m, err := manifest.Load([]byte(b.Manifest), r.Env)
 	if err != nil {
 		return err
 	}

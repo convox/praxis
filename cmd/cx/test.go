@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"time"
@@ -34,12 +35,7 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	m, err := manifest.LoadFile("convox.yml")
-	if err != nil {
-		return err
-	}
-
-	env := map[string]string{}
+	env := types.Environment{}
 
 	for _, e := range os.Environ() {
 		parts := strings.SplitN(e, "=", 2)
@@ -47,6 +43,16 @@ func runTest(c *cli.Context) error {
 		if len(parts) == 2 {
 			env[parts[0]] = parts[1]
 		}
+	}
+
+	data, err := ioutil.ReadFile("convox.yml")
+	if err != nil {
+		return err
+	}
+
+	m, err := manifest.Load(data, env)
+	if err != nil {
+		return err
 	}
 
 	if err := m.Validate(env); err != nil {

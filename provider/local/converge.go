@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/manifest"
 	shellquote "github.com/kballard/go-shellquote"
 )
@@ -19,31 +20,8 @@ func (p *Provider) converge(app string) error {
 
 	log := Logger.At("converge").Namespace("app=%s", app).Start()
 
-	a, err := p.AppGet(app)
+	m, r, err := helpers.AppManifest(p, app)
 	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	if a.Release == "" {
-		return nil
-	}
-
-	r, err := p.ReleaseGet(a.Name, a.Release)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	b, err := p.BuildGet(a.Name, r.Build)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	m, err := manifest.Load([]byte(b.Manifest))
-	if err != nil {
-		log.Error(err)
 		return err
 	}
 
@@ -317,7 +295,7 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 		return nil, err
 	}
 
-	m, err := manifest.Load([]byte(b.Manifest))
+	m, err := manifest.Load([]byte(b.Manifest), r.Env)
 	if err != nil {
 		return nil, err
 	}

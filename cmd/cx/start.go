@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/convox/praxis/changes"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
@@ -47,38 +48,9 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	m, err := manifest.LoadFile("convox.yml")
-	if err != nil {
-		return err
-	}
-
-	env := types.Environment{}
-
-	a, err := Rack.AppGet(app)
-	if err != nil {
-		return err
-	}
-
-	if a.Release != "" {
-		r, err := Rack.ReleaseGet(app, a.Release)
-		if err != nil {
-			return err
-		}
-
-		env = r.Env
-	}
-
-	if err := m.Validate(env); err != nil {
-		return err
-	}
-
 	ch := make(chan error)
 
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	go handleSignals(sig, ch, m, app)
-
-	bw := types.Stream{Writer: m.Writer("build", os.Stdout)}
+	bw := types.Stream{Writer: os.Stdout}
 
 	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment}, bw)
 	if err != nil {
@@ -102,6 +74,15 @@ func runStart(c *cli.Context) error {
 		return fmt.Errorf("unknown build status: %s", b.Status)
 	}
 
+	m, _, err := helpers.AppManifest(Rack, app)
+	if err != nil {
+		return err
+	}
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	go handleSignals(sig, ch, m, app)
+
 	rw := types.Stream{Writer: m.Writer("release", os.Stdout)}
 
 	if err := releaseLogs(app, b.Release, rw); err != nil {
@@ -121,8 +102,13 @@ func runStart(c *cli.Context) error {
 		return fmt.Errorf("unknown release status: %s", r.Status)
 	}
 
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
 	for _, s := range m.Services {
-		go watchChanges(m, app, s.Name, ch)
+		go watchChanges(wd, m, app, s.Name, ch)
 	}
 
 	logs, err := Rack.AppLogs(app, types.LogsOptions{Follow: true})
@@ -176,21 +162,21 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 	os.Exit(0)
 }
 
-func watchChanges(m *manifest.Manifest, app, service string, ch chan error) {
+func watchChanges(root string, m *manifest.Manifest, app, service string, ch chan error) {
 	for _, s := range m.Services {
-		bss, err := m.BuildSources(s.Name)
+		bss, err := m.BuildSources(root, s.Name)
 		if err != nil {
 			ch <- err
 			return
 		}
 
 		for _, bs := range bss {
-			go watchPath(m, app, s.Name, bs, ch)
+			go watchPath(root, m, app, s.Name, bs, ch)
 		}
 	}
 }
 
-func watchPath(m *manifest.Manifest, app, service string, bs manifest.BuildSource, ch chan error) {
+func watchPath(root string, m *manifest.Manifest, app, service string, bs manifest.BuildSource, ch chan error) {
 	cch := make(chan changes.Change, 1)
 
 	w := m.Writer("convox", os.Stdout)
@@ -201,7 +187,7 @@ func watchPath(m *manifest.Manifest, app, service string, bs manifest.BuildSourc
 		return
 	}
 
-	ignores, err := m.BuildIgnores(service)
+	ignores, err := m.BuildIgnores(root, service)
 	if err != nil {
 		ch <- err
 		return
