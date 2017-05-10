@@ -160,12 +160,23 @@ func build() error {
 
 	mf := filepath.Join(tmp, flagManifest)
 
-	m, err := manifest.LoadFile(mf)
+	data, err := ioutil.ReadFile(mf)
 	if err != nil {
 		return err
 	}
 
-	data, err := ioutil.ReadFile(mf)
+	env := types.Environment{}
+
+	rs, err := Rack.ReleaseList(flagApp, types.ReleaseListOptions{Count: 1})
+	if err != nil {
+		return err
+	}
+
+	if len(rs) > 0 {
+		env = rs[0].Env
+	}
+
+	m, err := manifest.Load(data, env)
 	if err != nil {
 		return err
 	}
@@ -207,7 +218,7 @@ func build() error {
 		Stderr: w,
 	}
 
-	if err := m.Build(flagPrefix, flagId, opts); err != nil {
+	if err := m.Build(tmp, flagPrefix, flagId, opts); err != nil {
 		return err
 	}
 

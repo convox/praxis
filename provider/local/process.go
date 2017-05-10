@@ -170,31 +170,31 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	image := opts.Image
 
 	if image == "" {
-		release, err := p.ReleaseGet(app, opts.Release)
+		r, err := p.ReleaseGet(app, opts.Release)
 		if err != nil {
 			return nil, err
 		}
 
-		build, err := p.BuildGet(app, release.Build)
+		b, err := p.BuildGet(app, r.Build)
 		if err != nil {
 			return nil, err
 		}
 
-		m, err := manifest.Load([]byte(build.Manifest))
+		m, err := manifest.Load([]byte(b.Manifest), r.Env)
 		if err != nil {
 			return nil, err
 		}
 
-		service, err := m.Services.Find(opts.Service)
+		s, err := m.Services.Find(opts.Service)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range service.Volumes {
+		for _, v := range s.Volumes {
 			args = append(args, "-v", v)
 		}
 
-		image = fmt.Sprintf("%s/%s/%s:%s", p.Name, app, opts.Service, release.Build)
+		image = fmt.Sprintf("%s/%s/%s:%s", p.Name, app, opts.Service, r.Build)
 	}
 
 	if p.Frontend != "none" {

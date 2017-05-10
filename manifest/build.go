@@ -30,7 +30,7 @@ type BuildSource struct {
 	Remote string
 }
 
-func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
+func (m *Manifest) Build(root, prefix string, tag string, opts BuildOptions) error {
 	builds := map[string]ServiceBuild{}
 	pulls := map[string]bool{}
 	pushes := map[string]string{}
@@ -107,15 +107,10 @@ func (m *Manifest) Build(prefix string, tag string, opts BuildOptions) error {
 	return nil
 }
 
-func (m *Manifest) BuildIgnores(service string) ([]string, error) {
+func (m *Manifest) BuildIgnores(root, service string) ([]string, error) {
 	ignore := []string{}
 
-	root, err := m.Path("")
-	if err != nil {
-		return nil, err
-	}
-
-	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			return nil
 		}
@@ -154,7 +149,7 @@ func (m *Manifest) BuildIgnores(service string) ([]string, error) {
 	return ignore, nil
 }
 
-func (m *Manifest) BuildManifest(service string) ([]byte, error) {
+func (m *Manifest) BuildDockerfile(root, service string) ([]byte, error) {
 	s, err := m.Services.Find(service)
 	if err != nil {
 		return nil, err
@@ -162,11 +157,6 @@ func (m *Manifest) BuildManifest(service string) ([]byte, error) {
 
 	if s.Image != "" {
 		return nil, nil
-	}
-
-	root, err := m.Path("")
-	if err != nil {
-		return nil, err
 	}
 
 	path, err := filepath.Abs(filepath.Join(root, s.Build.Path, "Dockerfile"))
@@ -181,8 +171,8 @@ func (m *Manifest) BuildManifest(service string) ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
 
-func (m *Manifest) BuildSources(service string) ([]BuildSource, error) {
-	data, err := m.BuildManifest(service)
+func (m *Manifest) BuildSources(root, service string) ([]BuildSource, error) {
+	data, err := m.BuildDockerfile(root, service)
 	if err != nil {
 		return nil, err
 	}
