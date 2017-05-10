@@ -11,12 +11,16 @@ import (
 func (p *Provider) CacheFetch(app, cache, key string) (map[string]string, error) {
 	collection := fmt.Sprintf("%s-%s-%s", app, cache, key)
 
-	attrs, ok := lcache.Get(collection, key).(map[string]string)
-	if !ok {
-		return nil, fmt.Errorf("invalid cache item type")
+	item := lcache.Get(collection, key)
+	if item != nil {
+		if attrs, ok := item.(map[string]string); ok {
+			return attrs, nil
+		}
+
+		return nil, fmt.Errorf("cache item not of type map[string]string")
 	}
 
-	return attrs, nil
+	return nil, nil
 }
 
 func (p *Provider) CacheStore(app, cache, key string, attrs map[string]string, opts types.CacheStoreOptions) error {
