@@ -18,11 +18,6 @@ import (
 )
 
 func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error) {
-	a, err := p.AppGet(app)
-	if err != nil {
-		return nil, err
-	}
-
 	r, err := p.releaseFork(app)
 	if err != nil {
 		return nil, err
@@ -42,30 +37,143 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		return nil, err
 	}
 
+	return r, nil
+}
+
+func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
+	a, err := p.AppGet(app)
+	if err != nil {
+		return nil, err
+	}
+
+	domain, err := p.appResource(app, "Releases")
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := p.SimpleDB().GetAttributes(&simpledb.GetAttributesInput{
+		DomainName: aws.String(domain),
+		ItemName:   aws.String(id),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := p.releaseFromAttributes(id, res.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Id == a.Release {
+		r.Status = "current"
+	}
+
+	return r, nil
+}
+
+func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
+	a, err := p.AppGet(app)
+	if err != nil {
+		return nil, err
+	}
+
+	domain, err := p.appResource(app, "Releases")
+	if err != nil {
+		return nil, err
+	}
+
+	limit := coalescei(opts.Count, 10)
+
+	req := &simpledb.SelectInput{
+		ConsistentRead:   aws.Bool(true),
+		SelectExpression: aws.String(fmt.Sprintf("select * from `%s` where created is not null order by created desc limit %d", domain, limit)),
+	}
+
+	releases := types.Releases{}
+
+	res, err := p.SimpleDB().Select(req)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range res.Items {
+		release, err := p.releaseFromAttributes(*item.Name, item.Attributes)
+		if err != nil {
+			return nil, err
+		}
+
+		if release.Id == a.Release {
+			release.Status = "current"
+		}
+
+		releases = append(releases, *release)
+	}
+
+	return releases, nil
+}
+
+func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadCloser, error) {
+	group, err := p.appResource(app, "Logs")
+	if err != nil {
+		return nil, err
+	}
+
+	stream := fmt.Sprintf("convox/release/%s", id)
+
+	r, w := io.Pipe()
+
+	go p.subscribeLogsCallback(group, stream, opts, w, func() bool {
+		r, err := p.ReleaseGet(app, id)
+		if err != nil {
+			return false
+		}
+
+		switch r.Status {
+		case "complete", "failed":
+			return false
+		}
+
+		return true
+	})
+
+	return r, nil
+}
+
+func (p *Provider) ReleasePromote(app string, id string) error {
+	a, err := p.AppGet(app)
+	if err != nil {
+		return err
+	}
+
+	r, err := p.ReleaseGet(app, id)
+	if err != nil {
+		return err
+	}
+
 	if r.Build == "" {
-		return r, nil
+		return fmt.Errorf("no build for release: %s", r.Id)
 	}
 
 	b, err := p.BuildGet(app, r.Build)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	m, err := manifest.Load([]byte(b.Manifest))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	group, err := p.appResource(app, "Logs")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	stream := fmt.Sprintf("convox/release/%s", r.Id)
 
 	topic, err := p.rackResource("NotificationTopic")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	tp := map[string]interface{}{
@@ -78,7 +186,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 
 	data, err := formationTemplate("app", tp)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	fmt.Printf("string(data) = %+v\n", string(data))
@@ -87,7 +195,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 
 	domain, err := p.rackOutput("Domain")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	updates := map[string]string{
@@ -100,7 +208,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 
 	params, err := p.cloudformationUpdateParameters(stack, data, updates)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// p.writeLogf(group, stream, "creating changeset: %s", r.Id)
@@ -150,86 +258,10 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		TemplateBody:       aws.String(string(data)),
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return r, nil
-}
-
-func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
-	domain, err := p.appResource(app, "Releases")
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := p.SimpleDB().GetAttributes(&simpledb.GetAttributesInput{
-		DomainName: aws.String(domain),
-		ItemName:   aws.String(id),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return p.releaseFromAttributes(id, res.Attributes)
-}
-
-func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
-	domain, err := p.appResource(app, "Releases")
-	if err != nil {
-		return nil, err
-	}
-
-	limit := coalescei(opts.Count, 10)
-
-	req := &simpledb.SelectInput{
-		ConsistentRead:   aws.Bool(true),
-		SelectExpression: aws.String(fmt.Sprintf("select * from `%s` where created is not null order by created desc limit %d", domain, limit)),
-	}
-
-	releases := types.Releases{}
-
-	res, err := p.SimpleDB().Select(req)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, item := range res.Items {
-		release, err := p.releaseFromAttributes(*item.Name, item.Attributes)
-		if err != nil {
-			return nil, err
-		}
-
-		releases = append(releases, *release)
-	}
-
-	return releases, nil
-}
-
-func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadCloser, error) {
-	group, err := p.appResource(app, "Logs")
-	if err != nil {
-		return nil, err
-	}
-
-	stream := fmt.Sprintf("convox/release/%s", id)
-
-	r, w := io.Pipe()
-
-	go p.subscribeLogsCallback(group, stream, opts, w, func() bool {
-		r, err := p.ReleaseGet(app, id)
-		if err != nil {
-			return false
-		}
-
-		switch r.Status {
-		case "complete", "failed":
-			return false
-		}
-
-		return true
-	})
-
-	return r, nil
+	return nil
 }
 
 func (p *Provider) releaseFromAttributes(id string, attrs []*simpledb.Attribute) (*types.Release, error) {

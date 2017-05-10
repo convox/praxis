@@ -249,7 +249,7 @@ func (p *Provider) buildStore(build *types.Build) error {
 	}
 
 	if build.Manifest != "" {
-		mo, err := p.ObjectStore(build.App, fmt.Sprintf("convox/build/%s/manifest", build.Id), bytes.NewReader([]byte(build.Manifest)), types.ObjectStoreOptions{})
+		mo, err := p.ObjectStore(build.App, fmt.Sprintf("convox/builds/%s/manifest", build.Id), bytes.NewReader([]byte(build.Manifest)), types.ObjectStoreOptions{})
 		if err != nil {
 			return err
 		}

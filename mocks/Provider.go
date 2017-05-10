@@ -789,6 +789,20 @@ func (_m *Provider) ReleaseLogs(app string, id string, opts types.LogsOptions) (
 	return r0, r1
 }
 
+// ReleasePromote provides a mock function with given fields: app, id
+func (_m *Provider) ReleasePromote(app string, id string) error {
+	ret := _m.Called(app, id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(app, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ResourceList provides a mock function with given fields: app
 func (_m *Provider) ResourceList(app string) (types.Resources, error) {
 	ret := _m.Called(app)

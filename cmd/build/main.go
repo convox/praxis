@@ -179,7 +179,7 @@ func build() error {
 		return err
 	}
 
-	ce, err := Rack.ObjectExists(flagApp, "convox/cache/build")
+	ce, err := Rack.ObjectExists(flagApp, "convox/cache/build.tgz")
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func build() error {
 	if ce {
 		fmt.Fprintf(w, "restoring cache\n")
 
-		cr, err := Rack.ObjectFetch(flagApp, "convox/cache/build")
+		cr, err := Rack.ObjectFetch(flagApp, "convox/cache/build.tgz")
 		if err != nil {
 			return err
 		}
@@ -220,7 +220,20 @@ func build() error {
 
 	defer tgz.Close()
 
-	if _, err := Rack.ObjectStore(flagApp, "convox/cache/build", tgz, types.ObjectStoreOptions{}); err != nil {
+	if _, err := Rack.ObjectStore(flagApp, "convox/cache/build.tgz", tgz, types.ObjectStoreOptions{}); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(w, "storing artifacts\n")
+
+	r, err = Rack.ObjectFetch(flagApp, u.Path)
+	if err != nil {
+		return err
+	}
+
+	defer r.Close()
+
+	if _, err := Rack.ObjectStore(flagApp, fmt.Sprintf("convox/builds/%s/context.tgz", flagId), r, types.ObjectStoreOptions{}); err != nil {
 		return err
 	}
 
