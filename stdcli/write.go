@@ -68,11 +68,17 @@ func Writef(format string, args ...interface{}) (int, error) {
 	return DefaultWriter.Writef(format, args...)
 }
 
+type errorFormatter struct {
+	error
+	w *Writer
+}
+
+func (err errorFormatter) Format(s fmt.State, verb rune) {
+	fmt.Fprintf(s, err.w.renderTags("<error>%s</error>"), err.error)
+}
+
 func (w *Writer) Error(err error) error {
-	if err.Error() != "Token expired" {
-		w.Stderr.Write([]byte(fmt.Sprintf(w.renderTags("<error>%s</error>\n"), err)))
-	}
-	return err
+	return errorFormatter{error: err, w: w}
 }
 
 func (w *Writer) Errorf(format string, args ...interface{}) error {
@@ -88,7 +94,7 @@ func (w *Writer) Sprintf(format string, args ...interface{}) string {
 }
 
 func (w *Writer) Startf(format string, args ...interface{}) (int, error) {
-	return w.Writef("<start>%s</start><start>...</start> ", w.Sprintf(format, args...))
+	return w.Writef("<start>%s</start><start>:</start> ", w.Sprintf(format, args...))
 }
 
 func (w *Writer) Wait(status string) (int, error) {
