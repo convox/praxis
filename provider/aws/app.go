@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/aws/aws-sdk-go/service/simpledb"
 	"github.com/convox/praxis/types"
 )
 
@@ -73,15 +74,6 @@ func (p *Provider) AppGet(name string) (*types.App, error) {
 
 	if app.Status == "creating" {
 		return app, nil
-	}
-
-	rs, err := p.ReleaseList(name, types.ReleaseListOptions{Count: 1})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(rs) > 0 {
-		app.Release = rs[0].Id
 	}
 
 	return app, nil
@@ -156,9 +148,30 @@ func (p *Provider) AppRegistry(app string) (*types.Registry, error) {
 	return registry, nil
 }
 
+func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
+	domain, err := p.appResource(app, "Releases")
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := p.SimpleDB().GetAttributes(&simpledb.GetAttributesInput{
+		DomainName: aws.String(domain),
+		ItemName:   aws.String(id),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return p.releaseFromAttributes(id, res.Attributes)
+}
 func (p *Provider) appFromStack(stack *cloudformation.Stack) *types.App {
+	outputs := map[string]string{}
 	params := map[string]string{}
 	tags := map[string]string{}
+
+	for _, o := range stack.Outputs {
+		outputs[*o.OutputKey] = *o.OutputValue
+	}
 
 	for _, p := range stack.Parameters {
 		params[*p.ParameterKey] = *p.ParameterValue
@@ -179,7 +192,7 @@ func (p *Provider) appFromStack(stack *cloudformation.Stack) *types.App {
 
 	return &types.App{
 		Name:    name,
-		Release: params["Release"],
+		Release: outputs["Release"],
 		Status:  humanStatus(*stack.StackStatus),
 	}
 }

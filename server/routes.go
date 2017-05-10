@@ -68,6 +68,7 @@ func Routes(server *api.Server) {
 	auth.Route("release.get", "GET", "/apps/{app}/releases/{id}", controllers.ReleaseGet)
 	auth.Route("release.list", "GET", "/apps/{app}/releases", controllers.ReleaseList)
 	auth.Route("release.logs", "GET", "/apps/{app}/releases/{id}/logs", controllers.ReleaseLogs)
+	auth.Route("release.promote", "POST", "/apps/{app}/releases/{id}", controllers.ReleasePromote)
 
 	auth.Route("resource.list", "GET", "/apps/{app}/resources", controllers.ResourceList)
 

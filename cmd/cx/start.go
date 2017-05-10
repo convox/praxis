@@ -114,7 +114,7 @@ func runStart(c *cli.Context) error {
 	}
 
 	switch r.Status {
-	case "created", "running", "complete":
+	case "created", "promoting", "promoted":
 	case "failed":
 		return fmt.Errorf("release failed")
 	default:

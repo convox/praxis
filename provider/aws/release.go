@@ -18,11 +18,6 @@ import (
 )
 
 func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error) {
-	a, err := p.AppGet(app)
-	if err != nil {
-		return nil, err
-	}
-
 	r, err := p.releaseFork(app)
 	if err != nil {
 		return nil, err
@@ -42,135 +37,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		return nil, err
 	}
 
-	if r.Build == "" {
-		return r, nil
-	}
-
-	b, err := p.BuildGet(app, r.Build)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := manifest.Load([]byte(b.Manifest))
-	if err != nil {
-		return nil, err
-	}
-
-	group, err := p.appResource(app, "Logs")
-	if err != nil {
-		return nil, err
-	}
-
-	stream := fmt.Sprintf("convox/release/%s", r.Id)
-
-	topic, err := p.rackResource("NotificationTopic")
-	if err != nil {
-		return nil, err
-	}
-
-	tp := map[string]interface{}{
-		"App":      a,
-		"Env":      r.Env,
-		"Manifest": m,
-		"Release":  r,
-		"Version":  p.Version,
-	}
-
-	data, err := formationTemplate("app", tp)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Printf("string(data) = %+v\n", string(data))
-
-	// return nil, fmt.Errorf("stop")
-
-	domain, err := p.rackOutput("Domain")
-	if err != nil {
-		return nil, err
-	}
-
-	updates := map[string]string{
-		"Domain":   strings.ToLower(domain),
-		"Password": p.Password,
-		"Release":  r.Id,
-	}
-
-	stack := fmt.Sprintf("%s-%s", p.Name, app)
-
-	params, err := p.cloudformationUpdateParameters(stack, data, updates)
-	if err != nil {
-		return nil, err
-	}
-
-	// p.writeLogf(group, stream, "creating changeset: %s", r.Id)
-
-	// _, err = p.CloudFormation().CreateChangeSet(&cloudformation.CreateChangeSetInput{
-	//   Capabilities:     []*string{aws.String("CAPABILITY_IAM")},
-	//   ChangeSetName:    aws.String(r.Id),
-	//   ChangeSetType:    aws.String("UPDATE"),
-	//   ClientToken:      aws.String(r.Id),
-	//   Description:      aws.String(fmt.Sprintf("Release %s (Build %s)", r.Id, r.Build)),
-	//   Parameters:       params,
-	//   NotificationARNs: []*string{aws.String(topic)},
-	//   StackName:        aws.String(stack),
-	//   TemplateBody:     aws.String(string(data)),
-	// })
-	// if err != nil {
-	//   return nil, err
-	// }
-
-	// err = p.CloudFormation().WaitUntilChangeSetCreateComplete(&cloudformation.DescribeChangeSetInput{
-	//   ChangeSetName: aws.String(r.Id),
-	//   StackName:     aws.String(stack),
-	// })
-	// if err != nil {
-	//   return nil, err
-	// }
-
-	// p.writeLogf(group, stream, "executing changeset: %s", r.Id)
-
-	// _, err = p.CloudFormation().ExecuteChangeSet(&cloudformation.ExecuteChangeSetInput{
-	//   ChangeSetName:      aws.String(r.Id),
-	//   ClientRequestToken: aws.String(r.Id),
-	//   StackName:          aws.String(stack),
-	// })
-	// if err != nil {
-	//   return nil, err
-	// }
-
-	p.writeLogf(group, stream, "updating: %s", stack)
-
-	_, err = p.CloudFormation().UpdateStack(&cloudformation.UpdateStackInput{
-		Capabilities:       []*string{aws.String("CAPABILITY_IAM")},
-		ClientRequestToken: aws.String(r.Id),
-		Parameters:         params,
-		NotificationARNs:   []*string{aws.String(topic)},
-		StackName:          aws.String(stack),
-		TemplateBody:       aws.String(string(data)),
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	return r, nil
-}
-
-func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
-	domain, err := p.appResource(app, "Releases")
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := p.SimpleDB().GetAttributes(&simpledb.GetAttributesInput{
-		DomainName: aws.String(domain),
-		ItemName:   aws.String(id),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return p.releaseFromAttributes(id, res.Attributes)
 }
 
 func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
@@ -230,6 +97,131 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 	})
 
 	return r, nil
+}
+
+func (p *Provider) ReleasePromote(app string, id string) error {
+	a, err := p.AppGet(app)
+	if err != nil {
+		return err
+	}
+
+	r, err := p.ReleaseGet(app, id)
+	if err != nil {
+		return err
+	}
+
+	if r.Build == "" {
+		return fmt.Errorf("no build for release: %s", r.Id)
+	}
+
+	b, err := p.BuildGet(app, r.Build)
+	if err != nil {
+		return err
+	}
+
+	m, err := manifest.Load([]byte(b.Manifest))
+	if err != nil {
+		return err
+	}
+
+	group, err := p.appResource(app, "Logs")
+	if err != nil {
+		return err
+	}
+
+	stream := fmt.Sprintf("convox/release/%s", r.Id)
+
+	topic, err := p.rackResource("NotificationTopic")
+	if err != nil {
+		return err
+	}
+
+	tp := map[string]interface{}{
+		"App":      a,
+		"Env":      r.Env,
+		"Manifest": m,
+		"Release":  r,
+		"Version":  p.Version,
+	}
+
+	data, err := formationTemplate("app", tp)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("string(data) = %+v\n", string(data))
+
+	// return nil, fmt.Errorf("stop")
+
+	domain, err := p.rackOutput("Domain")
+	if err != nil {
+		return err
+	}
+
+	updates := map[string]string{
+		"Domain":   strings.ToLower(domain),
+		"Password": p.Password,
+		"Release":  r.Id,
+	}
+
+	stack := fmt.Sprintf("%s-%s", p.Name, app)
+
+	params, err := p.cloudformationUpdateParameters(stack, data, updates)
+	if err != nil {
+		return err
+	}
+
+	// p.writeLogf(group, stream, "creating changeset: %s", r.Id)
+
+	// _, err = p.CloudFormation().CreateChangeSet(&cloudformation.CreateChangeSetInput{
+	//   Capabilities:     []*string{aws.String("CAPABILITY_IAM")},
+	//   ChangeSetName:    aws.String(r.Id),
+	//   ChangeSetType:    aws.String("UPDATE"),
+	//   ClientToken:      aws.String(r.Id),
+	//   Description:      aws.String(fmt.Sprintf("Release %s (Build %s)", r.Id, r.Build)),
+	//   Parameters:       params,
+	//   NotificationARNs: []*string{aws.String(topic)},
+	//   StackName:        aws.String(stack),
+	//   TemplateBody:     aws.String(string(data)),
+	// })
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	// err = p.CloudFormation().WaitUntilChangeSetCreateComplete(&cloudformation.DescribeChangeSetInput{
+	//   ChangeSetName: aws.String(r.Id),
+	//   StackName:     aws.String(stack),
+	// })
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	// p.writeLogf(group, stream, "executing changeset: %s", r.Id)
+
+	// _, err = p.CloudFormation().ExecuteChangeSet(&cloudformation.ExecuteChangeSetInput{
+	//   ChangeSetName:      aws.String(r.Id),
+	//   ClientRequestToken: aws.String(r.Id),
+	//   StackName:          aws.String(stack),
+	// })
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	p.writeLogf(group, stream, "updating: %s", stack)
+
+	_, err = p.CloudFormation().UpdateStack(&cloudformation.UpdateStackInput{
+		Capabilities:       []*string{aws.String("CAPABILITY_IAM")},
+		ClientRequestToken: aws.String(r.Id),
+		Parameters:         params,
+		NotificationARNs:   []*string{aws.String(topic)},
+		StackName:          aws.String(stack),
+		TemplateBody:       aws.String(string(data)),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *Provider) releaseFromAttributes(id string, attrs []*simpledb.Attribute) (*types.Release, error) {

@@ -106,9 +106,14 @@ func runEnvSet(c *cli.Context) error {
 		cenv[k] = v
 	}
 
-	if err := releaseCreate(app, types.ReleaseCreateOptions{Env: cenv}); err != nil {
-		return err
+	stdcli.Startf("updating environment")
+
+	_, err = Rack.ReleaseCreate(app, types.ReleaseCreateOptions{Env: cenv})
+	if err != nil {
+		return stdcli.Error(err)
 	}
+
+	stdcli.OK()
 
 	return nil
 }
@@ -138,9 +143,14 @@ func runEnvUnset(c *cli.Context) error {
 		delete(cenv, k)
 	}
 
-	if err := releaseCreate(app, types.ReleaseCreateOptions{Env: cenv}); err != nil {
-		return err
+	stdcli.Startf("updating environment")
+
+	_, err = Rack.ReleaseCreate(app, types.ReleaseCreateOptions{Env: cenv})
+	if err != nil {
+		return stdcli.Error(err)
 	}
+
+	stdcli.OK()
 
 	return nil
 }

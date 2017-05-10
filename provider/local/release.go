@@ -35,20 +35,6 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		return nil, err
 	}
 
-	if !p.Test {
-		go func() {
-			if err := p.releasePromote(app, r.Id); err != nil {
-				p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, r.Id), []byte(fmt.Sprintf("error: %s\n", err)))
-				r.Status = "failed"
-			} else {
-				p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, r.Id), []byte(fmt.Sprintf("release promoted: %s\n", r.Id)))
-				r.Status = "complete"
-			}
-
-			p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, r.Id), r)
-		}()
-	}
-
 	return r, nil
 }
 
@@ -135,7 +121,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 				continue
 			}
 
-			if r.Status == "complete" || r.Status == "failed" {
+			if r.Status == "promoted" || r.Status == "failed" {
 				break
 			}
 		}
@@ -144,28 +130,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 	return lr, nil
 }
 
-func (p *Provider) releaseFork(app string) (*types.Release, error) {
-	r := &types.Release{
-		Id:      types.Id("R", 10),
-		App:     app,
-		Status:  "created",
-		Created: time.Now().UTC(),
-	}
-
-	rs, err := p.ReleaseList(app, types.ReleaseListOptions{Count: 1})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(rs) > 0 {
-		r.Build = rs[0].Build
-		r.Env = rs[0].Env
-	}
-
-	return r, nil
-}
-
-func (p *Provider) releasePromote(app, release string) error {
+func (p *Provider) ReleasePromote(app, release string) error {
 	a, err := p.AppGet(app)
 	if err != nil {
 		return err
@@ -218,11 +183,32 @@ func (p *Provider) releasePromote(app, release string) error {
 		}
 	}
 
-	r.Status = "complete"
+	r.Status = "promoted"
 
 	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, release), r); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (p *Provider) releaseFork(app string) (*types.Release, error) {
+	r := &types.Release{
+		Id:      types.Id("R", 10),
+		App:     app,
+		Status:  "created",
+		Created: time.Now().UTC(),
+	}
+
+	rs, err := p.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rs) > 0 {
+		r.Build = rs[0].Build
+		r.Env = rs[0].Env
+	}
+
+	return r, nil
 }

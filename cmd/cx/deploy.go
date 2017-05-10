@@ -12,7 +12,7 @@ import (
 func init() {
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "deploy",
-		Description: "deploy the application",
+		Description: "build and promote an application",
 		Action:      runDeploy,
 		Flags: []cli.Flag{
 			appFlag,
@@ -26,31 +26,9 @@ func runDeploy(c *cli.Context) error {
 		return err
 	}
 
-	a, err := Rack.AppGet(app)
-	if err != nil {
-		return err
-	}
-
-	if a.Status != "running" {
-		return fmt.Errorf("cannot build while app is %s", a.Status)
-	}
-
 	build, err := buildDirectory(app, ".", types.BuildCreateOptions{}, os.Stdout)
 	if err != nil {
 		return err
-	}
-
-	if err := buildLogs(build, os.Stdout); err != nil {
-		return err
-	}
-
-	build, err = Rack.BuildGet(app, build.Id)
-	if err != nil {
-		return err
-	}
-
-	if build.Status == "failed" {
-		return fmt.Errorf("build failed")
 	}
 
 	if err := releaseLogs(app, build.Release, os.Stdout); err != nil {
@@ -62,7 +40,7 @@ func runDeploy(c *cli.Context) error {
 		return err
 	}
 
-	if r.Status != "complete" {
+	if r.Status != "promoted" {
 		return fmt.Errorf("deploy failed")
 	}
 
