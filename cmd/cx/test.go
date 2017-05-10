@@ -30,6 +30,10 @@ func runTest(c *cli.Context) error {
 
 	defer Rack.AppDelete(name)
 
+	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(name, "creating")); err != nil {
+		return err
+	}
+
 	m, err := manifest.LoadFile("convox.yml")
 	if err != nil {
 		return err

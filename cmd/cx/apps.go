@@ -101,3 +101,17 @@ func runAppsInfo(c *cli.Context) error {
 
 	return nil
 }
+
+func notAppStatus(app, status string) func() (bool, error) {
+	return func() (bool, error) {
+		app, err := Rack.AppGet(app)
+		if err != nil {
+			return true, err
+		}
+		if app.Status != status {
+			return true, nil
+		}
+
+		return false, nil
+	}
+}
