@@ -224,6 +224,19 @@ func build() error {
 		return err
 	}
 
+	fmt.Fprintf(w, "storing artifacts\n")
+
+	r, err = Rack.ObjectFetch(flagApp, u.Path)
+	if err != nil {
+		return err
+	}
+
+	defer r.Close()
+
+	if _, err := Rack.ObjectStore(flagApp, fmt.Sprintf("convox/builds/%s/context.tgz", flagId), r, types.ObjectStoreOptions{}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
