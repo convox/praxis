@@ -59,6 +59,7 @@ type Provider interface {
 	ReleaseGet(app, id string) (*Release, error)
 	ReleaseList(app string, opts ReleaseListOptions) (Releases, error)
 	ReleaseLogs(app, id string, opts LogsOptions) (io.ReadCloser, error)
+	ReleasePromote(app, id string) error
 
 	ResourceList(app string) (Resources, error)
 

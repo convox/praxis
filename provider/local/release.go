@@ -35,34 +35,38 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		return nil, err
 	}
 
-	if !p.Test {
-		go func() {
-			if err := p.releasePromote(app, r.Id); err != nil {
-				p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, r.Id), []byte(fmt.Sprintf("error: %s\n", err)))
-				r.Status = "failed"
-			} else {
-				p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, r.Id), []byte(fmt.Sprintf("release promoted: %s\n", r.Id)))
-				r.Status = "complete"
-			}
+	return r, nil
+}
 
-			p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, r.Id), r)
-		}()
+func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
+	a, err := p.AppGet(app)
+	if err != nil {
+		return nil, err
+	}
+
+	var r *types.Release
+
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), r); err != nil {
+		return nil, err
+	}
+
+	if r.Env == nil {
+		r.Env = types.Environment{}
+	}
+
+	if r.Id == a.Release {
+		r.Status = "current"
 	}
 
 	return r, nil
 }
 
-func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
-	err = p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), &release)
-
-	if release.Env == nil {
-		release.Env = types.Environment{}
+func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
+	a, err := p.AppGet(app)
+	if err != nil {
+		return nil, err
 	}
 
-	return
-}
-
-func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
 	ids, err := p.storageList(fmt.Sprintf("apps/%s/releases", app))
 	if err != nil {
 		return nil, err
@@ -74,6 +78,10 @@ func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types
 		release, err := p.ReleaseGet(app, id)
 		if err != nil {
 			return nil, err
+		}
+
+		if release.Id == a.Release {
+			release.Status = "current"
 		}
 
 		releases[i] = *release
@@ -135,7 +143,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 				continue
 			}
 
-			if r.Status == "complete" || r.Status == "failed" {
+			if r.Status == "promoted" || r.Status == "failed" {
 				break
 			}
 		}
@@ -144,28 +152,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 	return lr, nil
 }
 
-func (p *Provider) releaseFork(app string) (*types.Release, error) {
-	r := &types.Release{
-		Id:      types.Id("R", 10),
-		App:     app,
-		Status:  "created",
-		Created: time.Now().UTC(),
-	}
-
-	rs, err := p.ReleaseList(app, types.ReleaseListOptions{Count: 1})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(rs) > 0 {
-		r.Build = rs[0].Build
-		r.Env = rs[0].Env
-	}
-
-	return r, nil
-}
-
-func (p *Provider) releasePromote(app, release string) error {
+func (p *Provider) ReleasePromote(app, release string) error {
 	a, err := p.AppGet(app)
 	if err != nil {
 		return err
@@ -218,11 +205,32 @@ func (p *Provider) releasePromote(app, release string) error {
 		}
 	}
 
-	r.Status = "complete"
+	r.Status = "promoted"
 
 	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, release), r); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (p *Provider) releaseFork(app string) (*types.Release, error) {
+	r := &types.Release{
+		Id:      types.Id("R", 10),
+		App:     app,
+		Status:  "created",
+		Created: time.Now().UTC(),
+	}
+
+	rs, err := p.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rs) > 0 {
+		r.Build = rs[0].Build
+		r.Env = rs[0].Env
+	}
+
+	return r, nil
 }
