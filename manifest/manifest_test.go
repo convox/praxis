@@ -60,6 +60,7 @@ func TestManifestLoad(t *testing.T) {
 				Build: manifest.ServiceBuild{
 					Path: "api",
 				},
+				CDN: "foo.example.org",
 				Command: manifest.ServiceCommand{
 					Development: "rerun github.com/convox/praxis",
 					Test:        "make test",

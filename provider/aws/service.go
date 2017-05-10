@@ -8,11 +8,6 @@ import (
 )
 
 func (p *Provider) ServiceList(app string) (types.Services, error) {
-	domain, err := p.rackOutput("Domain")
-	if err != nil {
-		return nil, err
-	}
-
 	a, err := p.AppGet(app)
 	if err != nil {
 		return nil, err
@@ -40,10 +35,9 @@ func (p *Provider) ServiceList(app string) (types.Services, error) {
 	ss := types.Services{}
 
 	for _, s := range m.Services {
-		endpoint := ""
-
-		if s.Port.Port > 0 {
-			endpoint = fmt.Sprintf("https://%s-%s.%s", app, s.Name, domain)
+		endpoint, err := p.appOutput(app, fmt.Sprintf("Endpoint%s", upperName(s.Name)))
+		if err != nil {
+			return nil, err
 		}
 
 		ss = append(ss, types.Service{
