@@ -1,6 +1,15 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Outputs": {
+    {{ range .Manifest.Services }}
+      "Endpoint{{ resource .Name }}": {
+        "Value": {{ if .CDN }}
+          { "Fn::GetAtt": [ "Service{{ resource .Name }}Cdn", "DomainName" ] }
+        {{ else }}
+          { "Fn::Sub": "{{ lower $.App.Name }}-{{ lower .Name }}.${Domain}" }
+        {{ end }}
+      },
+    {{ end }}
     "Release": {
       "Value": "{{ .Release.Id }}"
     }
@@ -26,6 +35,7 @@
   },
   "Resources": {
     {{ template "balancers" . }}
+    {{ template "cdns" . }}
     {{ template "keys" . }}
     {{ template "queues" . }}
     {{ template "resources" . }}
@@ -58,6 +68,55 @@
 }
 
 {{ define "balancers" }}
+{{ end }}
+
+{{ define "cdns" }}
+  {{ range $s := .Manifest.Services }}
+    {{ with .CDN }}
+      "Service{{ resource $s.Name }}Certificate": {
+        "Type": "AWS::CertificateManager::Certificate",
+        "Properties": {
+          "DomainName": "{{ . }}"
+        }
+      },
+      "Service{{ resource $s.Name }}Cdn": {
+        "Type": "AWS::CloudFront::Distribution",
+        "Properties": {
+          "DistributionConfig": {
+            "Comment": { "Fn::Sub": "${AWS::StackName} {{ $s.Name }} cdn" },
+            "DefaultCacheBehavior": {
+              "AllowedMethods": ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"],
+              "Compress": "true",
+              "ForwardedValues": {
+                "Cookies": { "Forward": "all" },
+                "Headers": [ "*" ],
+                "QueryString": "true"
+              },
+              "TargetOriginId": "default",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            "Enabled": "true",
+            "Origins": [
+              {
+                "CustomOriginConfig": {
+                  "HTTPSPort": "443",
+                  "OriginProtocolPolicy": "https-only",
+                  "OriginSSLProtocols": [ "TLSv1", "TLSv1.1", "TLSv1.2" ]
+                },
+                "DomainName": { "Fn::Sub": "{{ lower $.App.Name }}-{{ lower $s.Name }}.${Domain}" },
+                "Id": "default"
+              }
+            ],
+            "PriceClass": "PriceClass_100",
+            "ViewerCertificate": {
+              "AcmCertificateArn": { "Ref": "Service{{ resource $s.Name }}Certificate" },
+              "SslSupportMethod": "sni-only"
+            }
+          }
+        }
+      },
+    {{ end }}
+  {{ end }}
 {{ end }}
 
 {{ define "keys" }}
@@ -149,6 +208,26 @@
           "Priority": "{{ priority $.App.Name .Name }}"
         }
       },
+      {{ if .CDN }}
+        "Service{{ resource .Name }}ListenerRuleCdnRaw": {
+          "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+          "Properties": {
+            "Actions": [ { "Type": "forward", "TargetGroupArn": { "Ref": "Service{{ resource .Name }}TargetGroup" } } ],
+            "Conditions": [ { "Field": "host-header", "Values": [ { "Fn::GetAtt": [ "Service{{ resource .Name }}Cdn", "DomainName" ] } ] } ],
+            "ListenerArn": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:BalancerListener" } },
+            "Priority": "{{ priority $.App.Name (print .CDN "Raw") }}"
+          }
+        },
+        "Service{{ resource .Name }}ListenerRuleCdnDomain": {
+          "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+          "Properties": {
+            "Actions": [ { "Type": "forward", "TargetGroupArn": { "Ref": "Service{{ resource .Name }}TargetGroup" } } ],
+            "Conditions": [ { "Field": "host-header", "Values": [ "{{ .CDN }}" ] } ],
+            "ListenerArn": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:BalancerListener" } },
+            "Priority": "{{ priority $.App.Name (print .CDN "Domain") }}"
+          }
+        },
+      {{ end }}
       "Service{{ resource .Name }}TargetGroup": {
         "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
         "Properties": {

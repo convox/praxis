@@ -81,7 +81,9 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		return nil, err
 	}
 
-	// fmt.Printf("string(data) = %+v\n", string(data))
+	fmt.Printf("string(data) = %+v\n", string(data))
+
+	// return nil, fmt.Errorf("stop")
 
 	domain, err := p.rackOutput("Domain")
 	if err != nil {

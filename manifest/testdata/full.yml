@@ -18,6 +18,7 @@ services:
   api:
     build:
       path: api
+    cdn: foo.example.org
     command:
       development: rerun github.com/convox/praxis
       test: make test
