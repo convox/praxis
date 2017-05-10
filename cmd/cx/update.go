@@ -29,22 +29,22 @@ func runUpdate(c *cli.Context) error {
 		version = c.Args()[0]
 	}
 
-	fmt.Printf("version = %+v\n", version)
-
 	url := fmt.Sprintf("https://s3.amazonaws.com/praxis-releases/release/%s/cli/%s/cx", version, runtime.GOOS)
 
-	fmt.Printf("url = %+v\n", url)
+	stdcli.Startf("updating cli to <version>%s</version>", version)
 
 	res, err := http.Get(url)
 	if err != nil {
-		return err
+		return stdcli.Error(err)
 	}
 
 	defer res.Body.Close()
 
 	if err := update.Apply(res.Body, update.Options{}); err != nil {
-		return err
+		return stdcli.Error(err)
 	}
+
+	stdcli.OK()
 
 	return nil
 }
