@@ -239,10 +239,6 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 		TaskDefinition: aws.String(td),
 	}
 
-	if opts.Name != "" {
-		req.StartedBy = aws.String(opts.Name)
-	}
-
 	res, err := p.ECS().RunTask(req)
 	if err != nil {
 		return "", err
