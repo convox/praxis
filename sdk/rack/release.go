@@ -66,5 +66,5 @@ func (c *Client) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadClo
 }
 
 func (c *Client) ReleasePromote(app, id string) error {
-	return c.Post(fmt.Sprintf("/apps/%s/releases/%s/promote", app, id), RequestOptions{}, nil)
+	return c.Post(fmt.Sprintf("/apps/%s/releases/%s", app, id), RequestOptions{}, nil)
 }

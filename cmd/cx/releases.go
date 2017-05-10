@@ -166,7 +166,7 @@ func releaseCreate(app string, opts types.ReleaseCreateOptions) error {
 		return err
 	}
 
-	if r.Status != "complete" {
+	if r.Status != "promoted" {
 		return fmt.Errorf("release failed")
 	}
 

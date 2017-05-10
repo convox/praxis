@@ -35,6 +35,7 @@ func init() {
 
 	Rack = r
 
+	stdcli.DefaultWriter.Tags["env"] = stdcli.RenderAttributes(95)
 	stdcli.DefaultWriter.Tags["name"] = stdcli.RenderAttributes(39)
 	stdcli.DefaultWriter.Tags["url"] = stdcli.RenderAttributes(243)
 	stdcli.DefaultWriter.Tags["version"] = stdcli.RenderAttributes(208)

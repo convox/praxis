@@ -242,10 +242,10 @@ func (p *Provider) handleNotifications(body string) error {
 
 		switch msg["ResourceStatus"] {
 		case "UPDATE_IN_PROGRESS":
-			r.Status = "running"
+			r.Status = "promoting"
 		case "UPDATE_COMPLETE":
 			p.writeLogf(group, stream, "release promoted: %s", msg["ClientRequestToken"])
-			r.Status = "complete"
+			r.Status = "promoted"
 		}
 
 		if err := p.releaseStore(r); err != nil {

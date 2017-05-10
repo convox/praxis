@@ -127,3 +127,18 @@ func ReleaseLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	return nil
 }
+
+func ReleasePromote(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	app := c.Var("app")
+	id := c.Var("id")
+
+	if _, err := Provider.AppGet(app); err != nil {
+		return err
+	}
+
+	if err := Provider.ReleasePromote(app, id); err != nil {
+		return err
+	}
+
+	return nil
+}

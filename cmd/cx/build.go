@@ -16,6 +16,14 @@ import (
 
 func init() {
 	stdcli.RegisterCommand(cli.Command{
+		Name:        "build",
+		Description: "build an application",
+		Action:      runBuild,
+		Flags: []cli.Flag{
+			appFlag,
+		},
+	})
+	stdcli.RegisterCommand(cli.Command{
 		Name:        "builds",
 		Description: "list builds",
 		Action:      runBuilds,
@@ -33,6 +41,20 @@ func init() {
 			},
 		},
 	})
+}
+
+func runBuild(c *cli.Context) error {
+	app, err := appName(c, ".")
+	if err != nil {
+		return err
+	}
+
+	_, err = buildDirectory(app, ".", types.BuildCreateOptions{}, os.Stdout)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func runBuilds(c *cli.Context) error {
@@ -94,10 +116,6 @@ func runBuildsLogs(c *cli.Context) error {
 }
 
 func buildDirectory(app, dir string, opts types.BuildCreateOptions, w io.Writer) (*types.Build, error) {
-	if _, err := Rack.AppGet(app); err != nil {
-		return nil, err
-	}
-
 	fmt.Fprintf(w, "uploading: %s\n", dir)
 
 	r, err := createTarball(dir)
@@ -129,6 +147,19 @@ func buildDirectory(app, dir string, opts types.BuildCreateOptions, w io.Writer)
 	}
 
 	fmt.Fprintf(w, "%s\n", build.Process)
+
+	if err := buildLogs(build, os.Stdout); err != nil {
+		return nil, err
+	}
+
+	build, err = Rack.BuildGet(app, build.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	if build.Status == "failed" {
+		return nil, fmt.Errorf("build failed")
+	}
 
 	return build, nil
 }
