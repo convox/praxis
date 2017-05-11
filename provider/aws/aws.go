@@ -300,7 +300,7 @@ func (p *Provider) describeStack(name string) (*cloudformation.Stack, error) {
 	}
 
 	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(fmt.Sprintf("%s-%s", p.Name, name)),
+		StackName: aws.String(name),
 	})
 	if err != nil {
 		return nil, err
