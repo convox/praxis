@@ -272,6 +272,9 @@
     "Balancer": {
       "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
       "Properties": {
+        "LoadBalancerAttributes": [
+          { "Key" : "idle_timeout.timeout_seconds", "Value" : "600" }
+        ],
         "Scheme": "internet-facing",
         "SecurityGroups": [ { "Ref": "BalancerSecurity" } ],
         "Subnets": [
