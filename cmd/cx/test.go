@@ -89,6 +89,7 @@ func runTest(c *cli.Context) error {
 		code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{
 			Command:     s.Command.Test,
 			Environment: senv,
+			Release:     build.Release,
 			Service:     s.Name,
 			Stream: types.Stream{
 				Reader: nil,
