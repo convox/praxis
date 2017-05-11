@@ -1,8 +1,6 @@
 package aws
 
 import (
-	"fmt"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 )
@@ -28,19 +26,14 @@ func coalescei(ints ...int) int {
 }
 
 func (p *Provider) cloudformationUpdateParameters(stack string, body []byte, updates map[string]string) ([]*cloudformation.Parameter, error) {
-	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stack),
-	})
+	s, err := p.describeStack(stack)
 	if err != nil {
 		return nil, err
-	}
-	if len(res.Stacks) != 1 {
-		return nil, fmt.Errorf("could not find stack: %s", stack)
 	}
 
 	params := []*cloudformation.Parameter{}
 
-	for _, p := range res.Stacks[0].Parameters {
+	for _, p := range s.Parameters {
 		if u, ok := updates[*p.ParameterKey]; ok {
 			params = append(params, &cloudformation.Parameter{
 				ParameterKey:   p.ParameterKey,
