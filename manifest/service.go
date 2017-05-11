@@ -3,7 +3,6 @@ package manifest
 import (
 	"crypto/sha1"
 	"fmt"
-	"strings"
 )
 
 type Service struct {
@@ -57,18 +56,4 @@ type ServiceScale struct {
 
 func (s Service) BuildHash() string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(fmt.Sprintf("build[path=%q, args=%v] image=%q", s.Build.Path, s.Build.Args, s.Image))))
-}
-
-func parseEnv(env []string) map[string]string {
-	parsed := map[string]string{}
-
-	for _, e := range env {
-		parts := strings.SplitN(e, "=", 2)
-
-		if len(parts) == 2 {
-			parsed[parts[0]] = parts[1]
-		}
-	}
-
-	return parsed
 }
