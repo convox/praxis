@@ -20,12 +20,7 @@ const (
 )
 
 func (p *Provider) SystemGet() (*types.System, error) {
-	aid, err := p.rackOutput("Account")
-	if err != nil {
-		return nil, err
-	}
-
-	domain, err := p.rackOutput("Domain")
+	aid, err := p.accountID()
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +32,6 @@ func (p *Provider) SystemGet() (*types.System, error) {
 
 	system := &types.System{
 		Account: aid,
-		Domain:  domain,
 		Image:   fmt.Sprintf("convox/praxis:%s", p.Version),
 		Name:    p.Name,
 		Region:  os.Getenv("AWS_REGION"),
