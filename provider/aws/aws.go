@@ -605,7 +605,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 			return "", fmt.Errorf("no release for app: %s", app)
 		}
 
-		account, err := p.rackOutput("Account")
+		account, err := p.accountID()
 		if err != nil {
 			return "", err
 		}
