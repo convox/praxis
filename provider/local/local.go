@@ -76,22 +76,17 @@ func (p *Provider) Init() error {
 }
 
 // shutdown cleans up any running resources and exit
-func (p *Provider) shutdown() {
-	log := Logger.At("shutdown").Start()
-
+func (p *Provider) shutdown() error {
 	cs, err := containersByLabels(map[string]string{
 		"convox.rack": p.Name,
 	})
 	if err != nil {
-		log.Error(err)
-		return
+		return err
 	}
 
 	var wg sync.WaitGroup
 
 	for _, id := range cs {
-		log.Logf("id=%s", id)
-
 		wg.Add(1)
 		go p.containerStopAsync(id, &wg)
 	}
@@ -99,6 +94,8 @@ func (p *Provider) shutdown() {
 	wg.Wait()
 
 	os.Exit(0)
+
+	return nil
 }
 
 func (p *Provider) createRootBucket(name string) (*bolt.Bucket, error) {

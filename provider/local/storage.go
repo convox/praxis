@@ -108,7 +108,11 @@ func (p *Provider) storageLoad(key string, v interface{}) error {
 		return err
 	}
 
-	return json.Unmarshal(data, &v)
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *Provider) storageRead(key string) ([]byte, error) {

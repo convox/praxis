@@ -150,7 +150,7 @@ func (m *Manifest) BuildIgnores(root, service string) ([]string, error) {
 }
 
 func (m *Manifest) BuildDockerfile(root, service string) ([]byte, error) {
-	s, err := m.Services.Find(service)
+	s, err := m.Service(service)
 	if err != nil {
 		return nil, err
 	}

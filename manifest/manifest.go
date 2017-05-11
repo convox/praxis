@@ -3,8 +3,7 @@ package manifest
 import (
 	"fmt"
 	"io"
-
-	"github.com/convox/praxis/types"
+	"strings"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -16,22 +15,30 @@ const (
 )
 
 type Manifest struct {
-	Balancers Balancers
-	Keys      Keys
-	Queues    Queues
-	Resources Resources
-	Services  Services
-	Tables    Tables
-	Timers    Timers
-	Workflows Workflows
+	Balancers   Balancers
+	Environment Environment
+	Keys        Keys
+	Queues      Queues
+	Resources   Resources
+	Services    Services
+	Tables      Tables
+	Timers      Timers
+	Workflows   Workflows
 }
 
-func Load(data []byte, env types.Environment) (*Manifest, error) {
+func Load(data []byte, env Environment) (*Manifest, error) {
 	var m Manifest
 
-	if err := yaml.Unmarshal(data, &m); err != nil {
+	p, err := interpolate(data, env)
+	if err != nil {
 		return nil, err
 	}
+
+	if err := yaml.Unmarshal(p, &m); err != nil {
+		return nil, err
+	}
+
+	m.Environment = env
 
 	if err := m.applyDefaults(); err != nil {
 		return nil, err
@@ -40,41 +47,55 @@ func Load(data []byte, env types.Environment) (*Manifest, error) {
 	return &m, nil
 }
 
-// func LoadFile(path string) (*Manifest, error) {
-//   data, err := ioutil.ReadFile(path)
-//   if err != nil {
-//     return nil, err
-//   }
-
-//   m, err := Load(data)
-//   if err != nil {
-//     return nil, err
-//   }
-
-//   root, err := filepath.Abs(filepath.Dir(path))
-//   if err != nil {
-//     return nil, err
-//   }
-
-//   m.root = root
-
-//   return m, nil
-// }
-
-// func (m *Manifest) Path(sub string) (string, error) {
-//   if m.root == "" {
-//     return "", fmt.Errorf("path undefined for a manifest with no root")
-//   }
-
-//   return filepath.Join(m.root, sub), nil
-// }
-
-func (m *Manifest) Validate(env types.Environment) error {
+func (m *Manifest) Service(name string) (*Service, error) {
 	for _, s := range m.Services {
-		if err := s.Validate(env); err != nil {
-			return err
+		if s.Name == name {
+			return &s, nil
 		}
 	}
+
+	return nil, fmt.Errorf("no such service: %s", name)
+}
+
+func (m *Manifest) ServiceEnvironment(service string) (Environment, error) {
+	s, err := m.Service(service)
+	if err != nil {
+		return nil, err
+	}
+
+	env := Environment{}
+
+	for _, e := range s.Environment {
+		parts := strings.SplitN(e, "=", 2)
+
+		switch len(parts) {
+		case 1:
+			v, ok := m.Environment[parts[0]]
+			if !ok {
+				return nil, fmt.Errorf("required env: %s", parts[0])
+			}
+			env[parts[0]] = v
+		case 2:
+			v, ok := m.Environment[parts[0]]
+			if ok {
+				env[parts[0]] = v
+			} else {
+				env[parts[0]] = parts[1]
+			}
+		default:
+			return nil, fmt.Errorf("invalid environment declaration: %s", e)
+		}
+	}
+
+	return env, nil
+}
+
+func (m *Manifest) Validate() error {
+	// for _, s := range m.Services {
+	//   if err := s.Validate(m.Environment); err != nil {
+	//     return err
+	//   }
+	// }
 
 	return nil
 }

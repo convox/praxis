@@ -48,6 +48,8 @@ func (p *Provider) converge(app string) error {
 
 	cs = append(cs, c...)
 
+	// TODO: timers
+
 	for i, c := range cs {
 		id, err := p.containerConverge(c, app, r.Id)
 		if err != nil {
@@ -285,17 +287,7 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 		return nil, err
 	}
 
-	r, err := p.ReleaseGet(app, release)
-	if err != nil {
-		return nil, err
-	}
-
-	b, err := p.BuildGet(app, r.Build)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := manifest.Load([]byte(b.Manifest), r.Env)
+	m, r, err := helpers.ReleaseManifest(p, app, release)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +334,7 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 			return nil, err
 		}
 
-		env, err := s.Env(r.Env)
+		env, err := m.ServiceEnvironment(s.Name)
 		if err != nil {
 			return nil, err
 		}

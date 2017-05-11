@@ -3,18 +3,12 @@ package manifest_test
 import (
 	"testing"
 
-	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/manifest"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWorkflowSteps(t *testing.T) {
-	data, err := helpers.Testdata("full")
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	m, err := manifest.Load(data)
+	m, err := testdataManifest("full", manifest.Environment{})
 	if !assert.NoError(t, err) {
 		return
 	}

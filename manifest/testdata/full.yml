@@ -20,8 +20,8 @@ services:
       path: api
     cdn: foo.example.org
     command:
-      development: rerun github.com/convox/praxis
-      test: make test
+      development: rerun ${FOO} github.com/convox/praxis
+      test: make ${BAR} test
     environment:
       - DEVELOPMENT=false
       - SECRET

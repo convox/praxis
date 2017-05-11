@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/simpledb"
-	"github.com/convox/praxis/manifest"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
 
@@ -145,23 +145,13 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 		return err
 	}
 
-	r, err := p.ReleaseGet(app, id)
+	m, r, err := helpers.ReleaseManifest(p, app, id)
 	if err != nil {
 		return err
 	}
 
 	if r.Build == "" {
 		return fmt.Errorf("no build for release: %s", r.Id)
-	}
-
-	b, err := p.BuildGet(app, r.Build)
-	if err != nil {
-		return err
-	}
-
-	m, err := manifest.Load([]byte(b.Manifest), r.Env)
-	if err != nil {
-		return err
 	}
 
 	group, err := p.appResource(app, "Logs")

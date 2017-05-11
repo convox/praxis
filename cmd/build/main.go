@@ -165,18 +165,12 @@ func build() error {
 		return err
 	}
 
-	env := types.Environment{}
-
-	rs, err := Rack.ReleaseList(flagApp, types.ReleaseListOptions{Count: 1})
+	env, err := helpers.AppEnvironment(Rack, flagApp)
 	if err != nil {
 		return err
 	}
 
-	if len(rs) > 0 {
-		env = rs[0].Env
-	}
-
-	m, err := manifest.Load(data, env)
+	m, err := manifest.Load(data, manifest.Environment(env))
 	if err != nil {
 		return err
 	}

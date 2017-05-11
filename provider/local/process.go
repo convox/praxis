@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/convox/praxis/manifest"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 	shellquote "github.com/kballard/go-shellquote"
 )
@@ -170,22 +170,12 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	image := opts.Image
 
 	if image == "" {
-		r, err := p.ReleaseGet(app, opts.Release)
+		m, r, err := helpers.ReleaseManifest(p, app, opts.Release)
 		if err != nil {
 			return nil, err
 		}
 
-		b, err := p.BuildGet(app, r.Build)
-		if err != nil {
-			return nil, err
-		}
-
-		m, err := manifest.Load([]byte(b.Manifest), r.Env)
-		if err != nil {
-			return nil, err
-		}
-
-		s, err := m.Services.Find(opts.Service)
+		s, err := m.Service(opts.Service)
 		if err != nil {
 			return nil, err
 		}
