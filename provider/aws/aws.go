@@ -294,6 +294,43 @@ func (p *Provider) containerInstances() ([]*ecs.ContainerInstance, error) {
 	return ii, nil
 }
 
+func (p *Provider) deleteBucket(bucket string) error {
+	req := &s3.ListObjectsInput{
+		Bucket: aws.String(bucket),
+	}
+
+	err := p.S3().ListObjectsPages(req, func(res *s3.ListObjectsOutput, last bool) bool {
+		objects := make([]*s3.ObjectIdentifier, len(res.Contents))
+
+		for i, o := range res.Contents {
+			objects[i] = &s3.ObjectIdentifier{Key: o.Key}
+		}
+
+		if len(objects) == 0 {
+			return false
+		}
+
+		p.S3().DeleteObjects(&s3.DeleteObjectsInput{
+			Bucket: aws.String(bucket),
+			Delete: &s3.Delete{Objects: objects},
+		})
+
+		return true
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = p.S3().DeleteBucket(&s3.DeleteBucketInput{
+		Bucket: aws.String(bucket),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p *Provider) describeStack(name string) (*cloudformation.Stack, error) {
 	if v, ok := cache.Get("describeStack", name).(*cloudformation.Stack); ok {
 		return v, nil
