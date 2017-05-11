@@ -9,12 +9,7 @@ import (
 )
 
 func TestManifestLoad(t *testing.T) {
-	data, err := helpers.Testdata("full")
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	m, err := manifest.Load(data)
+	m, err := testdataManifest("full", manifest.Environment{"FOO": "bar"})
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -37,6 +32,9 @@ func TestManifestLoad(t *testing.T) {
 					manifest.BalancerEndpoint{Port: "2133", Target: "proxy:3000"},
 				},
 			},
+		},
+		Environment: manifest.Environment{
+			"FOO": "bar",
 		},
 		Keys: manifest.Keys{
 			manifest.Key{
@@ -62,8 +60,8 @@ func TestManifestLoad(t *testing.T) {
 				},
 				CDN: "foo.example.org",
 				Command: manifest.ServiceCommand{
-					Development: "rerun github.com/convox/praxis",
-					Test:        "make test",
+					Development: "rerun bar github.com/convox/praxis",
+					Test:        "make  test",
 					Production:  "",
 				},
 				Environment: []string{
@@ -164,20 +162,20 @@ func TestManifestLoad(t *testing.T) {
 }
 
 func TestManifestLoadInvalid(t *testing.T) {
-	m, err := testdataManifest("invalid.1")
+	m, err := testdataManifest("invalid.1", manifest.Environment{})
 	assert.Nil(t, m)
 	assert.Error(t, err, "yaml: line 2: did not find expected comment or line break")
 
-	m, err = testdataManifest("invalid.2")
+	m, err = testdataManifest("invalid.2", manifest.Environment{})
 	assert.Nil(t, m)
 	assert.Error(t, err, "yaml: line 3: mapping values are not allowed in this context")
 }
 
-func testdataManifest(name string) (*manifest.Manifest, error) {
+func testdataManifest(name string, env manifest.Environment) (*manifest.Manifest, error) {
 	data, err := helpers.Testdata(name)
 	if err != nil {
 		return nil, err
 	}
 
-	return manifest.Load(data)
+	return manifest.Load(data, env)
 }

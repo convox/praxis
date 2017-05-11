@@ -7,6 +7,19 @@ import (
 	"github.com/convox/praxis/types"
 )
 
+func AppEnvironment(p types.Provider, app string) (types.Environment, error) {
+	rs, err := p.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rs) < 1 {
+		return types.Environment{}, nil
+	}
+
+	return rs[0].Env, nil
+}
+
 func AppManifest(p types.Provider, app string) (*manifest.Manifest, *types.Release, error) {
 	a, err := p.AppGet(app)
 	if err != nil {
@@ -17,7 +30,11 @@ func AppManifest(p types.Provider, app string) (*manifest.Manifest, *types.Relea
 		return nil, nil, fmt.Errorf("no releases for app: %s", app)
 	}
 
-	r, err := p.ReleaseGet(app, a.Release)
+	return ReleaseManifest(p, app, a.Release)
+}
+
+func ReleaseManifest(p types.Provider, app, release string) (*manifest.Manifest, *types.Release, error) {
+	r, err := p.ReleaseGet(app, release)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -31,7 +48,7 @@ func AppManifest(p types.Provider, app string) (*manifest.Manifest, *types.Relea
 		return nil, nil, err
 	}
 
-	m, err := manifest.Load([]byte(b.Manifest), r.Env)
+	m, err := manifest.Load([]byte(b.Manifest), manifest.Environment(r.Env))
 	if err != nil {
 		return nil, nil, err
 	}

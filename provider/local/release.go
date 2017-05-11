@@ -7,7 +7,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
 )
 
@@ -46,8 +45,11 @@ func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
 
 	var r *types.Release
 
-	if err := p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), r); err != nil {
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), &r); err != nil {
 		return nil, err
+	}
+	if r == nil {
+		return nil, fmt.Errorf("could not find release: %s", id)
 	}
 
 	if r.Env == nil {
@@ -159,22 +161,14 @@ func (p *Provider) ReleasePromote(app, release string) error {
 	}
 
 	r, err := p.ReleaseGet(app, release)
-	if err != nil {
-		return err
-	}
 
 	if r.Build == "" {
-		return nil
+		return fmt.Errorf("no build for release: %s", release)
 	}
 
 	r.Status = "running"
 
 	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, release), r); err != nil {
-		return err
-	}
-
-	b, err := p.BuildGet(app, r.Build)
-	if err != nil {
 		return err
 	}
 
@@ -184,25 +178,8 @@ func (p *Provider) ReleasePromote(app, release string) error {
 		return err
 	}
 
-	m, err := manifest.Load([]byte(b.Manifest), r.Env)
-	if err != nil {
-		return err
-	}
-
 	if err := p.converge(app); err != nil {
 		return err
-	}
-
-	for _, t := range m.Timers {
-		opts := types.TimerCreateOptions{
-			Command:  t.Command,
-			Schedule: t.Schedule,
-			Service:  t.Service,
-		}
-
-		if err := p.TimerCreate(app, t.Name, opts); err != nil {
-			return err
-		}
 	}
 
 	r.Status = "promoted"

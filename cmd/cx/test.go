@@ -35,7 +35,7 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	env := types.Environment{}
+	env := manifest.Environment{}
 
 	for _, e := range os.Environ() {
 		parts := strings.SplitN(e, "=", 2)
@@ -55,7 +55,7 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	if err := m.Validate(env); err != nil {
+	if err := m.Validate(); err != nil {
 		return err
 	}
 
@@ -81,7 +81,7 @@ func runTest(c *cli.Context) error {
 			return err
 		}
 
-		senv, err := s.Env(env)
+		senv, err := m.ServiceEnvironment(s.Name)
 		if err != nil {
 			return err
 		}
