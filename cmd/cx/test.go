@@ -24,6 +24,8 @@ func init() {
 func runTest(c *cli.Context) error {
 	name := fmt.Sprintf("test-%d", time.Now().Unix())
 
+	stdcli.Startf("creating app <name>%s</name>", name)
+
 	app, err := Rack.AppCreate(name)
 	if err != nil {
 		return err
@@ -34,6 +36,8 @@ func runTest(c *cli.Context) error {
 	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(name, "creating")); err != nil {
 		return err
 	}
+
+	stdcli.OK()
 
 	env := manifest.Environment{}
 
@@ -66,9 +70,6 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	if err := buildLogs(build, bw); err != nil {
-		return err
-	}
 
 	for _, s := range m.Services {
 		if s.Command.Test == "" {
