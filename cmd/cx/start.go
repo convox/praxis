@@ -50,9 +50,14 @@ func runStart(c *cli.Context) error {
 
 	ch := make(chan error)
 
-	bw := types.Stream{Writer: os.Stdout}
+	bw := os.Stdout
 
 	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment}, bw)
+	if err != nil {
+		return err
+	}
+
+	m, _, err := helpers.ReleaseManifest(Rack, app, b.Release)
 	if err != nil {
 		return err
 	}
@@ -74,16 +79,11 @@ func runStart(c *cli.Context) error {
 		return fmt.Errorf("unknown build status: %s", b.Status)
 	}
 
-	m, _, err := helpers.AppManifest(Rack, app)
-	if err != nil {
+	rw := os.Stdout
+
+	if err := Rack.ReleasePromote(app, b.Release); err != nil {
 		return err
 	}
-
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	go handleSignals(sig, ch, m, app)
-
-	rw := types.Stream{Writer: m.Writer("release", os.Stdout)}
 
 	if err := releaseLogs(app, b.Release, rw); err != nil {
 		return err
@@ -101,6 +101,10 @@ func runStart(c *cli.Context) error {
 	default:
 		return fmt.Errorf("unknown release status: %s", r.Status)
 	}
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	go handleSignals(sig, ch, m, app)
 
 	wd, err := os.Getwd()
 	if err != nil {
