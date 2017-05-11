@@ -72,6 +72,10 @@ func appName(c *cli.Context, dir string) (string, error) {
 		return app, nil
 	}
 
+	if app := os.Getenv("CONVOX_APP"); app != "" {
+		return app, nil
+	}
+
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		return "", err
