@@ -27,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/convox/praxis/cache"
-	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 	"github.com/fsouza/go-dockerclient"
 )
@@ -573,6 +572,21 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		})
 	}
 
+	if opts.Release == "" {
+		a, err := p.AppGet(app)
+		if err != nil {
+			return "", err
+		}
+
+		opts.Release = a.Release
+	}
+
+	fmt.Printf("opts = %+v\n", opts)
+
+	if opts.Release == "" {
+		return "", fmt.Errorf("no release for app: %s", app)
+	}
+
 	if opts.Service != "" && opts.Image == "" {
 		account, err := p.rackOutput("Account")
 		if err != nil {
@@ -584,13 +598,9 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 			return "", err
 		}
 
-		_, r, err := helpers.AppManifest(p, app)
+		r, err := p.ReleaseGet(app, opts.Release)
 		if err != nil {
 			return "", err
-		}
-
-		if r.Build == "" {
-			return "", fmt.Errorf("no build for release: %s", r.Id)
 		}
 
 		req.ContainerDefinitions[0].Image = aws.String(fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s:%s.%s", account, p.Region, repo, opts.Service, r.Build))
