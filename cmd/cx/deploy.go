@@ -31,6 +31,10 @@ func runDeploy(c *cli.Context) error {
 		return err
 	}
 
+	if err := Rack.ReleasePromote(app, build.Release); err != nil {
+		return err
+	}
+
 	if err := releaseLogs(app, build.Release, os.Stdout); err != nil {
 		return err
 	}
