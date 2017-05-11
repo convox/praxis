@@ -572,22 +572,22 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		})
 	}
 
-	if opts.Release == "" {
-		a, err := p.AppGet(app)
-		if err != nil {
-			return "", err
+	if opts.Service != "" && opts.Image == "" {
+		if opts.Release == "" {
+			a, err := p.AppGet(app)
+			if err != nil {
+				return "", err
+			}
+
+			opts.Release = a.Release
 		}
 
-		opts.Release = a.Release
-	}
+		fmt.Printf("opts = %+v\n", opts)
 
-	fmt.Printf("opts = %+v\n", opts)
+		if opts.Release == "" {
+			return "", fmt.Errorf("no release for app: %s", app)
+		}
 
-	if opts.Release == "" {
-		return "", fmt.Errorf("no release for app: %s", app)
-	}
-
-	if opts.Service != "" && opts.Image == "" {
 		account, err := p.rackOutput("Account")
 		if err != nil {
 			return "", err
