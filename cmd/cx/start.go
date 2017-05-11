@@ -50,7 +50,7 @@ func runStart(c *cli.Context) error {
 
 	ch := make(chan error)
 
-	bw := os.Stdout
+	bw := types.Stream{Writer: os.Stdout}
 
 	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment}, bw)
 	if err != nil {
@@ -59,10 +59,6 @@ func runStart(c *cli.Context) error {
 
 	m, _, err := helpers.ReleaseManifest(Rack, app, b.Release)
 	if err != nil {
-		return err
-	}
-
-	if err := buildLogs(b, bw); err != nil {
 		return err
 	}
 
@@ -79,13 +75,16 @@ func runStart(c *cli.Context) error {
 		return fmt.Errorf("unknown build status: %s", b.Status)
 	}
 
-	rw := os.Stdout
-
 	if err := Rack.ReleasePromote(app, b.Release); err != nil {
 		return err
 	}
 
-	if err := releaseLogs(app, b.Release, rw); err != nil {
+	logs, err := Rack.ReleaseLogs(app, b.Release, types.LogsOptions{Follow: true})
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(os.Stdout, logs); err != nil {
 		return err
 	}
 
@@ -115,7 +114,7 @@ func runStart(c *cli.Context) error {
 		go watchChanges(wd, m, app, s.Name, ch)
 	}
 
-	logs, err := Rack.AppLogs(app, types.LogsOptions{Follow: true})
+	logs, err = Rack.AppLogs(app, types.LogsOptions{Follow: true})
 	if err != nil {
 		return err
 	}
