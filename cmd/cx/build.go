@@ -148,7 +148,7 @@ func buildDirectory(app, dir string, opts types.BuildCreateOptions, w io.Writer)
 
 	fmt.Fprintf(w, "%s\n", build.Process)
 
-	if err := buildLogs(build, os.Stdout); err != nil {
+	if err := buildLogs(build, w); err != nil {
 		return nil, err
 	}
 
