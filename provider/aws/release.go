@@ -41,8 +41,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 }
 
 func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
-	a, err := p.AppGet(app)
-	if err != nil {
+	if _, err := p.AppGet(app); err != nil {
 		return nil, err
 	}
 
@@ -64,16 +63,11 @@ func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error
 		return nil, err
 	}
 
-	if r.Id == a.Release {
-		r.Status = "current"
-	}
-
 	return r, nil
 }
 
 func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
-	a, err := p.AppGet(app)
-	if err != nil {
+	if _, err := p.AppGet(app); err != nil {
 		return nil, err
 	}
 
@@ -100,10 +94,6 @@ func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types
 		release, err := p.releaseFromAttributes(*item.Name, item.Attributes)
 		if err != nil {
 			return nil, err
-		}
-
-		if release.Id == a.Release {
-			release.Status = "current"
 		}
 
 		releases = append(releases, *release)

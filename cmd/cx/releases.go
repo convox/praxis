@@ -46,11 +46,6 @@ func init() {
 						Name:  "follow, f",
 						Usage: "stream logs continuously",
 					},
-					cli.StringFlag{
-						Name:  "since",
-						Usage: "how far back to retrieve logs",
-						Value: "2m",
-					},
 				},
 			},
 		},
@@ -113,7 +108,7 @@ func runReleasesLogs(c *cli.Context) error {
 		return err
 	}
 
-	since, err := time.ParseDuration(c.String("since"))
+	r, err := Rack.ReleaseGet(app, id)
 	if err != nil {
 		return err
 	}
@@ -122,7 +117,7 @@ func runReleasesLogs(c *cli.Context) error {
 		Filter: c.String("filter"),
 		Follow: c.Bool("follow"),
 		Prefix: true,
-		Since:  time.Now().Add(-1 * since),
+		Since:  r.Created,
 	}
 
 	logs, err := Rack.ReleaseLogs(app, id, opts)

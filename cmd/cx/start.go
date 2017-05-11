@@ -57,7 +57,8 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	if err := buildLogs(b, bw); err != nil {
+	m, _, err := helpers.ReleaseManifest(Rack, app, b.Release)
+	if err != nil {
 		return err
 	}
 
@@ -74,18 +75,16 @@ func runStart(c *cli.Context) error {
 		return fmt.Errorf("unknown build status: %s", b.Status)
 	}
 
-	m, _, err := helpers.AppManifest(Rack, app)
+	if err := Rack.ReleasePromote(app, b.Release); err != nil {
+		return err
+	}
+
+	logs, err := Rack.ReleaseLogs(app, b.Release, types.LogsOptions{Follow: true})
 	if err != nil {
 		return err
 	}
 
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	go handleSignals(sig, ch, m, app)
-
-	rw := types.Stream{Writer: m.Writer("release", os.Stdout)}
-
-	if err := releaseLogs(app, b.Release, rw); err != nil {
+	if _, err := io.Copy(os.Stdout, logs); err != nil {
 		return err
 	}
 
@@ -95,12 +94,16 @@ func runStart(c *cli.Context) error {
 	}
 
 	switch r.Status {
-	case "created", "current", "promoting", "promoted":
+	case "created", "promoting", "promoted":
 	case "failed":
 		return fmt.Errorf("release failed")
 	default:
 		return fmt.Errorf("unknown release status: %s", r.Status)
 	}
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	go handleSignals(sig, ch, m, app)
 
 	wd, err := os.Getwd()
 	if err != nil {
@@ -111,7 +114,7 @@ func runStart(c *cli.Context) error {
 		go watchChanges(wd, m, app, s.Name, ch)
 	}
 
-	logs, err := Rack.AppLogs(app, types.LogsOptions{Follow: true})
+	logs, err = Rack.AppLogs(app, types.LogsOptions{Follow: true})
 	if err != nil {
 		return err
 	}
