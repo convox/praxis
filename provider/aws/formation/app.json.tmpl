@@ -83,9 +83,9 @@
         "Type": "AWS::CloudFront::Distribution",
         "Properties": {
           "DistributionConfig": {
+            "Aliases": [ "{{ . }}" ],
             "Comment": { "Fn::Sub": "${AWS::StackName} {{ $s.Name }} cdn" },
             "DefaultCacheBehavior": {
-              "Aliases": [ "{{ . }}" ],
               "AllowedMethods": ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"],
               "Compress": "true",
               "ForwardedValues": {
