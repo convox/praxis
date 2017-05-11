@@ -30,14 +30,9 @@ func (p *Provider) SystemGet() (*types.System, error) {
 		return nil, err
 	}
 
-	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(p.Name),
-	})
+	stack, err := p.describeStack(p.Name)
 	if err != nil {
 		return nil, err
-	}
-	if len(res.Stacks) != 1 {
-		return nil, fmt.Errorf("could not find stack: %s", p.Name)
 	}
 
 	system := &types.System{
@@ -46,7 +41,7 @@ func (p *Provider) SystemGet() (*types.System, error) {
 		Image:   fmt.Sprintf("convox/praxis:%s", p.Version),
 		Name:    p.Name,
 		Region:  os.Getenv("AWS_REGION"),
-		Status:  humanStatus(*res.Stacks[0].StackStatus),
+		Status:  humanStatus(*stack.StackStatus),
 		Version: p.Version,
 	}
 
@@ -82,10 +77,11 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 		return "", err
 	}
 
-	sres, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(name),
-	})
-	if err != nil || len(sres.Stacks) < 1 || *sres.Stacks[0].StackStatus == "ROLLBACK_COMPLETE" {
+	stack, err := p.describeStack(name)
+	if err != nil {
+		return "", err
+	}
+	if *stack.StackStatus == "ROLLBACK_COMPLETE" {
 		return "", fmt.Errorf("installation failed")
 	}
 
@@ -218,18 +214,12 @@ func (p *Provider) cloudformationProgress(name string, opts types.SystemInstallO
 			}
 		}
 
-		sres, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
-			StackName: aws.String(name),
-		})
+		stack, err := p.describeStack(name)
 		if err != nil {
-			return nil // stack is gone, we're done
+			return err
 		}
 
-		if sres == nil || len(sres.Stacks) < 1 {
-			return fmt.Errorf("could not find stack: %s", name)
-		}
-
-		switch *sres.Stacks[0].StackStatus {
+		switch *stack.StackStatus {
 		case "CREATE_COMPLETE":
 			return nil
 		case "ROLLBACK_COMPLETE":

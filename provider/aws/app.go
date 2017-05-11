@@ -51,9 +51,7 @@ func (p *Provider) AppDelete(name string) error {
 }
 
 func (p *Provider) AppGet(name string) (*types.App, error) {
-	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(fmt.Sprintf("%s-%s", p.Name, name)),
-	})
+	stack, err := p.describeStack(fmt.Sprintf("%s-%s", p.Name, name))
 	if awsError(err) == "ValidationError" {
 		return nil, fmt.Errorf("no such app: %s", name)
 	}
@@ -61,11 +59,7 @@ func (p *Provider) AppGet(name string) (*types.App, error) {
 		return nil, err
 	}
 
-	if len(res.Stacks) < 1 {
-		return nil, fmt.Errorf("no such app: %s", name)
-	}
-
-	app := p.appFromStack(res.Stacks[0])
+	app := p.appFromStack(stack)
 
 	if app == nil {
 		return nil, fmt.Errorf("no such app: %s", name)
