@@ -21,7 +21,8 @@ func TestCacheStoreFetch(t *testing.T) {
 	err = local.CacheStore("app", "test", "data", attrs, types.CacheStoreOptions{})
 	require.NoError(t, err)
 
-	cached := local.CacheFetch("app", "test", "data")
+	cached, err := local.CacheFetch("app", "test", "data")
+	require.NoError(t, err)
 
 	assert.Equal(t, "fake", cached["test"])
 	assert.Equal(t, "bar", cached["foo"])
