@@ -38,8 +38,7 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 }
 
 func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
-	a, err := p.AppGet(app)
-	if err != nil {
+	if _, err := p.AppGet(app); err != nil {
 		return nil, err
 	}
 
@@ -56,16 +55,11 @@ func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
 		r.Env = types.Environment{}
 	}
 
-	if r.Id == a.Release {
-		r.Status = "current"
-	}
-
 	return r, nil
 }
 
 func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
-	a, err := p.AppGet(app)
-	if err != nil {
+	if _, err := p.AppGet(app); err != nil {
 		return nil, err
 	}
 
@@ -80,10 +74,6 @@ func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types
 		release, err := p.ReleaseGet(app, id)
 		if err != nil {
 			return nil, err
-		}
-
-		if release.Id == a.Release {
-			release.Status = "current"
 		}
 
 		releases[i] = *release
@@ -145,7 +135,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 				continue
 			}
 
-			if r.Status == "promoted" || r.Status == "failed" || r.Status == "current" {
+			if r.Status == "promoted" || r.Status == "failed" {
 				break
 			}
 		}
