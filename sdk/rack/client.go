@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/convox/praxis/helpers"
-
 	"golang.org/x/net/http2"
 	"golang.org/x/net/websocket"
 )
@@ -126,7 +124,7 @@ func (c *Client) Stream(path string, opts RequestOptions) (io.ReadCloser, error)
 			return nil, err
 		}
 
-		go helpers.HalfPipe(ws, r)
+		go io.Copy(ws, r)
 
 		return ws, nil
 	case "http2":
