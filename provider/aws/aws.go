@@ -294,6 +294,28 @@ func (p *Provider) containerInstances() ([]*ecs.ContainerInstance, error) {
 	return ii, nil
 }
 
+func (p *Provider) describeStack(name string) (*cloudformation.Stack, error) {
+	if v, ok := cache.Get("describeStack", name).(*cloudformation.Stack); ok {
+		return v, nil
+	}
+
+	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(fmt.Sprintf("%s-%s", p.Name, name)),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Stacks) < 1 {
+		return nil, fmt.Errorf("no such stack: %s", name)
+	}
+
+	if err := cache.Set("describeStack", name, res.Stacks[0], 10*time.Second); err != nil {
+		return nil, err
+	}
+
+	return res.Stacks[0], nil
+}
+
 func (p *Provider) ec2Instance(id string) (*ec2.Instance, error) {
 	res, err := p.EC2().DescribeInstances(&ec2.DescribeInstancesInput{
 		InstanceIds: []*string{aws.String(id)},
@@ -439,17 +461,12 @@ func (p *Provider) stackOutput(name string, output string) (string, error) {
 		return v, nil
 	}
 
-	res, err := p.CloudFormation().DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(name),
-	})
+	stack, err := p.describeStack(name)
 	if err != nil {
 		return "", err
 	}
-	if len(res.Stacks) < 1 {
-		return "", fmt.Errorf("no such stack: %s", name)
-	}
 
-	for _, o := range res.Stacks[0].Outputs {
+	for _, o := range stack.Outputs {
 		if *o.OutputKey == output {
 			ov := *o.OutputValue
 
