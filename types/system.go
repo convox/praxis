@@ -4,7 +4,6 @@ import "io"
 
 type System struct {
 	Account string `json:"account"`
-	Domain  string `json:"domain"`
 	Name    string `json:"name"`
 	Image   string `json:"image"`
 	Region  string `json:"region"`

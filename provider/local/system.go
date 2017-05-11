@@ -20,7 +20,6 @@ var (
 
 func (p *Provider) SystemGet() (*types.System, error) {
 	system := &types.System{
-		Domain:  p.Name,
 		Image:   fmt.Sprintf("convox/praxis:%s", p.Version),
 		Name:    p.Name,
 		Status:  "running",
