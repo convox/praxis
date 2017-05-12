@@ -35,7 +35,7 @@ func runDeploy(c *cli.Context) error {
 		return err
 	}
 
-	if err := releaseLogs(app, build.Release, os.Stdout); err != nil {
+	if err := releaseLogs(app, build.Release, os.Stdout, types.LogsOptions{Follow: true}); err != nil {
 		return err
 	}
 

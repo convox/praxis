@@ -45,7 +45,7 @@ func runPromote(c *cli.Context) error {
 
 	stdcli.OK()
 
-	if err := releaseLogs(app, release, os.Stdout); err != nil {
+	if err := releaseLogs(app, release, os.Stdout, types.LogsOptions{Follow: true}); err != nil {
 		return err
 	}
 

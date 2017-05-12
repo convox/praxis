@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"time"
 
@@ -116,16 +117,12 @@ func runReleasesLogs(c *cli.Context) error {
 	opts := types.LogsOptions{
 		Filter: c.String("filter"),
 		Follow: c.Bool("follow"),
-		Prefix: true,
 		Since:  r.Created,
 	}
 
-	logs, err := Rack.ReleaseLogs(app, id, opts)
-	if err != nil {
-		return err
-	}
+	fmt.Printf("opts = %+v\n", opts)
 
-	if _, err := io.Copy(os.Stdout, logs); err != nil {
+	if err := releaseLogs(app, id, os.Stdout, opts); err != nil {
 		return err
 	}
 
@@ -146,41 +143,44 @@ func notReleaseStatus(app, id, status string) func() (bool, error) {
 	}
 }
 
-func releaseCreate(app string, opts types.ReleaseCreateOptions) error {
-	r, err := Rack.ReleaseCreate(app, opts)
-	if err != nil {
-		return err
-	}
+type progress int64
 
-	if err := releaseLogs(app, r.Id, os.Stdout); err != nil {
-		return err
-	}
-
-	r, err = Rack.ReleaseGet(app, r.Id)
-	if err != nil {
-		return err
-	}
-
-	if r.Status != "promoted" {
-		return fmt.Errorf("release failed")
-	}
-
-	return nil
+func (p *progress) Write(data []byte) (int, error) {
+	*p += progress(len(data))
+	return len(data), nil
 }
 
-func releaseLogs(app string, id string, w io.Writer) error {
+func releaseLogs(app string, id string, w io.Writer, opts types.LogsOptions) error {
 	if err := tickWithTimeout(2*time.Second, 5*time.Minute, notReleaseStatus(app, id, "created")); err != nil {
 		return err
 	}
 
-	logs, err := Rack.ReleaseLogs(app, id, types.LogsOptions{Follow: true})
-	if err != nil {
-		return err
-	}
+	var p progress
 
-	if _, err := io.Copy(w, logs); err != nil {
-		return err
-	}
+	for {
+		logs, err := Rack.ReleaseLogs(app, id, opts)
+		if err != nil {
+			return err
+		}
 
-	return nil
+		if _, err := io.CopyN(ioutil.Discard, logs, int64(p)); err != nil {
+			return err
+		}
+
+		if _, err := io.Copy(io.MultiWriter(w, &p), logs); err != nil {
+			return err
+		}
+
+		r, err := Rack.ReleaseGet(app, id)
+		if err != nil {
+			return err
+		}
+
+		switch r.Status {
+		case "promoted", "failed":
+			return nil
+		}
+
+		time.Sleep(1 * time.Second)
+	}
 }
