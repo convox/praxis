@@ -48,7 +48,7 @@ func init() {
 				Name:        "install",
 				Description: "install a rack",
 				Action:      runRackInstall,
-				Usage:       "<provider> <name>",
+				Usage:       "<provider>",
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "name",
@@ -100,7 +100,7 @@ func init() {
 				Name:        "uninstall",
 				Description: "uninstall a rack",
 				Action:      runRackUninstall,
-				Usage:       "<provider> <name>",
+				Usage:       "<provider>",
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "name",
