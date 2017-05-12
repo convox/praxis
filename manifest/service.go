@@ -9,7 +9,7 @@ type Service struct {
 	Name string
 
 	Build       ServiceBuild
-	CDN         string
+	Certificate string
 	Command     ServiceCommand
 	Environment []string
 	Health      ServiceHealth
