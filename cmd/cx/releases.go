@@ -178,7 +178,7 @@ func releaseLogs(app string, id string, w io.Writer) error {
 		return err
 	}
 
-	if err := helpers.HalfPipe(w, logs); err != nil {
+	if _, err := io.Copy(w, logs); err != nil {
 		return err
 	}
 
