@@ -452,6 +452,7 @@ func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOp
 		})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			break
 		}
 
 		sort.Slice(events, func(i, j int) bool { return *events[i].Timestamp < *events[j].Timestamp })
