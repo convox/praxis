@@ -236,7 +236,7 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 
 	_, err = p.CloudFormation().UpdateStack(&cloudformation.UpdateStackInput{
 		Capabilities:       []*string{aws.String("CAPABILITY_IAM")},
-		ClientRequestToken: aws.String(r.Id),
+		ClientRequestToken: aws.String(fmt.Sprintf("%s-%s", r.Id, rs)),
 		Parameters:         params,
 		NotificationARNs:   []*string{aws.String(topic)},
 		StackName:          aws.String(stack),
