@@ -228,14 +228,18 @@ func (p *Provider) handleNotifications(body string) error {
 		return err
 	}
 
-	stream := fmt.Sprintf("convox/release/%s", msg["ClientRequestToken"])
+	token := msg["ClientRequestToken"]
+	tp := strings.Split(token, "-")
+	release := tp[0]
+
+	stream := fmt.Sprintf("convox/release/%s", release)
 
 	app := strings.TrimPrefix(msg["StackName"], fmt.Sprintf("%s-", p.Name))
 
 	p.writeLogf(group, stream, "%-20s  %-28s  %s", msg["ResourceStatus"], msg["LogicalResourceId"], msg["ResourceType"])
 
 	if msg["LogicalResourceId"] == msg["StackName"] {
-		r, err := p.ReleaseGet(app, msg["ClientRequestToken"])
+		r, err := p.ReleaseGet(app, release)
 		if err != nil {
 			return err
 		}
@@ -244,7 +248,7 @@ func (p *Provider) handleNotifications(body string) error {
 		case "UPDATE_IN_PROGRESS":
 			r.Status = "promoting"
 		case "UPDATE_COMPLETE":
-			p.writeLogf(group, stream, "release promoted: %s", msg["ClientRequestToken"])
+			p.writeLogf(group, stream, "release promoted: %s", release)
 			r.Status = "promoted"
 		}
 
