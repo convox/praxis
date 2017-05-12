@@ -99,7 +99,9 @@ func (m *Manifest) Build(root, prefix string, tag string, opts BuildOptions) err
 			return err
 		}
 
-		if err := opts.docker("push", to); err != nil {
+		fmt.Fprintf(opts.Stdout, "pushing: %s\n", to)
+
+		if err := opts.dockerq("push", to); err != nil {
 			return err
 		}
 	}
