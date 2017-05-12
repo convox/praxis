@@ -26,8 +26,8 @@ func init() {
 			},
 			cli.Command{
 				Name:        "info",
-				Description: "get info about an application",
-				Usage:       "<name>",
+				Description: "get application info",
+				Usage:       "[name]",
 				Action:      runAppsInfo,
 				Flags:       []cli.Flag{appFlag},
 			},
