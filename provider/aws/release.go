@@ -119,7 +119,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 		}
 
 		switch r.Status {
-		case "complete", "failed":
+		case "promoted", "failed":
 			return false
 		}
 
