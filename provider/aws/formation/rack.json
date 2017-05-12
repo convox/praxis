@@ -293,6 +293,30 @@
         "Protocol": "HTTPS"
       }
     },
+    "BalancerRedirectListener": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "DefaultActions": [ { "Type": "forward", "TargetGroupArn": { "Ref": "BalancerRedirectTargetGroup" } } ],
+        "LoadBalancerArn": { "Ref" : "Balancer" },
+        "Port": "80",
+        "Protocol": "HTTP"
+      }
+    },
+    "BalancerRedirectTargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "HealthCheckIntervalSeconds": 60,
+        "UnhealthyThresholdCount": 10,
+        "HealthCheckPath": "/",
+        "Port": "3001",
+        "Protocol": "HTTP",
+        "TargetGroupAttributes": [
+          { "Key": "deregistration_delay.timeout_seconds", "Value": "2" },
+          { "Key": "stickiness.enabled", "Value": "true" }
+        ],
+        "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
+      }
+    },
     "BalancerSecurity": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
