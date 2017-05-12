@@ -144,12 +144,12 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 		return fmt.Errorf("no build for release: %s", r.Id)
 	}
 
-	group, err := p.appResource(app, "Logs")
-	if err != nil {
-		return err
-	}
+	// group, err := p.appResource(app, "Logs")
+	// if err != nil {
+	//   return err
+	// }
 
-	stream := fmt.Sprintf("convox/release/%s", r.Id)
+	// stream := fmt.Sprintf("convox/release/%s", r.Id)
 
 	topic, err := p.rackResource("NotificationTopic")
 	if err != nil {
@@ -227,7 +227,12 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 	//   return nil, err
 	// }
 
-	p.writeLogf(group, stream, "updating: %s", stack)
+	// p.writeLogf(group, stream, "updating: %s", stack)
+
+	rs, err := types.Key(4)
+	if err != nil {
+		return err
+	}
 
 	_, err = p.CloudFormation().UpdateStack(&cloudformation.UpdateStackInput{
 		Capabilities:       []*string{aws.String("CAPABILITY_IAM")},
