@@ -250,6 +250,9 @@ func (p *Provider) handleNotifications(body string) error {
 		case "UPDATE_COMPLETE":
 			p.writeLogf(group, stream, "release promoted: %s", release)
 			r.Status = "promoted"
+		case "UPDATE_ROLLBACK_COMPLETE":
+			p.writeLogf(group, stream, "promote failed: %s", release)
+			r.Status = "failed"
 		}
 
 		if err := p.releaseStore(r); err != nil {
