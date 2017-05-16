@@ -97,8 +97,6 @@ A fault-tolerant, highly scalable architecture built on modern AWS services such
 
 #### Create a convox.yml
 
-[TODO: Reference Docs]()
-
 See also the `examples/` directory of this repo.
 
 #### Create an application
