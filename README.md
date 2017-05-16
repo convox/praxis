@@ -110,7 +110,7 @@ See also the `examples/` directory of this repo.
 
 #### Deploy the applications
 
-    $ convox deploy
+    $ cx deploy
 
 ## UPDATING
 
