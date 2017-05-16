@@ -18,6 +18,9 @@ keys:
 queues:
   mail:
     timeout: 1m
+resources:
+  database:
+    type: postgres
 services:
   web:
     build: .
