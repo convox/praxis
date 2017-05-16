@@ -91,6 +91,7 @@ A fault-tolerant, highly scalable architecture built on modern AWS services such
 
 #### AWS
 
+    $ aws configure
     $ cx rack install aws
 
 ## DEPLOY
