@@ -6,7 +6,7 @@ Praxis is a framework for modern application infrastructure. It formalizes a set
 
 ## ABOUT
 
-Praxis allows you to specify the entire infrastructure for your application.
+Praxis allows you to specify the entire infrastructure for your application in a single configuration file, `convox.yml`.
 
 ```yaml
 caches:
