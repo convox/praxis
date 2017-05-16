@@ -2,7 +2,7 @@
 
 Praxis is a framework for modern application infrastructure. It formalizes a set of portable infrastructure primitives that your application can use anywhere without changes, from your laptop to cloud infrastructure.
 
-**WARNING: This project is currently an *alpha* release and is not recommended for production or the faint of heart.**
+**NOTICE: This project is currently in beta and is not yet recommended for production.**
 
 ## ABOUT
 
