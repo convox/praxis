@@ -35,7 +35,7 @@ timers:
 
 ### API
 
-Praxis makes these primitives available to your application with a simple API.
+Praxis makes these infrastructure primitives available to your application with a simple API.
 
 ```
 # list applications
@@ -66,10 +66,6 @@ Runs on your laptop (or any single node). Great for development and CI.
 #### AWS
 
 A fault-tolerant, highly scalable architecture built on modern AWS services such as ECS, ALB, and Lambda.
-
-### API
-
-[TODO: API Docs]()
 
 ## INSTALLATION
 
