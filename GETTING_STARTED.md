@@ -51,15 +51,15 @@ services:
     port: 1313
 ```
 
-The `convox.yml` for this site is pretty simple. It defines a single service called "web". Containers for the web service will listen on port 1313 for requests. The project will be build from a `Dockerfile` in the same directory. Unlike `docker-compose.yml`, `convox.yml` does not requrie you to specify a `build: .` stanza if the app is to be built from `Dockerfile` in the same directory. It is implied.
+The `convox.yml` for this site is pretty simple. It defines a single service called "web". Containers for the web service will listen on port 1313 for requests. The project will be built from a `Dockerfile` in the same directory. Unlike `docker-compose.yml`, `convox.yml` does not requrie you to specify a `build: .` stanza if the app is to be built from a `Dockerfile` in the same directory. It is implied.
 
 "Services" is just one of many components in the Praxis spec that you can define in a `convox.yml`. The project that you're currently in, `praxis-site` is under active development to explain the entire scope of Praxis, so stay tuned for updates.
 
 ### Deploy the app
 
-Now that we've seen what a Praxis app looks like, let's deploy it to our local Rack.
+Now that you've seen what a Praxis app looks like, you can deploy it to your local Rack.
 
-First we'll need to create an app in our Rack to use as a deployment target:
+First you'll need to create an app in your Rack to use as a deployment target:
 
     $ cx apps create praxis-site
 
@@ -101,7 +101,7 @@ You can fetch endpoints for your services at any time:
 
 ### Edit the source
 
-Now that you have the app up and running, let's explore the development cycle by making a change to the source code and deploying it to our development rack.
+Now that you have the app up and running, you can explore the development cycle by making a change to the source code and deploying it to your development rack.
 
 Open `content/index.md` in the project and add the text "Hello, this is a change!" right below the Introduction header. After the edit your file should look like this:
 
@@ -116,7 +116,7 @@ Open `content/index.md` in the project and add the text "Hello, this is a change
 
 ### Build the app
 
-Now let's ship this to the Rack. Rather than doing a `cx deploy`, this time we'll just build the source. That will allow us to inspect the diff before completing deployment.
+Now you can ship this to the Rack. Rather than doing a `cx deploy`, this time you'll just build the source. That will allow you to inspect the diff before completing deployment.
 
     $ cx build
     uploading: .
@@ -145,11 +145,11 @@ Every time you build your app (or change an environment variable) a new "release
     RTKJFWMKYG  BHRATEYFZS  created   4 minutes ago
     RYCQLGAAAV  BJKETOESCA  promoted  19 minutes ago
 
-We can see from this list that the most recent release, `RTKJFWMKYG`, was created but not promoted. To "promote" a release means to make it the current live version.
+You can see from this list that the most recent release, `RTKJFWMKYG`, was created but not promoted. To "promote" a release means to make it the current live version.
 
 ### Diff releases
 
-Before we promote the release, let's diff it to make sure we're deploying exactly what we expect:
+Before you promote the release, you can diff it to make sure you're deploying exactly what you expect:
 
     fetching RTKJFWMKYG: OK
     fetching RYCQLGAAAV: OK
@@ -164,7 +164,7 @@ Before we promote the release, let's diff it to make sure we're deploying exactl
     +Hello, this is a change!
     +
 
-This looks correct, so let's promote it.
+Once you verify that the diff is correct you can promote it.
 
 ### Promote the app
 
@@ -184,18 +184,21 @@ Refresh your browser to see your change in action!
 
 ### Manage environment variables
 
-We mentioned before that changing an environment variable also creates a relase. Let's see that in action.
+As previously mentioned, changing an environment variable also creates a relase. Here's how to see that in action.
 
 The `cx env` command lists all of your app's environment variables. Run that now to see that it's empty:
 
     $ cx env
 
-Now let's set an environment variable:
+Now set an environment variable:
 
     $ cx env set FOO=bar
     updating environment: OK
 
-And `cx releases` will now show us that a new release has been created:
+    $ cx env
+    FOO=bar
+
+`cx releases` will now show that a new release has been created:
 
     $ cx releases
     ID          BUILD       STATUS    CREATED
@@ -209,7 +212,7 @@ You can now promote the latest release just as you did after a build:
 
 ### A faster development loop
 
-You may be thinking that this is shaping up to be a pretty nice development workflow, but it's a bit laborious. You'd be exactly right, but luckly we have a solution! There's a way to see all of your changes live as you develop:
+You may be thinking that this is shaping up to be a pretty nice development workflow, but it's a bit laborious. You'd be exactly right, but luckily we have a solution! There's a way to see all of your changes live as you develop:
 
     $ cx start
 
