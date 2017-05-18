@@ -4,7 +4,7 @@ Convox Praxis is a universal infrastructure interface. When you develop and depl
 
 This guide will walk you through installing the Praxis CLI, the Rack deployment platform, and deploying an application.
 
-## Setting up your development environment
+## Setting up your development platform
 
 ### Install the CLI
 
