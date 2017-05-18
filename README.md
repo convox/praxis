@@ -124,6 +124,10 @@ See also the `examples/` directory of this repo.
 
     $ cx rack update [version]
 
+## Guide
+
+For more a more detailed setup guide, see "[Getting Started](https://github.com/convox/praxis/blob/master/GETTING_STARTED.md)".
+
 ## COPYRIGHT
 
 Convox, Inc. 2017
