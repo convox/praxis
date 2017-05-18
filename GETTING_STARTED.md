@@ -252,6 +252,8 @@ Export this to your local environment to get `cx` talking to the AWS rack.
 
     $ export RACK_URL=https://715f4971060be34d64d9e2f39f33820d:@rack.convo-Balan-1EDQ1YOXSKZGL-1009186257.us-east-1.rack.convox.io
 
+**Setting this environment variable is a temporary requirement for the beta.**
+
 ### Deploy to production
 
 Now you can deploy your application to your production Rack. You've already verified everything on your development rack, so you can deploy with confidence.
