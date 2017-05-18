@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"regexp"
@@ -241,10 +242,8 @@ func watchPath(root string, m *manifest.Manifest, app, service string, bs manife
 					w.Writef("remove: %s to %s\n", strings.Join(changes.Files(removes), ", "), ps.Service)
 				}
 
-				if len(removes) > 0 {
-					if err := handleRemoves(app, ps.Id, removes); err != nil {
-						w.Writef("sync remove error: %s\n", err)
-					}
+				if err := handleRemoves(app, ps.Id, removes); err != nil {
+					w.Writef("sync remove error: %s\n", err)
 				}
 			}
 
@@ -256,6 +255,17 @@ func watchPath(root string, m *manifest.Manifest, app, service string, bs manife
 func handleAdds(app, pid, remote string, adds []changes.Change) error {
 	if len(adds) == 0 {
 		return nil
+	}
+
+	if !filepath.IsAbs(remote) {
+		data, err := exec.Command("docker", "inspect", pid, "--format", "{{.Config.WorkingDir}}").CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("container inspect %s %s", string(data), err)
+		}
+
+		wd := strings.TrimSpace(string(data))
+
+		remote = filepath.Join(wd, remote)
 	}
 
 	r, w := io.Pipe()
