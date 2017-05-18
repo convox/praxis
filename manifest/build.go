@@ -184,7 +184,7 @@ func (m *Manifest) BuildSources(root, service string) ([]BuildSource, error) {
 
 	bs := []BuildSource{}
 	env := map[string]string{}
-	wd := "/"
+	wd := ""
 
 	s := bufio.NewScanner(bytes.NewReader(data))
 
@@ -209,7 +209,7 @@ func (m *Manifest) BuildSources(root, service string) ([]BuildSource, error) {
 				default:
 					remote := replaceEnv(parts[2], env)
 
-					if !filepath.IsAbs(remote) {
+					if wd != "" {
 						remote = filepath.Join(wd, remote)
 					}
 
