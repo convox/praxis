@@ -1,15 +1,13 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Outputs": {
-    {{ with .Manifest.Caches }}
-      {{ range . }}
-        "Cache{{ resource .Name }}Endpoint": {
-          "Value": { "Fn::GetAtt": [ "Cache{{ resource .Name }}", "RedisEndpoint.Address" ] }
-        },
-        "Cache{{ resource .Name }}Port": {
-          "Value": { "Fn::GetAtt": [ "Cache{{ resource .Name }}", "RedisEndpoint.Port" ] }
-        },
-      {{ end }}
+    {{ range .Manifest.Caches }}
+      "Cache{{ resource .Name }}Endpoint": {
+        "Value": { "Fn::GetAtt": [ "Cache{{ resource .Name }}", "RedisEndpoint.Address" ] }
+      },
+      "Cache{{ resource .Name }}Port": {
+        "Value": { "Fn::GetAtt": [ "Cache{{ resource .Name }}", "RedisEndpoint.Port" ] }
+      },
     {{ end }}
     {{ range .Manifest.Services }}
       "Endpoint{{ resource .Name }}": {

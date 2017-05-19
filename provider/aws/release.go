@@ -180,6 +180,42 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 		return err
 	}
 
+	// p.writeLogf(group, stream, "creating changeset: %s", r.Id)
+
+	// _, err = p.CloudFormation().CreateChangeSet(&cloudformation.CreateChangeSetInput{
+	//   Capabilities:     []*string{aws.String("CAPABILITY_IAM")},
+	//   ChangeSetName:    aws.String(r.Id),
+	//   ChangeSetType:    aws.String("UPDATE"),
+	//   ClientToken:      aws.String(r.Id),
+	//   Description:      aws.String(fmt.Sprintf("Release %s (Build %s)", r.Id, r.Build)),
+	//   Parameters:       params,
+	//   NotificationARNs: []*string{aws.String(topic)},
+	//   StackName:        aws.String(stack),
+	//   TemplateBody:     aws.String(string(data)),
+	// })
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	// err = p.CloudFormation().WaitUntilChangeSetCreateComplete(&cloudformation.DescribeChangeSetInput{
+	//   ChangeSetName: aws.String(r.Id),
+	//   StackName:     aws.String(stack),
+	// })
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	// p.writeLogf(group, stream, "executing changeset: %s", r.Id)
+
+	// _, err = p.CloudFormation().ExecuteChangeSet(&cloudformation.ExecuteChangeSetInput{
+	//   ChangeSetName:      aws.String(r.Id),
+	//   ClientRequestToken: aws.String(r.Id),
+	//   StackName:          aws.String(stack),
+	// })
+	// if err != nil {
+	//   return nil, err
+	// }
+
 	rs, err := types.Key(4)
 	if err != nil {
 		return err
