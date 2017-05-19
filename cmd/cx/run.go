@@ -2,10 +2,10 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
-	shellquote "github.com/kballard/go-shellquote"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -35,19 +35,28 @@ func runRun(c *cli.Context) error {
 	command := ""
 
 	if len(c.Args()) >= 2 {
-		command = shellquote.Join(c.Args()[1:]...)
+		command = strings.Join(c.Args()[1:], " ")
 	}
 
 	opts := types.ProcessRunOptions{
 		Command: command,
 		Service: service,
-		Stream:  types.Stream{Reader: os.Stdin, Writer: os.Stdout},
+		Input:   os.Stdin,
+		Output:  os.Stdout,
 	}
+
+	state, err := terminalRaw(os.Stdin)
+	if err != nil {
+		return err
+	}
+	defer terminalRestore(os.Stdin, state)
 
 	code, err := Rack.ProcessRun(app, opts)
 	if err != nil {
 		return err
 	}
+
+	terminalRestore(os.Stdin, state)
 
 	os.Exit(code)
 

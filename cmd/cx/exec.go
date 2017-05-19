@@ -34,10 +34,21 @@ func runExec(c *cli.Context) error {
 	pid := c.Args()[0]
 	command := shellquote.Join(c.Args()[1:]...)
 
-	code, err := Rack.ProcessExec(app, pid, command, types.ProcessExecOptions{Stream: types.Stream{Reader: os.Stdin, Writer: os.Stdout}})
+	state, err := terminalRaw(os.Stdin)
 	if err != nil {
 		return err
 	}
+	defer terminalRestore(os.Stdin, state)
+
+	code, err := Rack.ProcessExec(app, pid, command, types.ProcessExecOptions{
+		Input:  os.Stdin,
+		Output: os.Stdout,
+	})
+	if err != nil {
+		return err
+	}
+
+	terminalRestore(os.Stdin, state)
 
 	os.Exit(code)
 

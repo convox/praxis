@@ -13,7 +13,7 @@ import (
 
 func (c *Client) ProcessExec(app, pid, command string, opts types.ProcessExecOptions) (int, error) {
 	ro := RequestOptions{
-		Body: opts.Stream,
+		Body: opts.Input,
 		Headers: Headers{
 			"Command": command,
 		},
@@ -26,7 +26,7 @@ func (c *Client) ProcessExec(app, pid, command string, opts types.ProcessExecOpt
 
 	defer r.Close()
 
-	if err := helpers.HalfPipe(opts.Stream, r); err != nil {
+	if err := helpers.Stream(opts.Output, r); err != nil {
 		return 0, err
 	}
 
@@ -82,7 +82,7 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 	}
 
 	ro := RequestOptions{
-		Body: opts.Stream,
+		Body: opts.Input,
 		Headers: Headers{
 			"Command":     opts.Command,
 			"Environment": ev.Encode(),
@@ -111,23 +111,11 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 
 	defer r.Close()
 
-	if err := helpers.HalfPipe(opts.Stream, r); err != nil {
+	if err := helpers.Stream(opts.Output, r); err != nil {
 		return 0, err
 	}
-	// res, err := c.PostStream(fmt.Sprintf("/apps/%s/processes/run", app), ro)
-	// if err != nil {
-	//   return 0, err
-	// }
 
-	// defer res.Body.Close()
-
-	// if err := helpers.HalfPipe(opts.Stream, res.Body); err != nil {
-	//   return 0, err
-	// }
-
-	// if code, err := strconv.Atoi(res.Trailer.Get("Exit-Code")); err == nil {
-	//   return code, nil
-	// }
+	// TODO: get exit code
 
 	return 0, nil
 }

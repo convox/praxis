@@ -9,7 +9,6 @@ import (
 	"github.com/convox/praxis/types"
 )
 
-// FromEnv returns a new Provider from env vars
 func FromEnv() (types.Provider, error) {
 	return FromType(os.Getenv("PROVIDER"))
 }

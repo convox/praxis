@@ -1,14 +1,9 @@
 package controllers
 
 import (
-	"crypto/rand"
-	"crypto/sha1"
-	"fmt"
-	"io"
-	"net/http"
-
 	"github.com/convox/praxis/provider"
 	"github.com/convox/praxis/types"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -19,10 +14,10 @@ var (
 	Provider types.Provider
 )
 
-func Init() error {
+func Setup() error {
 	p, err := provider.FromEnv()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	Provider = p
@@ -32,34 +27,24 @@ func Init() error {
 	return nil
 }
 
-func randomString() (string, error) {
-	rb := make([]byte, 128)
+// func stream(w io.Writer, r io.Reader) error {
+//   buf := make([]byte, 1024)
 
-	if _, err := rand.Read(rb); err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%x", sha1.Sum(rb)), nil
-}
-
-func stream(w io.Writer, r io.Reader) error {
-	buf := make([]byte, 1024)
-
-	for {
-		n, err := r.Read(buf)
-		if n > 0 {
-			if _, err := w.Write(buf[0:n]); err != nil {
-				return err
-			}
-			if f, ok := w.(http.Flusher); ok {
-				f.Flush()
-			}
-		}
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-	}
-}
+//   for {
+//     n, err := r.Read(buf)
+//     if n > 0 {
+//       if _, err := w.Write(buf[0:n]); err != nil {
+//         return err
+//       }
+//       if f, ok := w.(http.Flusher); ok {
+//         f.Flush()
+//       }
+//     }
+//     if err == io.EOF {
+//       return nil
+//     }
+//     if err != nil {
+//       return err
+//     }
+//   }
+// }

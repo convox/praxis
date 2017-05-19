@@ -55,7 +55,7 @@ func (p *Provider) AppDelete(name string) error {
 
 	if bucket != "" {
 		if err := p.deleteBucket(bucket); err != nil {
-			fmt.Println("ns=provider.aws at=app.delete error=%q\n", err)
+			fmt.Printf("ns=provider.aws at=app.delete error=%q\n", err)
 		}
 	}
 

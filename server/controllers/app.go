@@ -7,15 +7,12 @@ import (
 	"time"
 
 	"github.com/convox/praxis/api"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
 
 func AppCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	name := c.Form("name")
-
-	c.LogParams("name")
-
-	app, err := Provider.AppCreate(name)
+	app, err := Provider.WithContext(c.Context()).AppCreate(c.Form("name"))
 	if err != nil {
 		return err
 	}
@@ -24,19 +21,15 @@ func AppCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 }
 
 func AppDelete(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	name := c.Var("name")
-
-	if err := Provider.AppDelete(name); err != nil {
+	if err := Provider.WithContext(c.Context()).AppDelete(c.Var("name")); err != nil {
 		return err
 	}
 
-	return nil
+	return c.RenderOK()
 }
 
 func AppGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	name := c.Var("name")
-
-	app, err := Provider.AppGet(name)
+	app, err := Provider.WithContext(c.Context()).AppGet(c.Var("name"))
 	if err != nil {
 		return err
 	}
@@ -45,7 +38,7 @@ func AppGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 }
 
 func AppList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	apps, err := Provider.AppList()
+	apps, err := Provider.WithContext(c.Context()).AppList()
 	if err != nil {
 		return err
 	}
@@ -58,7 +51,7 @@ func AppList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 func AppLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 
-	if _, err := Provider.AppGet(app); err != nil {
+	if _, err := Provider.WithContext(c.Context()).AppGet(app); err != nil {
 		return err
 	}
 
@@ -84,7 +77,7 @@ func AppLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	w.WriteHeader(200)
 
-	if err := stream(w, logs); err != nil {
+	if err := helpers.Stream(w, logs); err != nil {
 		return err
 	}
 
@@ -92,9 +85,7 @@ func AppLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 }
 
 func AppRegistry(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	app := c.Var("app")
-
-	registry, err := Provider.AppRegistry(app)
+	registry, err := Provider.WithContext(c.Context()).AppRegistry(c.Var("app"))
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package local
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -13,11 +14,25 @@ import (
 
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
-	shellquote "github.com/kballard/go-shellquote"
+	"github.com/kr/pty"
 )
 
 func (p *Provider) ProcessExec(app, pid, command string, opts types.ProcessExecOptions) (int, error) {
-	return 0, fmt.Errorf("unimplemented")
+	cmd := exec.Command("docker", "exec", "-it", pid, "sh", "-c", command)
+
+	fd, err := pty.Start(cmd)
+	if err != nil {
+		return 0, err
+	}
+
+	go io.Copy(fd, opts.Input)
+	go io.Copy(opts.Output, fd)
+
+	if err := cmd.Wait(); err != nil {
+		return 0, err
+	}
+
+	return 0, nil
 }
 
 func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
@@ -61,12 +76,17 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 }
 
 func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.ReadCloser, error) {
-	_, err := p.ProcessGet(app, pid)
+	_, err := p.AppGet(app)
 	if err != nil {
 		return nil, err
 	}
 
-	r, w := io.Pipe()
+	ps, err := p.ProcessGet(app, pid)
+	if err != nil {
+		return nil, err
+	}
+
+	cr, cw := io.Pipe()
 
 	args := []string{"logs"}
 
@@ -78,19 +98,34 @@ func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.Read
 
 	cmd := exec.Command("docker", args...)
 
-	cmd.Stdout = w
-	cmd.Stderr = w
+	cmd.Stdout = cw
+	cmd.Stderr = cw
 
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}
 
+	s := bufio.NewScanner(cr)
+
+	rr, rw := io.Pipe()
+
 	go func() {
-		cmd.Wait()
-		w.Close()
+		defer rw.Close()
+		for s.Scan() {
+			if opts.Prefix {
+				fmt.Fprintf(rw, "%s %s/%s/%s %s\n", time.Now().Format(helpers.PrintableTime), ps.App, ps.Service, ps.Id, s.Text())
+			} else {
+				fmt.Fprintf(rw, "%s\n", s.Text())
+			}
+		}
 	}()
 
-	return r, nil
+	go func() {
+		defer cw.Close()
+		cmd.Wait()
+	}()
+
+	return rr, nil
 }
 
 func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
@@ -98,7 +133,7 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 		exec.Command("docker", "rm", "-f", opts.Name).Run()
 	}
 
-	args := []string{"run", "--rm"}
+	args := []string{"run", "-it", "--rm"}
 
 	oargs, err := p.argsFromOpts(app, opts)
 	if err != nil {
@@ -109,20 +144,19 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 
 	cmd := exec.Command("docker", args...)
 
-	if opts.Stream != nil {
-		cmd.Stdin = opts.Stream
-		cmd.Stdout = opts.Stream
-		cmd.Stderr = opts.Stream
+	rw, err := pty.Start(cmd)
+	if err != nil {
+		return 0, err
 	}
 
-	err = cmd.Run()
+	go io.Copy(rw, opts.Input)
+	go io.Copy(opts.Output, rw)
 
-	if ee, ok := err.(*exec.ExitError); ok {
-		if status, ok := ee.Sys().(syscall.WaitStatus); ok {
-			if opts.Stream != nil {
-				fmt.Fprintf(opts.Stream, "exit: %d", status.ExitStatus())
+	if err := cmd.Wait(); err != nil {
+		if ee, ok := err.(*exec.ExitError); ok {
+			if status, ok := ee.Sys().(syscall.WaitStatus); ok {
+				return status.ExitStatus(), nil
 			}
-			return status.ExitStatus(), nil
 		}
 	}
 
@@ -235,12 +269,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	args = append(args, image)
 
 	if opts.Command != "" {
-		cp, err := shellquote.Split(opts.Command)
-		if err != nil {
-			return nil, err
-		}
-
-		args = append(args, cp...)
+		args = append(args, "sh", "-c", opts.Command)
 	}
 
 	return args, nil

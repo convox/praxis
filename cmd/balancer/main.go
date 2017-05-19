@@ -204,8 +204,8 @@ func handleConnection(cn net.Conn, app string, scheme, host string, port int) er
 
 	defer out.Close()
 
-	if err := helpers.HalfPipe(cn, out); err != nil {
-		fmt.Printf("halfpipe err: %s\n", err)
+	if err := helpers.Stream(cn, out); err != nil {
+		fmt.Printf("stream err: %s\n", err)
 		return err
 	}
 

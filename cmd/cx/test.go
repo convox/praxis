@@ -63,13 +63,10 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	bw := types.Stream{Writer: m.Writer("build", os.Stdout)}
-
-	build, err := buildDirectory(app.Name, ".", types.BuildCreateOptions{Stage: manifest.StageTest}, bw)
+	build, err := buildDirectory(app.Name, ".", types.BuildCreateOptions{Stage: manifest.StageTest})
 	if err != nil {
 		return err
 	}
-
 
 	for _, s := range m.Services {
 		if s.Command.Test == "" {
@@ -92,10 +89,7 @@ func runTest(c *cli.Context) error {
 			Environment: senv,
 			Release:     build.Release,
 			Service:     s.Name,
-			Stream: types.Stream{
-				Reader: nil,
-				Writer: w,
-			},
+			Output:      w,
 		})
 		if err != nil {
 			return err

@@ -54,7 +54,7 @@ func (a *API) Cleanup() {
 
 	for range tick {
 		for hash, e := range a.frontend.endpoints {
-			log := log.Namespace("host=%q port=%d", e.Host, e.Port)
+			log := log.Append("host=%q port=%d", e.Host, e.Port)
 
 			if e.Until.Before(time.Now()) {
 				if err := e.Cleanup(); err != nil {
@@ -101,7 +101,7 @@ func (a *API) createEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log = log.Namespace("host=%s port=%s target=%s", host, port, target)
+	log = log.Append("host=%s port=%s target=%s", host, port, target)
 
 	pi, err := strconv.Atoi(port)
 	if err != nil {
@@ -117,7 +117,7 @@ func (a *API) createEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log = log.Namespace("ip=%s", ip)
+	log = log.Append("ip=%s", ip)
 
 	hash := fmt.Sprintf("%s:%d", ip, pi)
 

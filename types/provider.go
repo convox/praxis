@@ -1,6 +1,7 @@
 package types
 
 import (
+	"context"
 	"io"
 )
 
@@ -76,6 +77,8 @@ type Provider interface {
 	TableList(app string) (Tables, error)
 	TableQuery(app, table, query string) (TableRows, error)
 	TableTruncate(app, table string) error
+
+	WithContext(ctx context.Context) Provider
 
 	Workers()
 }

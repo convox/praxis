@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/convox/praxis/api"
 	"github.com/convox/praxis/server/controllers"
+	"github.com/pkg/errors"
 )
 
 type Server struct {
@@ -10,7 +11,7 @@ type Server struct {
 }
 
 func New() *Server {
-	server := api.New("rack", "convox.rack")
+	server := api.New("api", "rack.convox")
 
 	Routes(server)
 
@@ -18,8 +19,8 @@ func New() *Server {
 }
 
 func (s *Server) Setup() error {
-	if err := controllers.Init(); err != nil {
-		return err
+	if err := controllers.Setup(); err != nil {
+		return errors.WithStack(err)
 	}
 
 	return nil

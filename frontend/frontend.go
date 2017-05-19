@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/convox/logger"
+	"github.com/convox/praxis/logger"
 )
 
 var (
@@ -40,7 +40,7 @@ func New(iface, subnet string) *Frontend {
 }
 
 func (f *Frontend) Serve() error {
-	log := f.logger.At("serve").Namespace("interface=%s subnet=%q", f.Interface, f.Subnet)
+	log := f.logger.At("serve").Append("interface=%s subnet=%q", f.Interface, f.Subnet)
 
 	ip, err := setupListener(f.Interface, f.Subnet)
 	if err != nil {

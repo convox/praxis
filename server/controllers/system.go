@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/convox/praxis/api"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
 
@@ -41,7 +42,7 @@ func SystemLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	w.WriteHeader(200)
 
-	if err := stream(w, logs); err != nil {
+	if err := helpers.Stream(w, logs); err != nil {
 		return err
 	}
 
