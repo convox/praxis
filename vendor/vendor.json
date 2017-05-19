@@ -286,12 +286,6 @@
 			"revisionTime": "2017-03-13T03:58:21Z"
 		},
 		{
-			"checksumSHA1": "tpVVVf9Rvd/QKR0/ye/gWGsXxE8=",
-			"path": "github.com/convox/logger",
-			"revision": "83dac67db9513d027318b06248a27d373c29ff5c",
-			"revisionTime": "2016-08-25T18:52:19Z"
-		},
-		{
 			"checksumSHA1": "OFu4xJEIjiI8Suu+j/gabfp+y6Q=",
 			"origin": "github.com/stretchr/testify/vendor/github.com/davecgh/go-spew/spew",
 			"path": "github.com/davecgh/go-spew/spew",
@@ -582,6 +576,12 @@
 			"path": "github.com/opencontainers/runc/libcontainer/user",
 			"revision": "3e53ecaaae0a6cebdfd6b734a7cb6ef47725a9b2",
 			"revisionTime": "2017-02-16T19:23:48Z"
+		},
+		{
+			"checksumSHA1": "rJab1YdNhQooDiBWNnt7TLWPyBU=",
+			"path": "github.com/pkg/errors",
+			"revision": "c605e284fe17294bda444b34710735b29d1a9d90",
+			"revisionTime": "2017-05-05T04:36:39Z"
 		},
 		{
 			"checksumSHA1": "zKKp5SZ3d3ycKe4EKMNT0BqAWBw=",

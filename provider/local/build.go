@@ -6,43 +6,47 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/convox/praxis/types"
+	"github.com/pkg/errors"
 )
 
 func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error) {
+	log := p.logger("BuildCreate").Append("app=%q url=%q", app, url)
+
 	a, err := p.AppGet(app)
 	if err != nil {
-		return nil, err
+		return nil, log.Error(err)
 	}
 
 	id := types.Id("B", 10)
 
-	build := &types.Build{
+	b := &types.Build{
 		Id:      id,
 		App:     app,
 		Status:  "created",
 		Created: time.Now().UTC(),
 	}
 
-	if err := p.storageStore(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
-		return nil, err
+	if err := p.storageStore(fmt.Sprintf("apps/%s/builds/%s", app, id), b); err != nil {
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	registries, err := p.RegistryList()
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	auth, err := json.Marshal(registries)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	sys, err := p.SystemGet()
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
@@ -62,32 +66,45 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
-	build, err = p.BuildGet(app, id)
+	b, err = p.BuildGet(app, id)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
-	build.Process = pid
+	b.Process = pid
 
-	if err := p.storageStore(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
-		return nil, err
+	if err := p.storageStore(fmt.Sprintf("apps/%s/builds/%s", app, id), b); err != nil {
+		return nil, errors.WithStack(log.Error(err))
 	}
 
-	return build, nil
+	return b, log.Successf("id=%s", b.Id)
 }
 
-func (p *Provider) BuildGet(app, id string) (build *types.Build, err error) {
-	err = p.storageLoad(fmt.Sprintf("apps/%s/builds/%s", app, id), &build)
-	return
+func (p *Provider) BuildGet(app, id string) (*types.Build, error) {
+	log := p.logger("BuildGet").Append("app=%q id=%q", app, id)
+
+	var b *types.Build
+
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/builds/%s", app, id), &b); err != nil {
+		if strings.HasPrefix(err.Error(), "no such key:") {
+			return nil, log.Error(fmt.Errorf("no such build: %s", id))
+		} else {
+			return nil, errors.WithStack(log.Error(err))
+		}
+	}
+
+	return b, log.Success()
 }
 
 func (p *Provider) BuildList(app string) (types.Builds, error) {
+	log := p.logger("BuildList").Append("app=%q", app)
+
 	ids, err := p.storageList(fmt.Sprintf("apps/%s/builds", app))
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	builds := make(types.Builds, len(ids))
@@ -95,7 +112,7 @@ func (p *Provider) BuildList(app string) (types.Builds, error) {
 	for i, id := range ids {
 		build, err := p.BuildGet(app, id)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(log.Error(err))
 		}
 
 		builds[i] = *build
@@ -103,27 +120,33 @@ func (p *Provider) BuildList(app string) (types.Builds, error) {
 
 	sort.Slice(builds, func(i, j int) bool { return builds[i].Created.Before(builds[j].Created) })
 
-	return builds, nil
+	return builds, log.Success()
 }
 
 func (p *Provider) BuildLogs(app, id string) (io.ReadCloser, error) {
+	log := p.logger("BuildLogs").Append("app=%q id=%q", app, id)
+
 	build, err := p.BuildGet(app, id)
 	if err != nil {
-		return nil, err
+		return nil, log.Error(err)
 	}
 
 	switch build.Status {
 	case "running":
+		log.Success()
 		return p.ProcessLogs(app, build.Process, types.LogsOptions{Follow: true, Prefix: false})
 	default:
+		log.Success()
 		return p.ObjectFetch(app, fmt.Sprintf("convox/builds/%s/log", id))
 	}
 }
 
 func (p *Provider) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*types.Build, error) {
+	log := p.logger("BuildUpdate").Append("app=%q id=%q", app, id)
+
 	build, err := p.BuildGet(app, id)
 	if err != nil {
-		return nil, err
+		return nil, log.Error(err)
 	}
 
 	if !opts.Ended.IsZero() {
@@ -147,8 +170,8 @@ func (p *Provider) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*
 	}
 
 	if err := p.storageStore(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
-	return build, nil
+	return build, log.Success()
 }

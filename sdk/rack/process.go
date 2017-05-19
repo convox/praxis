@@ -26,7 +26,7 @@ func (c *Client) ProcessExec(app, pid, command string, opts types.ProcessExecOpt
 
 	defer r.Close()
 
-	if err := helpers.HalfPipe(opts.Stream, r); err != nil {
+	if err := helpers.Stream(opts.Stream, r); err != nil {
 		return 0, err
 	}
 
@@ -111,7 +111,7 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 
 	defer r.Close()
 
-	if err := helpers.HalfPipe(opts.Stream, r); err != nil {
+	if err := helpers.Stream(opts.Stream, r); err != nil {
 		return 0, err
 	}
 	// res, err := c.PostStream(fmt.Sprintf("/apps/%s/processes/run", app), ro)

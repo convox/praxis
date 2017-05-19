@@ -1,5 +1,6 @@
 package mocks
 
+import context "context"
 import io "io"
 import mock "github.com/stretchr/testify/mock"
 import types "github.com/convox/praxis/types"
@@ -1045,6 +1046,22 @@ func (_m *Provider) TableTruncate(app string, table string) error {
 		r0 = rf(app, table)
 	} else {
 		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// WithContext provides a mock function with given fields: ctx
+func (_m *Provider) WithContext(ctx context.Context) types.Provider {
+	ret := _m.Called(ctx)
+
+	var r0 types.Provider
+	if rf, ok := ret.Get(0).(func(context.Context) types.Provider); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Provider)
+		}
 	}
 
 	return r0

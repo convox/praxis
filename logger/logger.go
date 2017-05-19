@@ -5,13 +5,15 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"regexp"
-	"runtime"
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 func init() {
@@ -24,6 +26,8 @@ type Logger struct {
 	started   time.Time
 	writer    io.Writer
 }
+
+var Discard = &Logger{writer: ioutil.Discard}
 
 var Output io.Writer = nil
 
@@ -39,16 +43,20 @@ func (l *Logger) At(at string) *Logger {
 	return l.Replace("at", at)
 }
 
-func (l *Logger) Step(step string) *Logger {
-	return l.Replace("step", step)
-}
+func (l *Logger) Error(err error) error {
+	if st, ok := err.(stackTracer); ok {
+		l.Logf("error=%q", err.Error())
 
-func (l *Logger) Error(err error) {
-	if _, file, line, ok := runtime.Caller(1); ok {
-		l.Logf("state=error error=%q location=%q", strings.Replace(err.Error(), "\n", " ", -1), fmt.Sprintf("%s:%d", file, line))
+		for _, s := range st.StackTrace() {
+			parts := strings.Split(fmt.Sprintf("%+s", s), "\n")
+			file := strings.TrimSpace(parts[len(parts)-1])
+			l.WithoutElapsed().Logf("stack=%q", fmt.Sprintf("%s:%d", file, s))
+		}
 	} else {
-		l.Logf("state=error error=%q", err)
+		l.Logf("error=%q", err.Error())
 	}
+
+	return err
 }
 
 func (l *Logger) Errorf(format string, args ...interface{}) {
@@ -75,13 +83,21 @@ func (l *Logger) Logf(format string, args ...interface{}) {
 		l.Writer().Write([]byte(fmt.Sprintf("%s %s\n", l.namespace, fmt.Sprintf(format, args...))))
 	} else {
 		elapsed := float64(time.Now().Sub(l.started).Nanoseconds()) / 1000000
-		l.Writer().Write([]byte(fmt.Sprintf("%s %s elapsed=%0.3f\n", l.namespace, fmt.Sprintf(format, args...), elapsed)))
+		l.Writer().Write([]byte(fmt.Sprintf("%s %s elapsed=%0.2fms\n", l.namespace, fmt.Sprintf(format, args...), elapsed)))
 	}
 }
 
-func (l *Logger) Namespace(format string, args ...interface{}) *Logger {
+func (l *Logger) Append(format string, args ...interface{}) *Logger {
 	return &Logger{
 		namespace: fmt.Sprintf("%s %s", l.namespace, fmt.Sprintf(format, args...)),
+		started:   l.started,
+		writer:    l.writer,
+	}
+}
+
+func (l *Logger) Prepend(format string, args ...interface{}) *Logger {
+	return &Logger{
+		namespace: fmt.Sprintf("%s %s", fmt.Sprintf(format, args...), l.namespace),
 		started:   l.started,
 		writer:    l.writer,
 	}
@@ -99,7 +115,7 @@ func (l *Logger) Replace(key, value string) *Logger {
 			writer:    l.writer,
 		}
 	} else {
-		return l.Namespace(fmt.Sprintf("%s=%s", key, value))
+		return l.Append(fmt.Sprintf("%s=%s", key, value))
 	}
 }
 
@@ -111,12 +127,21 @@ func (l *Logger) Start() *Logger {
 	}
 }
 
-func (l *Logger) Success() {
+func (l *Logger) Success() error {
 	l.Logf("state=success")
+	return nil
 }
 
-func (l *Logger) Successf(format string, args ...interface{}) {
+func (l *Logger) Successf(format string, args ...interface{}) error {
 	l.Logf("state=success %s", fmt.Sprintf(format, args...))
+	return nil
+}
+
+func (l *Logger) WithoutElapsed() *Logger {
+	return &Logger{
+		namespace: l.namespace,
+		writer:    l.writer,
+	}
 }
 
 func (l *Logger) Writer() io.Writer {
@@ -125,4 +150,8 @@ func (l *Logger) Writer() io.Writer {
 	}
 
 	return l.writer
+}
+
+type stackTracer interface {
+	StackTrace() errors.StackTrace
 }

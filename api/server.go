@@ -5,7 +5,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/convox/logger"
+	"github.com/convox/praxis/logger"
 )
 
 type Server struct {
@@ -42,8 +42,8 @@ func (s *Server) Listen(proto, addr string) error {
 	return http.Serve(l, s)
 }
 
-func (s *Server) Route(name, method, path string, fn HandlerFunc) {
-	s.Router.Route(name, method, path, fn)
+func (s *Server) Route(method, path string, fn HandlerFunc) {
+	s.Router.Route(method, path, fn)
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

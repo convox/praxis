@@ -5,22 +5,31 @@ import (
 	"net/http"
 )
 
-func HalfPipe(w io.Writer, r io.Reader) error {
-	defer func() {
-		if c, ok := w.(io.Closer); ok {
-			c.Close()
-		}
-	}()
+func Pipe(a, b io.ReadWriter) error {
+	ch := make(chan error)
 
+	go StreamAsync(a, b, ch)
+	go StreamAsync(b, a, ch)
+
+	if err := <-ch; err != nil {
+		return err
+	}
+
+	if err := <-ch; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Stream(w io.Writer, r io.Reader) error {
 	buf := make([]byte, 1024)
 
 	for {
 		n, err := r.Read(buf)
 		if n > 0 {
 			if _, err := w.Write(buf[0:n]); err != nil {
-				if err != io.ErrClosedPipe {
-					return err
-				}
+				return err
 			}
 			if f, ok := w.(http.Flusher); ok {
 				f.Flush()
@@ -35,23 +44,12 @@ func HalfPipe(w io.Writer, r io.Reader) error {
 	}
 }
 
-func HalfPipeAsync(w io.Writer, r io.Reader, ch chan error) {
-	ch <- HalfPipe(w, r)
-}
+func StreamAsync(w io.Writer, r io.Reader, ch chan error) {
+	err := Stream(w, r)
 
-func Pipe(a, b io.ReadWriter) error {
-	ch := make(chan error)
-
-	go HalfPipeAsync(a, b, ch)
-	go HalfPipeAsync(b, a, ch)
-
-	if err := <-ch; err != nil {
-		return err
+	if c, ok := w.(io.Closer); ok {
+		c.Close()
 	}
 
-	if err := <-ch; err != nil {
-		return err
-	}
-
-	return nil
+	ch <- err
 }

@@ -18,7 +18,7 @@ func (p *Provider) converge(app string) error {
 	convergeLock.Lock()
 	defer convergeLock.Unlock()
 
-	log := Logger.At("converge").Namespace("app=%s", app).Start()
+	log := Logger.At("converge").Append("app=%s", app).Start()
 
 	m, r, err := helpers.AppManifest(p, app)
 	if err != nil {

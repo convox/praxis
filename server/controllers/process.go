@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/convox/praxis/api"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
 
@@ -112,7 +113,7 @@ func ProcessLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		return err
 	}
 
-	if err := stream(w, logs); err != nil {
+	if err := helpers.Stream(w, logs); err != nil {
 		return err
 	}
 
@@ -315,8 +316,6 @@ func ProcessStart(w http.ResponseWriter, r *http.Request, c *api.Context) error 
 
 		opts.Release = a.Release
 	}
-
-	c.LogParams("release", "service")
 
 	pid, err := Provider.ProcessStart(app, opts)
 	if err != nil {

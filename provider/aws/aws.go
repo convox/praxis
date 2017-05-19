@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"math/rand"
@@ -38,6 +39,7 @@ const (
 
 type Provider struct {
 	Config      *aws.Config
+	Context     context.Context
 	Development bool
 	Name        string
 	Password    string
@@ -60,6 +62,7 @@ func FromEnv() (*Provider, error) {
 
 	p := &Provider{
 		Config:      &aws.Config{Region: aws.String(region)},
+		Context:     context.Background(),
 		Development: os.Getenv("DEVELOPMENT") == "true",
 		Name:        os.Getenv("NAME"),
 		Password:    os.Getenv("PASSWORD"),

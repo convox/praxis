@@ -59,7 +59,7 @@ func (d *DNS) resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
 		for _, q := range m.Question {
 			switch q.Qtype {
 			case dns.TypeA:
-				log = log.Namespace("name=%s", q.Name)
+				log = log.Append("name=%s", q.Name)
 				if ip, ok := d.frontend.hosts[q.Name]; ok {
 					if rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip)); err == nil {
 						rr.Header().Ttl = 5

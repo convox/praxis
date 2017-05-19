@@ -50,9 +50,7 @@ func runStart(c *cli.Context) error {
 
 	ch := make(chan error)
 
-	bw := types.Stream{Writer: os.Stdout}
-
-	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment}, bw)
+	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment})
 	if err != nil {
 		return err
 	}

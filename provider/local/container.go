@@ -33,7 +33,7 @@ type containerPort struct {
 }
 
 func (p *Provider) containerConverge(c container, app, release string) (string, error) {
-	log := Logger.At("converge.container").Namespace("app=%s name=%s", app, c.Name).Start()
+	log := Logger.At("converge.container").Append("app=%s name=%s", app, c.Name).Start()
 
 	args := []string{}
 
@@ -74,11 +74,11 @@ func (p *Provider) containerConverge(c container, app, release string) (string, 
 
 		id = i
 
-		log = log.Namespace("action=start")
+		log = log.Append("action=start")
 	case 1:
 		id = ids[0]
 
-		log = log.Namespace("action=found")
+		log = log.Append("action=found")
 	default:
 		return "", fmt.Errorf("matched more than one container")
 	}

@@ -30,7 +30,7 @@ func init() {
 			"fail":   RenderAttributes(203),
 			"header": RenderAttributes(242),
 			"ok":     RenderAttributes(46),
-			"start":  RenderAttributes(247),
+			"start":  RenderAttributes(253),
 			"wait":   RenderAttributes(228),
 		},
 	}
@@ -54,6 +54,23 @@ func Sprintf(format string, args ...interface{}) string {
 
 func Startf(format string, args ...interface{}) (int, error) {
 	return DefaultWriter.Startf(format, args...)
+}
+
+type tagWriter struct {
+	io.Writer
+	tag string
+}
+
+func (w tagWriter) Write(data []byte) (int, error) {
+	if _, err := DefaultWriter.Writef(fmt.Sprintf("<%s>%%s</%s>", w.tag, w.tag), string(data)); err != nil {
+		return 0, err
+	}
+
+	return len(data), nil
+}
+
+func TagWriter(tag string, w io.Writer) io.Writer {
+	return tagWriter{Writer: w, tag: tag}
 }
 
 func Wait(status string) (int, error) {
@@ -132,7 +149,7 @@ func RenderAttributes(attrs ...int) Renderer {
 }
 
 func renderError(s string) string {
-	return fmt.Sprintf("\033[38;5;124mERROR: \033[38;5;203m%s\033[0m", stripTag(s))
+	return fmt.Sprintf("\033[38;5;196mERROR: \033[38;5;203m%s\033[0m", stripTag(s))
 }
 
 var colorStripper = regexp.MustCompile("\033\\[[^m]+m")

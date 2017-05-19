@@ -1,6 +1,7 @@
 package local
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -311,4 +312,20 @@ func processList(filters []string, all bool) (types.Processes, error) {
 	}
 
 	return ps, nil
+}
+
+func (p *Provider) processLogs(app string, ps types.Process, opts types.LogsOptions, w io.WriteCloser) {
+	defer w.Close()
+
+	r, err := p.ProcessLogs(app, ps.Id, opts)
+	if err != nil {
+		w.Write([]byte(fmt.Sprintf("error: %s\n", err)))
+		return
+	}
+
+	s := bufio.NewScanner(r)
+
+	for s.Scan() {
+		w.Write([]byte(fmt.Sprintf("[%s.%s] %s\n", ps.Service, ps.Id, s.Text())))
+	}
 }
