@@ -33,7 +33,7 @@ type containerPort struct {
 }
 
 func (p *Provider) containerConverge(c container, app, release string) (string, error) {
-	log := Logger.At("converge.container").Namespace("app=%s name=%s", app, c.Name).Start()
+	log := Logger.At("converge.container").Append("app=%s name=%s", app, c.Name).Start()
 
 	args := []string{}
 
@@ -50,22 +50,7 @@ func (p *Provider) containerConverge(c container, app, release string) (string, 
 
 	switch len(ids) {
 	case 0:
-		suffix := ""
-
-		if c.Hostname != "" {
-			scheme := "tcp"
-
-			switch c.Port.Host {
-			case 443:
-				scheme = "https"
-			case 5432:
-				scheme = "postgres"
-			}
-
-			suffix = fmt.Sprintf(" (%s://%s:%d)", scheme, c.Hostname, c.Port.Host)
-		}
-
-		p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, release), []byte(fmt.Sprintf("starting: %s%s\n", c.Name, suffix)))
+		p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, release), []byte(fmt.Sprintf("starting: %s\n", c.Name)))
 
 		i, err := p.containerStart(c, app, release)
 		if err != nil {
@@ -74,11 +59,11 @@ func (p *Provider) containerConverge(c container, app, release string) (string, 
 
 		id = i
 
-		log = log.Namespace("action=start")
+		log = log.Append("action=start")
 	case 1:
 		id = ids[0]
 
-		log = log.Namespace("action=found")
+		log = log.Append("action=found")
 	default:
 		return "", fmt.Errorf("matched more than one container")
 	}

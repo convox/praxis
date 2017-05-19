@@ -7,6 +7,7 @@ import (
 
 	"github.com/convox/praxis/api"
 	"github.com/convox/praxis/types"
+	"github.com/pkg/errors"
 )
 
 func ObjectExists(w http.ResponseWriter, r *http.Request, c *api.Context) error {
@@ -48,12 +49,12 @@ func ObjectStore(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	key := c.Var("key")
 
 	if key == "" {
-		r, err := randomString()
+		k, err := types.Key(32)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
-		key = fmt.Sprintf("tmp/%s", r)
+		key = fmt.Sprintf("tmp/%s", k)
 	}
 
 	object, err := Provider.ObjectStore(app, key, r.Body, types.ObjectStoreOptions{})

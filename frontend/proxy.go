@@ -35,7 +35,7 @@ func (p *Proxy) Close() error {
 }
 
 func (p *Proxy) Serve() error {
-	log := Log.At("proxy.create").Namespace("host=%s port=%s target=%s", p.Host, p.Port, p.Target).Start()
+	log := Log.At("proxy.create").Append("host=%s port=%s target=%s", p.Host, p.Port, p.Target).Start()
 
 	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%s", p.Host, p.Port))
 	if err != nil {
@@ -75,7 +75,7 @@ func (p *Proxy) handleConnection(cn net.Conn) {
 		return
 	}
 
-	log = log.Namespace("ip=%s port=%s", ip, port)
+	log = log.Append("ip=%s port=%s", ip, port)
 
 	pi, err := strconv.Atoi(port)
 	if err != nil {
@@ -89,7 +89,7 @@ func (p *Proxy) handleConnection(cn net.Conn) {
 		return
 	}
 
-	log = log.Namespace("target=%s host=%q", ep.Target, ep.Host)
+	log = log.Append("target=%s host=%q", ep.Target, ep.Host)
 
 	out, err := net.Dial("tcp", ep.Target)
 	if err != nil {

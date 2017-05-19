@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/convox/logger"
+	"github.com/convox/praxis/logger"
 )
 
 var (
@@ -20,7 +21,11 @@ var (
 )
 
 // Logger is a package-wide logger
-var Logger = logger.New("ns=provider.local")
+var Logger = logger.New("ns=p.local")
+
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
+}
 
 type Provider struct {
 	Frontend string
@@ -29,10 +34,10 @@ type Provider struct {
 	Test     bool
 	Version  string
 
-	db *bolt.DB
+	ctx context.Context
+	db  *bolt.DB
 }
 
-// FromEnv returns a new local.Provider from env vars
 func FromEnv() (*Provider, error) {
 	p := &Provider{
 		Name:     coalesce(os.Getenv("NAME"), "convox"),
@@ -52,8 +57,12 @@ func FromEnv() (*Provider, error) {
 	return p, nil
 }
 
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
+func (p *Provider) Context() context.Context {
+	if p.ctx != nil {
+		return p.ctx
+	}
+
+	return context.Background()
 }
 
 func (p *Provider) Init() error {
@@ -73,6 +82,16 @@ func (p *Provider) Init() error {
 	}
 
 	return nil
+}
+
+func (p *Provider) logger(at string) *logger.Logger {
+	log := logger.New("ns=local")
+
+	if id := p.Context().Value("request.id"); id != nil {
+		log = log.Prepend("id=%s", id)
+	}
+
+	return log.At(at).Start()
 }
 
 // shutdown cleans up any running resources and exit

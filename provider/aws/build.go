@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/simpledb"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
 
@@ -190,12 +191,12 @@ func (p *Provider) buildFromAttributes(id string, attrs []*simpledb.Attribute) (
 		case "app":
 			build.App = *attr.Value
 		case "created":
-			build.Created, err = time.Parse(sortableTime, *attr.Value)
+			build.Created, err = time.Parse(helpers.SortableTime, *attr.Value)
 			if err != nil {
 				return nil, err
 			}
 		case "ended":
-			build.Ended, err = time.Parse(sortableTime, *attr.Value)
+			build.Ended, err = time.Parse(helpers.SortableTime, *attr.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -220,7 +221,7 @@ func (p *Provider) buildFromAttributes(id string, attrs []*simpledb.Attribute) (
 		case "release":
 			build.Release = *attr.Value
 		case "started":
-			build.Started, err = time.Parse(sortableTime, *attr.Value)
+			build.Started, err = time.Parse(helpers.SortableTime, *attr.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -240,11 +241,11 @@ func (p *Provider) buildStore(build *types.Build) error {
 
 	attrs := []*simpledb.ReplaceableAttribute{
 		{Replace: aws.Bool(true), Name: aws.String("app"), Value: aws.String(build.App)},
-		{Replace: aws.Bool(true), Name: aws.String("created"), Value: aws.String(build.Created.Format(sortableTime))},
-		{Replace: aws.Bool(true), Name: aws.String("ended"), Value: aws.String(build.Ended.Format(sortableTime))},
+		{Replace: aws.Bool(true), Name: aws.String("created"), Value: aws.String(build.Created.Format(helpers.SortableTime))},
+		{Replace: aws.Bool(true), Name: aws.String("ended"), Value: aws.String(build.Ended.Format(helpers.SortableTime))},
 		{Replace: aws.Bool(true), Name: aws.String("process"), Value: aws.String(build.Process)},
 		{Replace: aws.Bool(true), Name: aws.String("release"), Value: aws.String(build.Release)},
-		{Replace: aws.Bool(true), Name: aws.String("started"), Value: aws.String(build.Started.Format(sortableTime))},
+		{Replace: aws.Bool(true), Name: aws.String("started"), Value: aws.String(build.Started.Format(helpers.SortableTime))},
 		{Replace: aws.Bool(true), Name: aws.String("status"), Value: aws.String(build.Status)},
 	}
 

@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	reAppLog = regexp.MustCompile(`^\[([^.]+)\.([^\]]+)\] (.*)$`)
+	reAppLog = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) ([^/]+)/([^/]+)/([^ ]+) (.*)$`)
 )
 
 func init() {
@@ -51,9 +51,7 @@ func runStart(c *cli.Context) error {
 
 	ch := make(chan error)
 
-	bw := types.Stream{Writer: os.Stdout}
-
-	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment}, bw)
+	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment})
 	if err != nil {
 		return err
 	}
@@ -115,7 +113,7 @@ func runStart(c *cli.Context) error {
 		go watchChanges(wd, m, app, s.Name, ch)
 	}
 
-	logs, err = Rack.AppLogs(app, types.LogsOptions{Follow: true})
+	logs, err = Rack.AppLogs(app, types.LogsOptions{Follow: true, Prefix: true})
 	if err != nil {
 		return err
 	}
@@ -125,8 +123,8 @@ func runStart(c *cli.Context) error {
 	for ls.Scan() {
 		match := reAppLog.FindStringSubmatch(ls.Text())
 
-		if len(match) == 4 {
-			m.Writef(match[1], "%s\n", match[3])
+		if len(match) == 7 {
+			m.Writef(match[4], "%s\n", match[6])
 		}
 	}
 

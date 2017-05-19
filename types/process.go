@@ -21,8 +21,10 @@ type Processes []Process
 
 type ProcessExecOptions struct {
 	Height int
-	Stream io.ReadWriter
 	Width  int
+
+	Input  io.Reader
+	Output io.Writer
 }
 
 type ProcessListOptions struct {
@@ -40,7 +42,9 @@ type ProcessRunOptions struct {
 	Ports       map[int]int
 	Release     string
 	Service     string
-	Stream      io.ReadWriter
 	Volumes     map[string]string
 	Width       int
+
+	Input  io.Reader
+	Output io.Writer
 }

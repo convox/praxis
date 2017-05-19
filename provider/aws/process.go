@@ -83,9 +83,9 @@ func (p *Provider) ProcessExec(app, pid, command string, opts types.ProcessExecO
 		Detach:       false,
 		Tty:          true,
 		RawTerminal:  true,
-		InputStream:  ioutil.NopCloser(opts.Stream),
-		OutputStream: opts.Stream,
-		ErrorStream:  opts.Stream,
+		InputStream:  ioutil.NopCloser(opts.Input),
+		OutputStream: opts.Output,
+		ErrorStream:  opts.Output,
 		Success:      success,
 	})
 	if err != nil {
@@ -193,15 +193,16 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 		Tasks:   []*string{aws.String(pid)},
 	}
 
-	if opts.Stream != nil {
+	if opts.Output != nil {
 		if err := p.ECS().WaitUntilTasksRunning(treq); err != nil {
 			return 0, err
 		}
 
 		return p.ProcessExec(app, pid, opts.Command, types.ProcessExecOptions{
 			Height: opts.Height,
-			Stream: opts.Stream,
 			Width:  opts.Width,
+			Input:  opts.Input,
+			Output: opts.Output,
 		})
 	}
 

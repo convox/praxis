@@ -3,12 +3,14 @@ package controllers
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/convox/praxis/api"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
 
@@ -23,7 +25,8 @@ func ProcessExec(rw io.ReadWriteCloser, c *api.Context) error {
 	width := c.Header("Width")
 
 	opts := types.ProcessExecOptions{
-		Stream: rw,
+		Input:  rw,
+		Output: rw,
 	}
 
 	if height != "" {
@@ -112,7 +115,7 @@ func ProcessLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		return err
 	}
 
-	if err := stream(w, logs); err != nil {
+	if err := helpers.Stream(w, logs); err != nil {
 		return err
 	}
 
@@ -184,8 +187,9 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 		Ports:       ports,
 		Release:     release,
 		Service:     service,
-		Stream:      rw,
 		Volumes:     volumes,
+		Input:       ioutil.NopCloser(rw),
+		Output:      rw,
 	}
 
 	if height != "" {
@@ -315,8 +319,6 @@ func ProcessStart(w http.ResponseWriter, r *http.Request, c *api.Context) error 
 
 		opts.Release = a.Release
 	}
-
-	c.LogParams("release", "service")
 
 	pid, err := Provider.ProcessStart(app, opts)
 	if err != nil {

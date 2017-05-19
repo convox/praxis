@@ -6,16 +6,22 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/convox/praxis/logger"
 	"github.com/convox/praxis/mocks"
 	"github.com/convox/praxis/server"
 	"github.com/convox/praxis/server/controllers"
+	"github.com/stretchr/testify/mock"
 )
 
 func mockServer() (*httptest.Server, *mocks.Provider) {
 	mp := &mocks.Provider{}
 	controllers.Provider = mp
 
+	mp.On("WithContext", mock.Anything).Return(mp)
+
 	s := server.New()
+
+	s.Logger = logger.Discard
 
 	ts := httptest.NewUnstartedServer(s)
 

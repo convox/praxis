@@ -21,7 +21,7 @@ func (p *Provider) Workers() {
 
 	go func() {
 		for {
-			time.Sleep(5 * time.Second)
+			time.Sleep(10 * time.Second)
 
 			if err := p.workerConverge(); err != nil {
 				fmt.Printf("ns=provider.local at=converge error=%q\n", err)

@@ -271,7 +271,7 @@ func (p *Provider) releaseFromAttributes(id string, attrs []*simpledb.Attribute)
 		case "build":
 			release.Build = *attr.Value
 		case "created":
-			release.Created, err = time.Parse(sortableTime, *attr.Value)
+			release.Created, err = time.Parse(helpers.SortableTime, *attr.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -337,7 +337,7 @@ func (p *Provider) releaseStore(release *types.Release) error {
 	attrs := []*simpledb.ReplaceableAttribute{
 		{Replace: aws.Bool(true), Name: aws.String("app"), Value: aws.String(release.App)},
 		{Replace: aws.Bool(true), Name: aws.String("build"), Value: aws.String(release.Build)},
-		{Replace: aws.Bool(true), Name: aws.String("created"), Value: aws.String(release.Created.Format(sortableTime))},
+		{Replace: aws.Bool(true), Name: aws.String("created"), Value: aws.String(release.Created.Format(helpers.SortableTime))},
 		{Replace: aws.Bool(true), Name: aws.String("stage"), Value: aws.String(strconv.Itoa(release.Stage))},
 		{Replace: aws.Bool(true), Name: aws.String("status"), Value: aws.String(release.Status)},
 	}

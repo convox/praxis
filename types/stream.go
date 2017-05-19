@@ -32,13 +32,16 @@ func (s Stream) Write(data []byte) (int, error) {
 	// }
 
 	n, err := s.Writer.Write(data)
+	if err == io.ErrClosedPipe {
+		return n, nil
+	}
 	if err != nil {
 		return n, err
 	}
 
 	if n > 0 {
 		if f, ok := s.Writer.(http.Flusher); ok {
-			go f.Flush()
+			f.Flush()
 		}
 	}
 

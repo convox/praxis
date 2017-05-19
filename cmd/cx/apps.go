@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -53,17 +55,23 @@ func runApps(c *cli.Context) error {
 }
 
 func runAppsCreate(c *cli.Context) error {
-	if len(c.Args()) != 1 {
-		return stdcli.Usage(c)
+	name, err := appName(c, ".")
+	if err != nil {
+		return stdcli.Error(err)
 	}
 
-	name := c.Args()[0]
+	if len(c.Args()) > 0 {
+		name = c.Args()[0]
+	}
 
 	stdcli.Startf("creating <name>%s</name>", name)
 
-	_, err := Rack.AppCreate(name)
-	if err != nil {
+	if _, err = Rack.AppCreate(name); err != nil {
 		return stdcli.Error(err)
+	}
+
+	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(name, "creating")); err != nil {
+		return err
 	}
 
 	stdcli.OK()

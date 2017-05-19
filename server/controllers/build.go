@@ -7,12 +7,11 @@ import (
 	"time"
 
 	"github.com/convox/praxis/api"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
 
 func BuildCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	c.LogParams("url", "cache")
-
 	app := c.Var("app")
 	url := c.Form("url")
 	cache := c.Form("cache") == "true"
@@ -25,7 +24,7 @@ func BuildCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 		opts.Stage = s
 	}
 
-	build, err := Provider.BuildCreate(app, url, opts)
+	build, err := Provider.WithContext(c.Context()).BuildCreate(app, url, opts)
 	if err != nil {
 		return err
 	}
@@ -37,7 +36,7 @@ func BuildGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	id := c.Var("id")
 
-	if _, err := Provider.AppGet(app); err != nil {
+	if _, err := Provider.WithContext(c.Context()).AppGet(app); err != nil {
 		return err
 	}
 
@@ -81,7 +80,7 @@ func BuildLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	w.WriteHeader(200)
 
-	if err := stream(w, logs); err != nil {
+	if err := helpers.Stream(w, logs); err != nil {
 		return err
 	}
 
@@ -89,8 +88,6 @@ func BuildLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 }
 
 func BuildUpdate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	c.LogParams("release", "status")
-
 	app := c.Var("app")
 	id := c.Var("id")
 

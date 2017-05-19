@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"golang.org/x/crypto/ssh/terminal"
+
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
@@ -35,7 +37,10 @@ func init() {
 
 	Rack = r
 
+	stdcli.DefaultWriter.Tags["dir"] = stdcli.RenderAttributes(243)
 	stdcli.DefaultWriter.Tags["env"] = stdcli.RenderAttributes(95)
+	stdcli.DefaultWriter.Tags["id"] = stdcli.RenderAttributes(243)
+	stdcli.DefaultWriter.Tags["log"] = stdcli.RenderAttributes(31)
 	stdcli.DefaultWriter.Tags["name"] = stdcli.RenderAttributes(39)
 	stdcli.DefaultWriter.Tags["url"] = stdcli.RenderAttributes(243)
 	stdcli.DefaultWriter.Tags["version"] = stdcli.RenderAttributes(243)
@@ -54,7 +59,9 @@ func main() {
 
 	ch := make(chan error)
 
-	go autoUpdate(ch)
+	if Version != "dev" {
+		go autoUpdate(ch)
+	}
 
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
@@ -136,4 +143,12 @@ func errorExit(fn cli.ActionFunc, code int) cli.ActionFunc {
 		}
 		return nil
 	}
+}
+
+func terminalRaw(f *os.File) (*terminal.State, error) {
+	return terminal.MakeRaw(int(f.Fd()))
+}
+
+func terminalRestore(f *os.File, state *terminal.State) error {
+	return terminal.Restore(int(f.Fd()), state)
 }

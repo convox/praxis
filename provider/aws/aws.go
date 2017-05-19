@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"math/rand"
@@ -27,17 +28,16 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/convox/praxis/cache"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 	"github.com/fsouza/go-dockerclient"
 )
 
-const (
-	printableTime = "2006-01-02 15:04:05"
-	sortableTime  = "20060102.150405.000000000"
-)
+const ()
 
 type Provider struct {
 	Config      *aws.Config
+	Context     context.Context
 	Development bool
 	Name        string
 	Password    string
@@ -60,6 +60,7 @@ func FromEnv() (*Provider, error) {
 
 	p := &Provider{
 		Config:      &aws.Config{Region: aws.String(region)},
+		Context:     context.Background(),
 		Development: os.Getenv("DEVELOPMENT") == "true",
 		Name:        os.Getenv("NAME"),
 		Password:    os.Getenv("PASSWORD"),
@@ -465,7 +466,7 @@ func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOp
 				ts := time.Unix(*e.Timestamp/1000, *e.Timestamp%1000*1000).UTC()
 
 				if opts.Prefix {
-					fmt.Fprintf(w, "%s %s/%s/%s %s\n", ts.Format(printableTime), parts[0], parts[1], pp[len(pp)-1], *e.Message)
+					fmt.Fprintf(w, "%s %s/%s/%s %s\n", ts.Format(helpers.PrintableTime), parts[0], parts[1], pp[len(pp)-1], *e.Message)
 				} else {
 					fmt.Fprintf(w, "%s\n", *e.Message)
 				}
@@ -592,7 +593,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		req.ContainerDefinitions[0].Command = []*string{aws.String("sh"), aws.String("-c"), aws.String(opts.Command)}
 	}
 
-	if opts.Stream != nil {
+	if opts.Output != nil {
 		req.ContainerDefinitions[0].Command = []*string{aws.String("sleep"), aws.String("3600")}
 	}
 
