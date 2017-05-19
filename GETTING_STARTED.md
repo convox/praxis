@@ -50,10 +50,18 @@ The first thing to take note of in the project is the `convox.yml` file. This is
 ```yaml
 services:
   web:
+    command:
+      test: make test
     port: 1313
 ```
 
-The `convox.yml` for this site is pretty simple. It defines a single service called "web". Containers for the web service will listen on port 1313 for requests. The project will be built from a `Dockerfile` in the same directory. Unlike `docker-compose.yml`, `convox.yml` does not require you to specify a `build: .` stanza if the app is to be built from a `Dockerfile` in the same directory. It is implied.
+The `convox.yml` for this site is pretty simple. It defines a single service called "web".
+
+Containers for the web service will listen on port 1313 for requests.
+
+The project will be built from a `Dockerfile` in the same directory. Unlike `docker-compose.yml`, `convox.yml` does not require you to specify a `build: .` stanza if the app is to be built from a `Dockerfile` in the same directory. It is implied.
+
+Commands for different environments can be defined. Here we define a test command. For other environments the `CMD` from the `Dockerfile` will be inherited.
 
 "Services" is just one of many components in the Praxis spec that you can define in a `convox.yml`. The project that you're currently in, `praxis-site` is under active development to explain the entire scope of Praxis, so stay tuned for updates.
 
@@ -116,6 +124,33 @@ Open `content/index.md` in the project and add the text "Hello, this is a change
     # Introduction
     
     Hello, this is a change!
+
+### Test the app
+
+You can test an app using the `cx test` command. It will build the app, deploy it to a temporary test app, run test commands defined on each service, output the results, and then delete the test app from the Rack:
+
+    $ cx test
+    creating app test-1495232395: OK
+    building: /Users/matthew/code/convox/praxis-site
+    uploading: OK
+    starting build: aa00646feff3ae71935329157fba982456c7d440953a0d697fc2f599509ede5e
+    preparing source
+    building: .
+    running: docker build -t 9836064b94124bad54f83c70026dd85fcb8b5a13 /tmp/526868377
+    Sending build context to Docker daemon  12.22MB
+    Step 1/2 : FROM convox/hugo:0.0.1
+     ---> 95f8d1e0347e
+    Step 2/2 : COPY . /app
+     ---> b02503ae7b30
+    Removing intermediate container 879f6b064ded
+    Successfully built b02503ae7b30
+    running: docker tag 9836064b94124bad54f83c70026dd85fcb8b5a13 convox/test-1495232395/web:BUOVBPTLQF
+    saving cache
+    storing artifacts
+    web     | running: make test
+    web     | test -f static/images/logo.png
+
+If you'd like to see the test fail, just delete `static/images/logo.png` and run `cx test` again.
 
 ### Build the app
 
