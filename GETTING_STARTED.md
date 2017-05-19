@@ -51,7 +51,7 @@ services:
     port: 1313
 ```
 
-The `convox.yml` for this site is pretty simple. It defines a single service called "web". Containers for the web service will listen on port 1313 for requests. The project will be built from a `Dockerfile` in the same directory. Unlike `docker-compose.yml`, `convox.yml` does not requrie you to specify a `build: .` stanza if the app is to be built from a `Dockerfile` in the same directory. It is implied.
+The `convox.yml` for this site is pretty simple. It defines a single service called "web". Containers for the web service will listen on port 1313 for requests. The project will be built from a `Dockerfile` in the same directory. Unlike `docker-compose.yml`, `convox.yml` does not require you to specify a `build: .` stanza if the app is to be built from a `Dockerfile` in the same directory. It is implied.
 
 "Services" is just one of many components in the Praxis spec that you can define in a `convox.yml`. The project that you're currently in, `praxis-site` is under active development to explain the entire scope of Praxis, so stay tuned for updates.
 
