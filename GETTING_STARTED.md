@@ -262,11 +262,11 @@ Verify that the login and region info reflect where you want to install your Rac
 
 The CloudFormation output will be streamed back to your terminal as the installation progresses. When the installation completes, a `RACK_URL` is returned.
 
-Export this to your local environment to get `cx` talking to the AWS rack.
+**Make sure you note the value of `RACK_URL`. It is not recoverable. This is a temporary situation while Praxis is in beta. Official Rack management is coming soon**
+
+Export `RACK_URL` to your local environment to get `cx` talking to the AWS rack.
 
     $ export RACK_URL=https://715f4971060be34d64d9e2f39f33820d:@rack.convo-Balan-1EDQ1YOXSKZGL-1009186257.us-east-1.rack.convox.io
-
-**Setting this environment variable is a temporary requirement for the beta.**
 
 ### Deploy to production
 
