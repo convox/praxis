@@ -257,7 +257,8 @@ Verify that the login and region info reflect where you want to install your Rac
     CREATE_IN_PROGRESS    Network                       AWS::CloudFormation::Stack
     CREATE_IN_PROGRESS    Volumes                       AWS::EFS::FileSystem
     CREATE_COMPLETE       convox                        AWS::CloudFormation::Stack
-    RACK_URL=https://715f4971060be34d64d9e2f39f33820d:@rack.convo-Balan-1EDQ1YOXSKZGL-1009186257.us-east-1.rack.convox.io
+    . . .
+    RACK_URL=https://...
 
 The CloudFormation output will be streamed back to your terminal as the installation progresses. When the installation completes, a `RACK_URL` is returned.
 
