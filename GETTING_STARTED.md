@@ -74,20 +74,21 @@ You should now see it in your apps list:
 Now deploy:
 
     $ cx deploy
-    uploading: .
-    starting build: 220cf7b4dc6f9c794258adbc4713671222e06327c31a296e287cb4585512de1e
+    building: /Users/matthew/code/convox/praxis-site
+    uploading: OK
+    starting build: eed730a1180227074e774357acf8201cd39fe8f7478c367374ced3ded78cb92e
     preparing source
     restoring cache
     building: .
-    running: docker build -t 9836064b94124bad54f83c70026dd85fcb8b5a13 /tmp/126260423
-    Sending build context to Docker daemon 19.56 MB
+    running: docker build -t 9836064b94124bad54f83c70026dd85fcb8b5a13 /tmp/503720936
+    Sending build context to Docker daemon  19.56MB
     Step 1/2 : FROM convox/hugo:0.0.1
      ---> 95f8d1e0347e
     Step 2/2 : COPY . /app
-     ---> Using cache
-     ---> 89bacd4cc3a3
-    Successfully built 89bacd4cc3a3
-    running: docker tag 9836064b94124bad54f83c70026dd85fcb8b5a13 convox/praxis-site/web:BJKETOESCA
+     ---> 1ae0dab8258d
+    Removing intermediate container 256b517ec707
+    Successfully built 1ae0dab8258d
+    running: docker tag 9836064b94124bad54f83c70026dd85fcb8b5a13 convox/praxis-site/web:BLFMGFUNTS
     saving cache
     storing artifacts
     starting: convox.praxis-site.endpoint.web (https://web.service.praxis-site.convox:443)
