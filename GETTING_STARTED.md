@@ -29,6 +29,8 @@ To install a local development Rack you first need to install Docker. The free D
 Once you have Docker up and running you can use `cx` to install a local Rack:
 
     $ sudo cx rack install local
+    installing: /Library/LaunchDaemons/convox.frontend.plist
+    installing: /Library/LaunchDaemons/convox.rack.plist
 
 This will install a local Rack that boots when your computer boots.
 
