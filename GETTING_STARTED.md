@@ -219,7 +219,17 @@ You may be thinking that this is shaping up to be a pretty nice development work
 
     $ cx start
 
-This will rebuild your app and start streaming its logs live to your terminal. It will also start watching your local filesystem. Any changes you make in your local files will be instantly synced into the containers running in your local rack. This lets you see the effect of changes without having to redeploy your appliction repeatedly.
+Go ahead and delete the "Hello, this is a change!" line you added previously. You'll be able to immediately view the changes in your browser.
+
+#### Code sync
+
+Convox code sync allows changes you make in your local files to be instantly reflected in the containers running in your local rack. This lets you see the effect of changes without having to redeploy your appliction repeatedly.
+
+Any directory that appears in a `COPY` or `ADD` line in your Dockerfile will be synced. This project has:
+
+    COPY . .
+
+in the Dockerfile, so the entire project directory is synced.
 
 ## Setting up a production platform
 
