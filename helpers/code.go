@@ -9,16 +9,20 @@ import (
 
 var regexpCodeGrabber = regexp.MustCompile(`^26bda8cd-ad49-4e4b-8bb3-2f19e197b3bd\[(\d+)\]$`)
 
-type CodeGrabber struct {
-	Code   *int
-	Writer io.Writer
+type codeGrabber struct {
+	code *int
+	w    io.Writer
+}
+
+func CodeGrabber(w io.Writer, code *int) io.Writer {
+	return codeGrabber{code, w}
 }
 
 func CodeWrite(w io.Writer, code int) {
 	fmt.Fprintf(w, "26bda8cd-ad49-4e4b-8bb3-2f19e197b3bd[%d]", code)
 }
 
-func (w CodeGrabber) Write(data []byte) (int, error) {
+func (w codeGrabber) Write(data []byte) (int, error) {
 	match := regexpCodeGrabber.FindSubmatch(data)
 
 	if len(match) == 2 {
@@ -27,14 +31,14 @@ func (w CodeGrabber) Write(data []byte) (int, error) {
 			return 0, err
 		}
 
-		*w.Code = i
+		*w.code = i
 
-		if _, err := w.Writer.Write(regexpCodeGrabber.ReplaceAll(data, []byte{})); err != nil {
+		if _, err := w.w.Write(regexpCodeGrabber.ReplaceAll(data, []byte{})); err != nil {
 			return 0, err
 		}
 
 		return len(data), nil
 	}
 
-	return w.Writer.Write(data)
+	return w.w.Write(data)
 }
