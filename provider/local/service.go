@@ -19,7 +19,7 @@ func (p *Provider) ServiceList(app string) (types.Services, error) {
 		endpoint := ""
 
 		if s.Port.Port > 0 {
-			endpoint = fmt.Sprintf("https://%s.service.%s.%s", s.Name, app, p.Name)
+			endpoint = fmt.Sprintf("https://%s.%s.%s", s.Name, app, p.Name)
 		}
 
 		ss = append(ss, types.Service{
