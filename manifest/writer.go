@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"sync"
+
+	"github.com/convox/praxis/stdcli"
 )
 
 type PrefixWriter struct {
@@ -27,8 +29,26 @@ func (m *Manifest) Writef(label string, format string, args ...interface{}) {
 
 var lock sync.Mutex
 
+func init() {
+	// color := rand.Intn(256)
+	// for i := 0; i < 32; i++ {
+	//   stdcli.DefaultWriter.Tags[fmt.Sprintf("color%d", i)] = stdcli.RenderAttributes(color)
+	//   color += 15
+	//   color %= 256
+	// }
+	for i := 0; i < 18; i++ {
+		stdcli.DefaultWriter.Tags[fmt.Sprintf("color%d", i)] = stdcli.RenderAttributes(237 + i)
+	}
+}
+
 func (m *Manifest) Writer(label string, w io.Writer) *PrefixWriter {
-	prefix := []byte(fmt.Sprintf(fmt.Sprintf("%%-%ds | ", m.prefixLength()), label))
+	hash := 0
+	for _, c := range label {
+		hash += int(c)
+	}
+	color := hash % 18
+
+	prefix := []byte(stdcli.Sprintf(fmt.Sprintf("<color%d>%%-%ds</color%d> | ", color, m.prefixLength(), color), label))
 
 	return &PrefixWriter{
 		Writer: func(s string) error {

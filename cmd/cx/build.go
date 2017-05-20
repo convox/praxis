@@ -49,7 +49,7 @@ func runBuild(c *cli.Context) error {
 		return err
 	}
 
-	_, err = buildDirectory(app, ".", types.BuildCreateOptions{})
+	_, err = buildDirectory(app, ".", types.BuildCreateOptions{}, os.Stdout)
 	if err != nil {
 		return err
 	}
@@ -115,14 +115,19 @@ func runBuildsLogs(c *cli.Context) error {
 	return nil
 }
 
-func buildDirectory(app, dir string, opts types.BuildCreateOptions) (*types.Build, error) {
+func buildDirectory(app, dir string, opts types.BuildCreateOptions, w io.Writer) (*types.Build, error) {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, err
 	}
 
-	stdcli.Writef("<start>building:</start> <dir>%s</dir>\n", abs)
-	stdcli.Startf("uploading")
+	sw := *stdcli.DefaultWriter
+
+	sw.Stdout = w
+	sw.Stderr = w
+
+	sw.Writef("<start>building:</start> <dir>%s</dir>\n", abs)
+	sw.Startf("uploading")
 
 	r, err := createTarball(dir)
 	if err != nil {
@@ -136,9 +141,9 @@ func buildDirectory(app, dir string, opts types.BuildCreateOptions) (*types.Buil
 		return nil, err
 	}
 
-	stdcli.OK()
+	sw.OK()
 
-	stdcli.Startf("starting build")
+	sw.Startf("starting build")
 
 	build, err := Rack.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key), opts)
 	if err != nil {
@@ -154,9 +159,9 @@ func buildDirectory(app, dir string, opts types.BuildCreateOptions) (*types.Buil
 		return nil, err
 	}
 
-	stdcli.Writef("<id>%s</id>\n", build.Process)
+	sw.Writef("<id>%s</id>\n", build.Process)
 
-	if err := buildLogs(build, stdcli.TagWriter("log", os.Stdout)); err != nil {
+	if err := buildLogs(build, stdcli.TagWriter("log", w)); err != nil {
 		return nil, err
 	}
 

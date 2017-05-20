@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strings"
 )
 
 var (
@@ -62,7 +63,15 @@ type tagWriter struct {
 }
 
 func (w tagWriter) Write(data []byte) (int, error) {
-	if _, err := DefaultWriter.Writef(fmt.Sprintf("<%s>%%s</%s>", w.tag, w.tag), string(data)); err != nil {
+	cparts := []string{}
+
+	for _, line := range strings.Split(string(data), "\n") {
+		cparts = append(cparts, fmt.Sprintf("<%s>%s</%s>", w.tag, line, w.tag))
+	}
+
+	cdata := strings.Join(cparts, "\n")
+
+	if _, err := w.Writer.Write([]byte(Sprintf(cdata))); err != nil {
 		return 0, err
 	}
 
