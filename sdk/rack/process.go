@@ -114,7 +114,7 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 
 	var code int
 
-	if err := helpers.Stream(helpers.CodeGrabber{&code, opts.Output}, r); err != nil {
+	if err := helpers.Stream(helpers.CodeGrabber(opts.Output, &code), r); err != nil {
 		return 0, err
 	}
 
