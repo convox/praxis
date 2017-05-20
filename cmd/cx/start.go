@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -51,12 +52,22 @@ func runStart(c *cli.Context) error {
 
 	ch := make(chan error)
 
-	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment})
+	data, err := ioutil.ReadFile("convox.yml")
 	if err != nil {
 		return err
 	}
 
-	m, _, err := helpers.ReleaseManifest(Rack, app, b.Release)
+	m, err := manifest.Load(data, manifest.Environment{})
+	if err != nil {
+		return err
+	}
+
+	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment}, m.Writer("build", os.Stdout))
+	if err != nil {
+		return err
+	}
+
+	m, _, err = helpers.ReleaseManifest(Rack, app, b.Release)
 	if err != nil {
 		return err
 	}
@@ -83,7 +94,7 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	if _, err := io.Copy(os.Stdout, logs); err != nil {
+	if _, err := io.Copy(m.Writer("convox", os.Stdout), logs); err != nil {
 		return err
 	}
 

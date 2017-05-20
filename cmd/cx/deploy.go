@@ -26,7 +26,7 @@ func runDeploy(c *cli.Context) error {
 		return err
 	}
 
-	build, err := buildDirectory(app, ".", types.BuildCreateOptions{})
+	build, err := buildDirectory(app, ".", types.BuildCreateOptions{}, os.Stdout)
 	if err != nil {
 		return err
 	}
