@@ -69,6 +69,10 @@ func (p *Provider) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
 		args = append(args, "-f")
 	}
 
+	if !opts.Since.IsZero() {
+		args = append(args, "--since", opts.Since.Format(time.RFC3339))
+	}
+
 	args = append(args, hostname)
 
 	cmd := exec.Command("docker", args...)
