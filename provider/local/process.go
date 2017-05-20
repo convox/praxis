@@ -133,24 +133,30 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 		exec.Command("docker", "rm", "-f", opts.Name).Run()
 	}
 
-	args := []string{"run", "-it", "--rm"}
-
 	oargs, err := p.argsFromOpts(app, opts)
 	if err != nil {
 		return 0, err
 	}
 
-	args = append(args, oargs...)
+	cmd := exec.Command("docker", oargs...)
 
-	cmd := exec.Command("docker", args...)
+	if opts.Input != nil {
+		rw, err := pty.Start(cmd)
+		if err != nil {
+			return 0, err
+		}
+		defer rw.Close()
 
-	rw, err := pty.Start(cmd)
-	if err != nil {
-		return 0, err
+		go io.Copy(rw, opts.Input)
+		go io.Copy(opts.Output, rw)
+	} else {
+		cmd.Stdout = opts.Output
+		cmd.Stderr = opts.Output
+
+		if err := cmd.Start(); err != nil {
+			return 0, err
+		}
 	}
-
-	go io.Copy(rw, opts.Input)
-	go io.Copy(opts.Output, rw)
 
 	if err := cmd.Wait(); err != nil {
 		if ee, ok := err.(*exec.ExitError); ok {
@@ -177,14 +183,13 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 		opts.Name = fmt.Sprintf("%s.%s.process.%s.%s", p.Name, app, opts.Service, rs)
 	}
 
-	args := []string{"run", "--detach"}
-
 	oargs, err := p.argsFromOpts(app, opts)
 	if err != nil {
 		return "", err
 	}
 
-	args = append(args, oargs...)
+	args := append(oargs[0:1], "--detach")
+	args = append(args, oargs[1:]...)
 
 	data, err := exec.Command("docker", args...).CombinedOutput()
 	if err != nil {
@@ -199,7 +204,11 @@ func (p *Provider) ProcessStop(app, pid string) error {
 }
 
 func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]string, error) {
-	args := []string{"-i"}
+	args := []string{"run", "--rm", "-i"}
+
+	if opts.Input != nil {
+		args = append(args, "-t")
+	}
 
 	image := opts.Image
 

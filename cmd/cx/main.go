@@ -67,11 +67,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
-
-	if err := <-ch; err != nil {
-		// fmt.Fprintf(os.Stderr, "error: autoupdate: %v\n", err)
-		// os.Exit(1)
-	}
 }
 
 func appName(c *cli.Context, dir string) (string, error) {

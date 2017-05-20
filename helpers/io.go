@@ -54,5 +54,7 @@ func StreamAsync(w io.Writer, r io.Reader, ch chan error) {
 		c.Close()
 	}
 
-	ch <- err
+	if ch != nil {
+		ch <- err
+	}
 }

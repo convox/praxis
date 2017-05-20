@@ -25,8 +25,11 @@ func ProcessExec(rw io.ReadWriteCloser, c *api.Context) error {
 	width := c.Header("Width")
 
 	opts := types.ProcessExecOptions{
-		Input:  rw,
 		Output: rw,
+	}
+
+	if c.Header("Input") == "true" {
+		opts.Input = rw
 	}
 
 	if height != "" {
@@ -188,8 +191,11 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 		Release:     release,
 		Service:     service,
 		Volumes:     volumes,
-		Input:       ioutil.NopCloser(rw),
 		Output:      rw,
+	}
+
+	if c.Header("Input") == "true" {
+		opts.Input = ioutil.NopCloser(rw)
 	}
 
 	if height != "" {
@@ -232,10 +238,12 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 	// w.Header().Add("Trailer", "Exit-Code")
 
 	code, err := Provider.ProcessRun(app, opts)
+	if err != nil {
+		return err
+	}
 
+	helpers.CodeWrite(rw, code)
 	// w.Header().Set("Exit-Code", fmt.Sprintf("%d", code))
-
-	fmt.Printf("code = %+v\n", code)
 
 	return err
 }
