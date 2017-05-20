@@ -87,6 +87,7 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 			"Command":     opts.Command,
 			"Environment": ev.Encode(),
 			"Image":       opts.Image,
+			"Input":       fmt.Sprintf("%t", opts.Input != nil),
 			"Links":       strings.Join(opts.Links, ","),
 			"Name":        opts.Name,
 			"Ports":       pv.Encode(),
@@ -111,13 +112,13 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 
 	defer r.Close()
 
-	if err := helpers.Stream(opts.Output, r); err != nil {
+	var code int
+
+	if err := helpers.Stream(helpers.CodeGrabber{&code, opts.Output}, r); err != nil {
 		return 0, err
 	}
 
-	// TODO: get exit code
-
-	return 0, nil
+	return code, nil
 }
 
 func (c *Client) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
