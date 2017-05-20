@@ -16,6 +16,7 @@ func (c *Client) ProcessExec(app, pid, command string, opts types.ProcessExecOpt
 		Body: opts.Input,
 		Headers: Headers{
 			"Command": command,
+			"Input":   fmt.Sprintf("%t", opts.Input != nil),
 		},
 	}
 
