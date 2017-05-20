@@ -18,6 +18,10 @@ import (
 )
 
 func (p *Provider) ProcessExec(app, pid, command string, opts types.ProcessExecOptions) (int, error) {
+	if _, err := p.AppGet(app); err != nil {
+		return 0, err
+	}
+
 	cmd := exec.Command("docker", "exec", "-it", pid, "sh", "-c", command)
 
 	fd, err := pty.Start(cmd)
@@ -232,6 +236,15 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 
 	if p.Frontend != "none" {
 		args = append(args, "--dns", p.Frontend)
+	}
+
+	env, err := helpers.AppEnvironment(p, app)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range env {
+		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 	}
 
 	for k, v := range opts.Environment {
