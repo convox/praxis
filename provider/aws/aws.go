@@ -597,7 +597,16 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		req.ContainerDefinitions[0].Command = []*string{aws.String("sleep"), aws.String("3600")}
 	}
 
+	env, err := helpers.AppEnvironment(p, app)
+	if err != nil {
+		return "", err
+	}
+
 	for k, v := range opts.Environment {
+		env[k] = v
+	}
+
+	for k, v := range env {
 		req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
 			Name:  aws.String(k),
 			Value: aws.String(v),
