@@ -296,7 +296,7 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 		if s.Port.Port > 0 {
 			cs = append(cs, container{
 				Name:     fmt.Sprintf("%s.%s.endpoint.%s", p.Name, app, s.Name),
-				Hostname: fmt.Sprintf("%s.service.%s.%s", s.Name, app, p.Name),
+				Hostname: fmt.Sprintf("%s.%s.%s", s.Name, app, p.Name),
 				Port: containerPort{
 					Host:      443,
 					Container: 3000,
