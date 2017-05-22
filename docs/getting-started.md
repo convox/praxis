@@ -97,7 +97,7 @@ Now deploy:
     running: docker tag 9836064b94124bad54f83c70026dd85fcb8b5a13 convox/praxis-site/web:BLFMGFUNTS
     saving cache
     storing artifacts
-    starting: convox.praxis-site.endpoint.web (https://web.service.praxis-site.convox:443)
+    starting: convox.praxis-site.endpoint.web
     starting: convox.praxis-site.service.web.1
 
 The application is now deployed to your local Rack. You can find its endpoints with the CLI:
