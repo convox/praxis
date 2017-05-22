@@ -2,8 +2,6 @@
 
 A framework for modern application infrastructure.
 
-**WARNING: This project is currently an *alpha* release and is not recommended for production or the faint of heart.**
-
 ## QUICKSTART
 
 [Getting Started with Convox Praxis](https://github.com/convox/praxis/blob/master/GETTING_STARTED.md).
