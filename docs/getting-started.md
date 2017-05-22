@@ -22,9 +22,9 @@ First, install the `cx` command line client.
 
 ### Install the development platform
 
-Your applications will run on a private platform called a "Rack". While your production Rack will likely run on a cloud infrastructure provider like AWS, you can also install a "local" Rack on your development computer. This makes it easy to achieve dev/prod parity.
+Your applications will run on a private platform called a *Rack*. While your production Rack will likely run on a cloud infrastructure provider like AWS, you can also install a Rack on your development computer. This makes it easy to achieve dev/prod parity.
 
-To install a local development Rack you first need to install Docker. The free Docker Community Edition can be found for your OS [here](https://www.docker.com/community-edition).
+To install a local Rack you'll first need to install Docker. The free Docker Community Edition can be found for your OS [here](https://www.docker.com/community-edition).
 
 Once you have Docker up and running you can use `cx` to install a local Rack:
 
@@ -32,11 +32,11 @@ Once you have Docker up and running you can use `cx` to install a local Rack:
     installing: /Library/LaunchDaemons/convox.frontend.plist
     installing: /Library/LaunchDaemons/convox.rack.plist
 
-This will install a local Rack that boots when your computer boots.
+This will install a Rack onto your local machine.
 
 ### Clone the example app
 
-Let's use an example app to see how deployment works. We'll use the Praxis documentation site for this example. It's a Go app using the Hugo project for static websites.
+We'll use the Praxis documentation site to demonstrate deployment. It's a Go app using the Hugo project for static websites.
 
 Clone the app and enter its directory:
 
@@ -59,11 +59,9 @@ The `convox.yml` for this site is pretty simple. It defines a single service cal
 
 Containers for the web service will listen on port 1313 for requests.
 
-The project will be built from a `Dockerfile` in the same directory. Unlike `docker-compose.yml`, `convox.yml` does not require you to specify a `build: .` stanza if the app is to be built from a `Dockerfile` in the same directory. It is implied.
+By default, the project will be built from a `Dockerfile` in the same directory.
 
-Commands for different environments can be defined. Here we define a test command. For other environments the `CMD` from the `Dockerfile` will be inherited.
-
-"Services" is just one of many components in the Praxis spec that you can define in a `convox.yml`. The project that you're currently in, `praxis-site` is under active development to explain the entire scope of Praxis, so stay tuned for updates.
+Commands for different environments can be defined. Here we define a a custom test command.
 
 ### Deploy the app
 
@@ -102,17 +100,17 @@ Now deploy:
     starting: convox.praxis-site.endpoint.web (https://web.service.praxis-site.convox:443)
     starting: convox.praxis-site.service.web.1
 
-The app will now be available at the returned endpoint, [https://web.service.praxis-site.convox:443](https://web.service.praxis-site.convox). Try clicking this link to load the app in your browser.
-
-You can fetch endpoints for your services at any time:
+The application is now deployed to your local Rack. You can find its endpoints with the CLI:
 
     $ cx services
     NAME  ENDPOINT
-    web   https://web.service.praxis-site.convox
+    web   https://web.praxis-site.convox
+
+You can visit [https://web.praxis-site.convox](https://web.praxis-site.convox) to view it.
 
 ### Edit the source
 
-Now that you have the app up and running, you can explore the development cycle by making a change to the source code and deploying it to your development rack.
+Now that you have the app up and running, you can try the development cycle by making a change to the source code and deploying it to your development rack.
 
 Open `content/index.md` in the project and add the text "Hello, this is a change!" right below the Introduction header. After the edit your file should look like this:
 
@@ -125,9 +123,9 @@ Open `content/index.md` in the project and add the text "Hello, this is a change
     
     Hello, this is a change!
 
-### Test the app
+### Run tests
 
-You can test an app using the `cx test` command. It will build the app, deploy it to a temporary test app, run test commands defined on each service, output the results, and then delete the test app from the Rack:
+You can test an app using `cx test`. This command will create a temporary application container, deploy the current code to it, and sequentially run the `test:` command specified for each service. If a `test:` command is not specified, no tests will be run. `cx test` will abort and pass through any non-zero exit code returned by a test command.
 
     $ cx test
     creating app test-1495232395: OK
@@ -152,9 +150,11 @@ You can test an app using the `cx test` command. It will build the app, deploy i
 
 If you'd like to see the test fail, just delete `static/images/logo.png` and run `cx test` again.
 
-### Build the app
+### Building without Deploying
 
-Now you can ship this to the Rack. Rather than doing a `cx deploy`, this time you'll just build the source. That will allow you to inspect the diff before completing deployment.
+While `cx deploy` is an easy way to deploy changes to a Rack, the various steps are available at the CLI so that you can customize your workflow.
+
+This time, let's create a build but not deploy it:
 
     $ cx build
     uploading: .
@@ -174,6 +174,8 @@ Now you can ship this to the Rack. Rather than doing a `cx deploy`, this time yo
     saving cache
     storing artifacts
 
+Building without deploying is useful to stage changes and then deploy them as a unit.
+
 ### View releases
 
 Every time you build your app (or change an environment variable) a new "release" is created to keep up with these changes. You can list these releases:
@@ -183,11 +185,18 @@ Every time you build your app (or change an environment variable) a new "release
     RTKJFWMKYG  BHRATEYFZS  created   4 minutes ago
     RYCQLGAAAV  BJKETOESCA  promoted  19 minutes ago
 
-You can see from this list that the most recent release, `RTKJFWMKYG`, was created but not promoted. To "promote" a release means to make it the current live version.
+You can see from this list that the most recent release, `RTKJFWMKYG`, was created but not promoted which means its changes have not yet been deployed.
+
+### Set an environment variable
+
+A new release is also created when you change the application's environment.
+
+    $ cx env set FOO=bar
+    updating environment: OK
 
 ### Diff releases
 
-Before you promote the release, you can diff it to make sure you're deploying exactly what you expect:
+Before you promote a release, you can use `cx diff` to summarize the changes about to be deployed:
 
     fetching RTKJFWMKYG: OK
     fetching RYCQLGAAAV: OK
@@ -202,16 +211,16 @@ Before you promote the release, you can diff it to make sure you're deploying ex
     +Hello, this is a change!
     +
 
-Once you verify that the diff is correct you can promote it.
+Once you verify the diff you can promote it.
 
-### Promote the app
+### Promote a release
 
     $ cx promote
     promoting RTKJFWMKYG: OK
     starting: convox.praxis-site.endpoint.web (https://web.service.praxis-site.convox:443)
     starting: convox.praxis-site.service.web.1
 
-The release will now show as promoted in the list.
+The release will now show as promoted.
 
     $ cx releases
     ID          BUILD       STATUS    CREATED
@@ -220,37 +229,9 @@ The release will now show as promoted in the list.
 
 Refresh your browser to see your change in action!
 
-### Manage environment variables
-
-As previously mentioned, changing an environment variable also creates a relase. Here's how to see that in action.
-
-The `cx env` command lists all of your app's environment variables. Run that now to see that it's empty:
-
-    $ cx env
-
-Now set an environment variable:
-
-    $ cx env set FOO=bar
-    updating environment: OK
-
-    $ cx env
-    FOO=bar
-
-`cx releases` will now show that a new release has been created:
-
-    $ cx releases
-    ID          BUILD       STATUS    CREATED
-    RDOAQYVUAK  BFTLZLBXCX  created   40 seconds ago
-    RTKJFWMKYG  BHRATEYFZS  promoted  11 minutes ago
-    RYCQLGAAAV  BJKETOESCA  promoted  27 minutes ag
-
-You can now promote the latest release just as you did after a build:
-
-    $ cx promote
-
 ### A faster development loop
 
-You may be thinking that this is shaping up to be a pretty nice development workflow, but it's a bit laborious. You'd be exactly right, but luckily we have a solution! There's a way to see all of your changes live as you develop:
+You may be thinking that this is shaping up to be a pretty nice workflow but it's a bit laborious for development. You can use `cx start` to pull an application into the foreground. `cx start` will restart the services of the application in development mode and set up live code-sync with your local development checkout allowing you to use your own tools and editor.
 
     $ cx start
 
@@ -266,13 +247,19 @@ Any directory that appears in a `COPY` or `ADD` line in your Dockerfile will be 
 
 in the Dockerfile, so the entire project directory is synced.
 
-## Setting up a production platform
+## Going to production
 
 The local Rack is great for development, but eventually you'll also want to set up a production Rack on the internet where you can deploy your apps and make them accessible to others.
 
 ### Install a production Rack
 
-Convox currently supports Amazon Web Services (AWS) as a cloud infrastructure provider. When you install a Rack on AWS, `cx` will inherit its login info from the [AWS CLI](http://docs.aws.amazon.com/cli/latest/userguide/installing.html). To make sure this is working correctly first run:
+#### AWS
+
+An AWS Rack offers a highly scalable fault-tolerant environment built on modern AWS services such as ECS, ALB, and Lambda. 
+
+The AWS Rack install process will use the `aws` CLI to execute the install. If you have not yet installed this tool visit the [AWS CLI Installation Guide](http://docs.aws.amazon.com/cli/latest/userguide/installing.html).
+
+To make sure this is working correctly run `aws configure`:
 
     $ aws configure
     AWS Access Key ID [****************W7GA]:
@@ -280,7 +267,7 @@ Convox currently supports Amazon Web Services (AWS) as a cloud infrastructure pr
     Default region name [us-east-1]:
     Default output format [json]:
 
-Verify that the login and region info reflect where you want to install your Rack. Then run the installation command.
+Verify that the login and region info reflect where you want to install your Rack. Then use the `cx` tool to install your Rack.
 
     $ cx rack install aws
     CREATE_IN_PROGRESS    convox                        AWS::CloudFormation::Stack
@@ -297,7 +284,7 @@ Verify that the login and region info reflect where you want to install your Rac
 
 The CloudFormation output will be streamed back to your terminal as the installation progresses. When the installation completes, a `RACK_URL` is returned.
 
-**Make sure you note the value of `RACK_URL`. It is not recoverable. This is a temporary situation while Praxis is in beta. Official Rack management is coming soon**
+**Make sure you note the value of `RACK_URL`. It is not recoverable.**
 
 Export `RACK_URL` to your local environment to get `cx` talking to the AWS rack.
 
@@ -311,8 +298,8 @@ Now you can deploy your application to your production Rack. You've already veri
 
     $ cx deploy
 
-Remember that when the deployment completes you can find your services' URLs with:
+Remember that when the deployment completes you can find your service URLs with:
 
     $ cx services
 
-Congratulations! You've just set up a powerful development workflow and deployed your application to robust cloud infrastructure! Time to build more apps :)
+Congratulations! You've just set up a powerful development workflow and deployed your application to robust cloud infrastructure!
