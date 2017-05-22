@@ -1,0 +1,3 @@
+[submodule "examples/tootr"]
+	path = examples/tootr
+	url = https://github.com/convox-examples/tootr
