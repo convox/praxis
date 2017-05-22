@@ -4,7 +4,7 @@ A framework for modern application infrastructure.
 
 ## QUICKSTART
 
-[Getting Started with Convox Praxis](https://github.com/convox/praxis/blob/master/GETTING_STARTED.md).
+[Getting Started with Convox Praxis](https://github.com/convox/praxis/blob/master/GETTING_STARTED.md)
 
 ## ABOUT
 
@@ -35,8 +35,6 @@ timers:
 ### API
 
 Praxis makes these primitives available to your application with a simple API.
-
-[TODO: API Docs]()
 
 ```
 # list applications
@@ -115,9 +113,9 @@ See also the [`examples/`](https://github.com/convox/praxis/tree/master/examples
 
 ## UPDATING
 
-    Your local CLI will automatically keep itself up to date.
+Your local CLI will automatically keep itself up to date.
 
-    You can update an installed Rack using `cx rack update`.
+You can update an installed Rack using `cx rack update`.
 
 ## COPYRIGHT
 
