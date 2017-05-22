@@ -1,12 +1,12 @@
 # Convox Praxis
 
-A framework for modern application infrastructure.
+Praxis is a framework for modern application infrastructure. It formalizes a set of portable infrastructure primitives that your application can use anywhere without changes, from your laptop to cloud infrastructure.
 
-**WARNING: This project is currently an *alpha* release and is not recommended for production or the faint of heart.**
+**NOTICE: This project is currently in beta and is not yet recommended for production.**
 
 ## ABOUT
 
-Praxis allows you to specify the entire infrastructure for your application.
+Praxis allows you to specify the entire infrastructure for your application in a single configuration file, `convox.yml`.
 
 ```yaml
 caches:
@@ -18,6 +18,9 @@ keys:
 queues:
   mail:
     timeout: 1m
+resources:
+  database:
+    type: postgres
 services:
   web:
     build: .
@@ -32,7 +35,7 @@ timers:
 
 ### API
 
-Praxis makes these primitives available to your application with a simple API.
+Praxis makes these infrastructure primitives available to your application with a simple API.
 
 ```
 # list applications
@@ -64,10 +67,6 @@ Runs on your laptop (or any single node). Great for development and CI.
 
 A fault-tolerant, highly scalable architecture built on modern AWS services such as ECS, ALB, and Lambda.
 
-### API
-
-[TODO: API Docs]()
-
 ## INSTALLATION
 
 ### CLI
@@ -92,13 +91,12 @@ A fault-tolerant, highly scalable architecture built on modern AWS services such
 
 #### AWS
 
+    $ aws configure
     $ cx rack install aws
 
 ## DEPLOY
 
 #### Create a convox.yml
-
-[TODO: Reference Docs]()
 
 See also the `examples/` directory of this repo.
 
@@ -112,7 +110,7 @@ See also the `examples/` directory of this repo.
 
 #### Deploy the applications
 
-    $ convox deploy
+    $ cx deploy
 
 ## UPDATING
 
