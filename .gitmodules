@@ -1,12 +1,12 @@
 [submodule "examples/tootr"]
 	path = examples/tootr
 	url = https://github.com/convox-examples/tootr
-[submodule "examples/praxis-site"]
-	path = examples/praxis-site
-	url = https://github.com/convox/praxis-site.git
 [submodule "examples/httpd"]
 	path = examples/httpd
 	url = https://github.com/convox-examples/httpd.git
 [submodule "examples/rails"]
 	path = examples/rails
 	url = https://github.com/convox-examples/praixs-rails.git
+[submodule "examples/praxis-site"]
+	path = examples/praxis-site
+	url = https://github.com/convox/praxis-site.git
