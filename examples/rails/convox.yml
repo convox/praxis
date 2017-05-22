@@ -1,8 +1,0 @@
-resources:
-  database:
-    type: postgres
-services:
-  web:
-    port: 5000
-    resources:
-      - database
