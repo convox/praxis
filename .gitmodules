@@ -7,3 +7,6 @@
 [submodule "examples/httpd"]
 	path = examples/httpd
 	url = https://github.com/convox-examples/httpd.git
+[submodule "examples/rails"]
+	path = examples/rails
+	url = https://github.com/convox-examples/praixs-rails.git
