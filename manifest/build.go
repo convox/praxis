@@ -56,10 +56,27 @@ func (m *Manifest) Build(root, prefix string, tag string, opts BuildOptions) err
 	for hash, b := range builds {
 		if opts.Cache != "" {
 			lcd := filepath.Join(opts.Root, b.Path, ".cache", "build")
+			rcd := filepath.Join(opts.Cache, hash)
 
 			exec.Command("mkdir", "-p", lcd).Run()
-			exec.Command("rm", "-rf", lcd).Run()
-			exec.Command("cp", "-a", filepath.Join(opts.Cache, hash), lcd).Run()
+
+			rls, err := ioutil.ReadDir(rcd)
+			if err != nil {
+				pe, ok := err.(*os.PathError)
+				if !ok {
+					return err
+				}
+
+				if pe.Err.Error() != "no such file or directory" {
+					return err
+				}
+			}
+
+			if len(rls) > 0 {
+				exec.Command("rm", "-rf", lcd).Run()
+			}
+
+			exec.Command("cp", "-a", rcd, lcd).Run()
 		}
 
 		if err := build(b, hash, opts); err != nil {
