@@ -217,7 +217,7 @@ Once you verify the diff you can promote it.
 
     $ cx promote
     promoting RTKJFWMKYG: OK
-    starting: convox.praxis-site.endpoint.web (https://web.service.praxis-site.convox:443)
+    starting: convox.praxis-site.endpoint.web (https://web.praxis-site.convox:443)
     starting: convox.praxis-site.service.web.1
 
 The release will now show as promoted.
