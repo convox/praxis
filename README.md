@@ -1,6 +1,6 @@
 # Convox Praxis
 
-Praxis is a framework for modern application infrastructure. It formalizes a set of portable infrastructure primitives that your application can use anywhere without changes, from your laptop to cloud infrastructure.
+Praxis is a framework for modern application infrastructure. It formalizes a set of portable primitives that your application can use anywhere without changes, from your laptop to cloud infrastructure.
 
 **NOTICE: This project is currently in beta and is not yet recommended for production.**
 
