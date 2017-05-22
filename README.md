@@ -119,14 +119,14 @@ See also the `examples/` directory of this repo.
 #### CLI
 
     The `cx` CLI will automatically keep itself up to date.
-    
+
 #### Rack
 
     $ cx rack update [version]
 
 ## Guide
 
-For more a more detailed setup guide, see "[Getting Started](https://github.com/convox/praxis/blob/master/GETTING_STARTED.md)".
+For more a more detailed setup guide, see "[Getting Started](https://github.com/convox/praxis/blob/master/docs/getting-started.md)".
 
 ## COPYRIGHT
 
