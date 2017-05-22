@@ -4,9 +4,13 @@ A framework for modern application infrastructure.
 
 **WARNING: This project is currently an *alpha* release and is not recommended for production or the faint of heart.**
 
+## QUICKSTART
+
+[Getting Started with Convox Praxis](https://github.com/convox/praxis/blob/master/GETTING_STARTED.md).
+
 ## ABOUT
 
-Praxis allows you to specify the entire infrastructure for your application.
+Praxis allows you to specify the entire infrastructure for your application using simple primitives.
 
 ```yaml
 caches:
@@ -34,6 +38,8 @@ timers:
 
 Praxis makes these primitives available to your application with a simple API.
 
+[TODO: API Docs]()
+
 ```
 # list applications
 GET /apps
@@ -48,13 +54,12 @@ GET /apps/myapp/queues/mail
 POST /apps/myapp/keys/master/encrypt
 ```
 
-#### SDK
+### Rack
 
-* [Go](https://github.com/convox/praxis/tree/master/sdk/rack)
+A Rack is the substrate for running Praxis applications and exposes the Praxis API both externally to
+management tools and operators and internally to the applications themselves.
 
-### Providers
-
-A Praxis Rack can be installed into one of many available infrastructure providers to expose the Praxis API.
+Praxis Racks are currently available for the following environments:
 
 #### Local
 
@@ -63,10 +68,6 @@ Runs on your laptop (or any single node). Great for development and CI.
 #### AWS
 
 A fault-tolerant, highly scalable architecture built on modern AWS services such as ECS, ALB, and Lambda.
-
-### API
-
-[TODO: API Docs]()
 
 ## INSTALLATION
 
@@ -100,7 +101,7 @@ A fault-tolerant, highly scalable architecture built on modern AWS services such
 
 [TODO: Reference Docs]()
 
-See also the `examples/` directory of this repo.
+See also the [`examples/`](https://github.com/convox/praxis/tree/master/examples) subdirectory of this project.
 
 #### Create an application
 
@@ -110,23 +111,15 @@ See also the `examples/` directory of this repo.
 
     $ cx env set FOO=bar
 
-#### Deploy the applications
+#### Deploy the application
 
     $ convox deploy
 
 ## UPDATING
 
-#### CLI
+    Your local CLI will automatically keep itself up to date.
 
-    The `cx` CLI will automatically keep itself up to date.
-
-#### Rack
-
-    $ cx rack update [version]
-
-## Guide
-
-For more a more detailed setup guide, see "[Getting Started](https://github.com/convox/praxis/blob/master/docs/getting-started.md)".
+    You can update an installed Rack using `cx rack update`.
 
 ## COPYRIGHT
 
