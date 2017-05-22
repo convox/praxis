@@ -97,6 +97,8 @@ A fault-tolerant, highly scalable architecture built on modern AWS services such
 
 [TODO: Reference Docs]()
 
+See the `convox.yml` of this project.
+
 See also the [`examples/`](https://github.com/convox/praxis/tree/master/examples) subdirectory of this project.
 
 #### Create an application
