@@ -4,3 +4,6 @@
 [submodule "examples/praxis-site"]
 	path = examples/praxis-site
 	url = https://github.com/convox/praxis-site.git
+[submodule "examples/httpd"]
+	path = examples/httpd
+	url = https://github.com/convox-examples/httpd.git
