@@ -124,8 +124,11 @@ func handleTarget(protocol, target string) error {
 
 	defer ln.Close()
 
+	isHTTP := false
 	switch protocol {
 	case "https", "tls":
+		isHTTP = true
+
 		cert, err := generateSelfSignedCertificate("convox.local")
 		if err != nil {
 			return err
@@ -148,6 +151,14 @@ func handleTarget(protocol, target string) error {
 		}
 
 		go func() {
+			if isHTTP {
+				cn, err = addHeaders(cn, port)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "header err: %+v\n", err)
+					return
+				}
+			}
+
 			if err := handleConnection(cn, app, u.Scheme, u.Hostname(), port); err != nil {
 				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 			}
@@ -194,11 +205,6 @@ func handleConnection(cn net.Conn, app string, scheme, host string, port int) er
 		go stream(cn, tc)
 
 		cn = r
-	}
-
-	cn, err = addHeaders(cn, port)
-	if err != nil {
-		return fmt.Errorf("header err: %s", err)
 	}
 
 	out, err := Rack.Proxy(app, ps[0].Id, port, cn)
