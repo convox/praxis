@@ -196,7 +196,7 @@ func handleConnection(cn net.Conn, app string, scheme, host string, port int) er
 		cn = r
 	}
 
-	out, err := Rack.Proxy(app, ps[0].Id, port, cn)
+	out, err := Rack.ProcessProxy(app, ps[0].Id, port, cn)
 	if err != nil {
 		fmt.Printf("proxy err: %s\n", err)
 		return err

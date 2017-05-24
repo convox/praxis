@@ -188,6 +188,10 @@ func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.Read
 	return r, nil
 }
 
+func (p *Provider) ProcessProxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("unimplemented")
+}
+
 func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
 	cluster, err := p.rackResource("RackCluster")
 	if err != nil {

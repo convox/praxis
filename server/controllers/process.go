@@ -123,6 +123,30 @@ func ProcessLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	return nil
 }
 
+func ProcessProxy(rw io.ReadWriteCloser, c *api.Context) error {
+	app := c.Var("app")
+	pid := c.Var("pid")
+	port := c.Var("port")
+
+	pi, err := strconv.Atoi(port)
+	if err != nil {
+		return err
+	}
+
+	r, err := Provider.ProcessProxy(app, pid, pi, rw)
+	if err != nil {
+		return err
+	}
+
+	defer r.Close()
+
+	if err := helpers.Stream(rw, r); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 	defer rw.Close()
 

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -56,6 +57,29 @@ func SystemOptions(w http.ResponseWriter, r *http.Request, c *api.Context) error
 	}
 
 	return c.RenderJSON(options)
+}
+
+func SystemProxy(rw io.ReadWriteCloser, c *api.Context) error {
+	host := c.Var("host")
+	port := c.Var("port")
+
+	pi, err := strconv.Atoi(port)
+	if err != nil {
+		return err
+	}
+
+	r, err := Provider.SystemProxy(host, pi, rw)
+	if err != nil {
+		return err
+	}
+
+	defer r.Close()
+
+	if err := helpers.Stream(rw, r); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func SystemUpdate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
