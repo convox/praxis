@@ -7,6 +7,21 @@ import (
 	"github.com/convox/praxis/types"
 )
 
+func (p *Provider) ServiceGet(app, name string) (*types.Service, error) {
+	ss, err := p.ServiceList(app)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, s := range ss {
+		if s.Name == name {
+			return &s, nil
+		}
+	}
+
+	return nil, fmt.Errorf("service not found: %s", name)
+}
+
 func (p *Provider) ServiceList(app string) (types.Services, error) {
 	m, _, err := helpers.AppManifest(p, app)
 	if err != nil {
@@ -23,7 +38,7 @@ func (p *Provider) ServiceList(app string) (types.Services, error) {
 
 		ss = append(ss, types.Service{
 			Name:     s.Name,
-			Endpoint: endpoint,
+			Endpoint: fmt.Sprintf("https://%s", endpoint),
 		})
 	}
 

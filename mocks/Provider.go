@@ -523,6 +523,29 @@ func (_m *Provider) ProcessLogs(app string, pid string, opts types.LogsOptions) 
 	return r0, r1
 }
 
+// ProcessProxy provides a mock function with given fields: app, pid, port, in
+func (_m *Provider) ProcessProxy(app string, pid string, port int, in io.Reader) (io.ReadCloser, error) {
+	ret := _m.Called(app, pid, port, in)
+
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(string, string, int, io.Reader) io.ReadCloser); ok {
+		r0 = rf(app, pid, port, in)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadCloser)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, int, io.Reader) error); ok {
+		r1 = rf(app, pid, port, in)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ProcessRun provides a mock function with given fields: app, opts
 func (_m *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
 	ret := _m.Called(app, opts)
@@ -577,29 +600,6 @@ func (_m *Provider) ProcessStop(app string, pid string) error {
 	}
 
 	return r0
-}
-
-// Proxy provides a mock function with given fields: app, pid, port, in
-func (_m *Provider) Proxy(app string, pid string, port int, in io.Reader) (io.ReadCloser, error) {
-	ret := _m.Called(app, pid, port, in)
-
-	var r0 io.ReadCloser
-	if rf, ok := ret.Get(0).(func(string, string, int, io.Reader) io.ReadCloser); ok {
-		r0 = rf(app, pid, port, in)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(io.ReadCloser)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, int, io.Reader) error); ok {
-		r1 = rf(app, pid, port, in)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
 }
 
 // QueueFetch provides a mock function with given fields: app, queue, opts
@@ -805,6 +805,29 @@ func (_m *Provider) ReleasePromote(app string, id string) error {
 	return r0
 }
 
+// ResourceGet provides a mock function with given fields: app, name
+func (_m *Provider) ResourceGet(app string, name string) (*types.Resource, error) {
+	ret := _m.Called(app, name)
+
+	var r0 *types.Resource
+	if rf, ok := ret.Get(0).(func(string, string) *types.Resource); ok {
+		r0 = rf(app, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Resource)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ResourceList provides a mock function with given fields: app
 func (_m *Provider) ResourceList(app string) (types.Resources, error) {
 	ret := _m.Called(app)
@@ -821,6 +844,29 @@ func (_m *Provider) ResourceList(app string) (types.Resources, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(app)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ServiceGet provides a mock function with given fields: app, name
+func (_m *Provider) ServiceGet(app string, name string) (*types.Service, error) {
+	ret := _m.Called(app, name)
+
+	var r0 *types.Service
+	if rf, ok := ret.Get(0).(func(string, string) *types.Service); ok {
+		r0 = rf(app, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Service)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(app, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -934,6 +980,29 @@ func (_m *Provider) SystemOptions() (map[string]string, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func() error); ok {
 		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SystemProxy provides a mock function with given fields: host, port, in
+func (_m *Provider) SystemProxy(host string, port int, in io.Reader) (io.ReadCloser, error) {
+	ret := _m.Called(host, port, in)
+
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(string, int, io.Reader) io.ReadCloser); ok {
+		r0 = rf(host, port, in)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadCloser)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, int, io.Reader) error); ok {
+		r1 = rf(host, port, in)
 	} else {
 		r1 = ret.Error(1)
 	}
