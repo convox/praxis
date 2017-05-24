@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -130,6 +131,29 @@ func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.Read
 	}()
 
 	return rr, nil
+}
+
+func (p *Provider) ProcessProxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error) {
+	_, err := p.AppGet(app)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := exec.Command("docker", "inspect", pid, "--format", "{{.NetworkSettings.IPAddress}}").CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	ip := strings.TrimSpace(string(data))
+
+	cn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
+	if err != nil {
+		return nil, err
+	}
+
+	go io.Copy(cn, in)
+
+	return cn, nil
 }
 
 func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {

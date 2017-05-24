@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"os/user"
@@ -98,6 +99,17 @@ func (p *Provider) SystemOptions() (map[string]string, error) {
 	}
 
 	return options, nil
+}
+
+func (p *Provider) SystemProxy(host string, port int, in io.Reader) (io.ReadCloser, error) {
+	cn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
+	if err != nil {
+		return nil, err
+	}
+
+	go io.Copy(cn, in)
+
+	return cn, nil
 }
 
 func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {
