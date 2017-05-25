@@ -109,7 +109,7 @@ See the `convox.yml` and the [`examples/`](https://github.com/convox/praxis/tree
 
 #### Deploy the application
 
-    $ convox deploy
+    $ cx deploy
 
 ## UPDATING
 
