@@ -71,7 +71,11 @@
       "Service{{ resource $s.Name }}Certificate": {
         "Type": "AWS::CertificateManager::Certificate",
         "Properties": {
-          "DomainName": "{{ . }}"
+          "DomainName": "{{ . }}",
+          "DomainValidationOptions": [{
+            "DomainName": "{{ . }}",
+            "ValidationDomain": "{{ apex . }}"
+          }]
         }
       },
       "Service{{ resource $s.Name }}Balancer": {

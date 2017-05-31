@@ -6,11 +6,22 @@ import (
 	"fmt"
 	"hash/crc32"
 	"html/template"
+	"net"
 	"strings"
 )
 
 func formationHelpers() template.FuncMap {
 	return template.FuncMap{
+		"apex": func(domain string) string {
+			parts := strings.Split(domain, ".")
+			for i := 0; i < len(parts)-1; i++ {
+				d := strings.Join(parts[i:], ".")
+				if mx, err := net.LookupMX(d); err == nil && len(mx) > 0 {
+					return d
+				}
+			}
+			return domain
+		},
 		"lower": func(s string) string {
 			return strings.ToLower(s)
 		},
