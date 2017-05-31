@@ -4,14 +4,14 @@
 #include "_cgo_export.h"
 
 void
-fswatch_callback(ConstFSEventStreamRef streamRef,
+fswatch_cb(ConstFSEventStreamRef streamRef,
                  void *clientCallBackInfo,
                  size_t numEvents,
                  void *eventPaths,
                  const FSEventStreamEventFlags eventFlags[],
                  const FSEventStreamEventId eventIds[])
 {
-  callback(
+  cb(
       (FSEventStreamRef)streamRef,
       clientCallBackInfo,
       numEvents,
@@ -20,10 +20,10 @@ fswatch_callback(ConstFSEventStreamRef streamRef,
       (FSEventStreamEventId*)eventIds);
 }
 
-FSEventStreamRef fswatch_create(FSEventStreamContext *ctx, CFMutableArrayRef pathsToWatch, FSEventStreamEventId since, CFTimeInterval latency, FSEventStreamCreateFlags flags) {
+FSEventStreamRef fswatch_new(FSEventStreamContext *ctx, CFMutableArrayRef pathsToWatch, FSEventStreamEventId since, CFTimeInterval latency, FSEventStreamCreateFlags flags) {
   return FSEventStreamCreate(
       NULL,
-      fswatch_callback,
+      fswatch_cb,
       ctx,
       pathsToWatch,
       since,
