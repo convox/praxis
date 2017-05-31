@@ -31,11 +31,10 @@ func runVersion(c *cli.Context) error {
 }
 
 func latestVersion() (string, error) {
-	res, err := http.Get("https://api.github.com/repos/convox/praxis/releases?per_page=1")
+	res, err := http.Get("https://releases.convox.com/releases/edge/next")
 	if err != nil {
 		return "", err
 	}
-
 	defer res.Body.Close()
 
 	data, err := ioutil.ReadAll(res.Body)
@@ -43,17 +42,11 @@ func latestVersion() (string, error) {
 		return "", err
 	}
 
-	var releases []struct {
-		Name string
-	}
+	var next string
 
-	if err := json.Unmarshal(data, &releases); err != nil {
+	if err := json.Unmarshal(data, &next); err != nil {
 		return "", err
 	}
 
-	if len(releases) < 1 {
-		return "", fmt.Errorf("no releases")
-	}
-
-	return releases[0].Name, nil
+	return next, nil
 }
