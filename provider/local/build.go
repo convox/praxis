@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/types"
 	"github.com/pkg/errors"
 )
@@ -86,6 +87,12 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 func (p *Provider) BuildGet(app, id string) (*types.Build, error) {
 	log := p.logger("BuildGet").Append("app=%q id=%q", app, id)
 
+	key := fmt.Sprintf("%s.%s", app, id)
+
+	if v, ok := cache.Get("BuildGet", key).(*types.Build); ok {
+		return v, log.Successf("cache=hit")
+	}
+
 	var b *types.Build
 
 	if err := p.storageLoad(fmt.Sprintf("apps/%s/builds/%s", app, id), &b); err != nil {
@@ -96,7 +103,11 @@ func (p *Provider) BuildGet(app, id string) (*types.Build, error) {
 		}
 	}
 
-	return b, log.Success()
+	if err := cache.Set("BuildGet", key, &app, 10*time.Second); err != nil {
+		return nil, err
+	}
+
+	return b, log.Successf("cache=miss")
 }
 
 func (p *Provider) BuildList(app string) (types.Builds, error) {
@@ -170,6 +181,10 @@ func (p *Provider) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*
 	}
 
 	if err := p.storageStore(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
+		return nil, errors.WithStack(log.Error(err))
+	}
+
+	if err := cache.Clear("BuildGet", fmt.Sprintf("%s.%s", app, id)); err != nil {
 		return nil, errors.WithStack(log.Error(err))
 	}
 

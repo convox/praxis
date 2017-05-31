@@ -6,8 +6,10 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/convox/praxis/api"
+	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 	"github.com/pkg/errors"
@@ -60,6 +62,10 @@ func (p *Provider) AppDelete(app string) error {
 func (p *Provider) AppGet(name string) (*types.App, error) {
 	log := p.logger("AppGet").Append("name=%q", name)
 
+	if v, ok := cache.Get("AppGet", name).(*types.App); ok {
+		return v, log.Successf("cache=hit")
+	}
+
 	var app types.App
 
 	if err := p.storageLoad(fmt.Sprintf("apps/%s/app.json", name), &app); err != nil {
@@ -70,7 +76,11 @@ func (p *Provider) AppGet(name string) (*types.App, error) {
 		}
 	}
 
-	return &app, log.Success()
+	if err := cache.Set("AppGet", name, &app, 10*time.Second); err != nil {
+		return nil, err
+	}
+
+	return &app, log.Successf("cache=miss")
 }
 
 func (p *Provider) AppList() (types.Apps, error) {
