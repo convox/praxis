@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"sync"
 
 	"github.com/convox/praxis/stdcli"
@@ -24,7 +23,7 @@ func (m *Manifest) WriteLine(line string) {
 }
 
 func (m *Manifest) Writef(label string, format string, args ...interface{}) {
-	m.Writer(label, os.Stdout).Write([]byte(fmt.Sprintf(format, args...)))
+	m.Writer(label, stdcli.DefaultWriter).Write([]byte(fmt.Sprintf(format, args...)))
 }
 
 var lock sync.Mutex
@@ -39,6 +38,9 @@ func init() {
 	for i := 0; i < 18; i++ {
 		stdcli.DefaultWriter.Tags[fmt.Sprintf("color%d", i)] = stdcli.RenderAttributes(237 + i)
 	}
+
+	stdcli.DefaultWriter.Tags["dir"] = stdcli.RenderAttributes(246)
+	stdcli.DefaultWriter.Tags["name"] = stdcli.RenderAttributes(246)
 }
 
 func (m *Manifest) Writer(label string, w io.Writer) *PrefixWriter {
@@ -59,7 +61,7 @@ func (m *Manifest) Writer(label string, w io.Writer) *PrefixWriter {
 				return err
 			}
 
-			if _, err := w.Write([]byte(s)); err != nil {
+			if _, err := w.Write([]byte(stdcli.DefaultWriter.Sprintf(s))); err != nil {
 				return err
 			}
 
