@@ -348,8 +348,6 @@ func build(b ServiceBuild, tag string, opts BuildOptions) error {
 
 	args = append(args, path)
 
-	fmt.Printf("args = %+v\n", args)
-
 	message(opts.Stdout, "building: %s", b.Path)
 
 	return opts.docker(args...)
