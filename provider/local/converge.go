@@ -9,7 +9,6 @@ import (
 
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/manifest"
-	shellquote "github.com/kballard/go-shellquote"
 )
 
 var convergeLock sync.Mutex
@@ -162,6 +161,8 @@ func resourcePort(kind string) (int, error) {
 	switch kind {
 	case "postgres":
 		return 5432, nil
+	case "redis":
+		return 6379, nil
 	}
 
 	return 0, fmt.Errorf("unknown resource type: %s", kind)
@@ -171,6 +172,8 @@ func resourceURL(app, kind, name string) (string, error) {
 	switch kind {
 	case "postgres":
 		return fmt.Sprintf("postgres://postgres:password@%s.resource.%s.convox:5432/app?sslmode=disable", name, app), nil
+	case "redis":
+		return fmt.Sprintf("redis://%s.resource.%s.convox:6379/0", name, app), nil
 	}
 
 	return "", fmt.Errorf("unknown resource type: %s", kind)
@@ -180,6 +183,8 @@ func resourceVolumes(app, kind, name string) ([]string, error) {
 	switch kind {
 	case "postgres":
 		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/var/lib/postgresql/data", app, name)}, nil
+	case "redis":
+		return []string{}, nil
 	}
 
 	return []string{}, fmt.Errorf("unknown resource type: %s", kind)
@@ -329,9 +334,10 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 			return nil, fmt.Errorf("unknown stage: %d", stage)
 		}
 
-		cmd, err := shellquote.Split(command)
-		if err != nil {
-			return nil, err
+		cmd := []string{}
+
+		if c := strings.TrimSpace(command); c != "" {
+			cmd = append(cmd, "sh", "-c", c)
 		}
 
 		env, err := m.ServiceEnvironment(s.Name)
