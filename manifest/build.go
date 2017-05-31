@@ -19,6 +19,7 @@ import (
 
 type BuildOptions struct {
 	Cache  string
+	Env    Environment
 	Push   string
 	Root   string
 	Stdout io.Writer
@@ -329,10 +330,6 @@ func build(b ServiceBuild, tag string, opts BuildOptions) error {
 
 	args := []string{"build"}
 
-	// for _, arg := range build.Args {
-	//   fmt.Printf("arg = %+v\n", arg)
-	// }
-
 	args = append(args, "-t", tag)
 
 	path, err := filepath.Abs(filepath.Join(opts.Root, b.Path))
@@ -340,11 +337,49 @@ func build(b ServiceBuild, tag string, opts BuildOptions) error {
 		return err
 	}
 
+	ba, err := buildArgs(filepath.Join(path, "Dockerfile"))
+	if err != nil {
+		return err
+	}
+
+	for _, a := range ba {
+		args = append(args, "--build-arg", fmt.Sprintf("%s=%s", a, opts.Env[a]))
+	}
+
 	args = append(args, path)
+
+	fmt.Printf("args = %+v\n", args)
 
 	message(opts.Stdout, "building: %s", b.Path)
 
 	return opts.docker(args...)
+}
+
+func buildArgs(dockerfile string) ([]string, error) {
+	fd, err := os.Open(dockerfile)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
+	s := bufio.NewScanner(fd)
+
+	args := []string{}
+
+	for s.Scan() {
+		fields := strings.Fields(strings.TrimSpace(s.Text()))
+
+		if len(fields) < 2 {
+			continue
+		}
+
+		switch fields[0] {
+		case "ARG":
+			args = append(args, fields[1])
+		}
+	}
+
+	return args, nil
 }
 
 func pull(image string, opts BuildOptions) error {
