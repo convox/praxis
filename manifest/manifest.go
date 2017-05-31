@@ -3,6 +3,7 @@ package manifest
 import (
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	yaml "gopkg.in/yaml.v2"
@@ -44,6 +45,10 @@ func Load(data []byte, env Environment) (*Manifest, error) {
 		return nil, err
 	}
 
+	if err := m.Validate(); err != nil {
+		return nil, err
+	}
+
 	return &m, nil
 }
 
@@ -65,6 +70,8 @@ func (m *Manifest) ServiceEnvironment(service string) (Environment, error) {
 
 	env := Environment{}
 
+	missing := []string{}
+
 	for _, e := range s.Environment {
 		parts := strings.SplitN(e, "=", 2)
 
@@ -72,7 +79,7 @@ func (m *Manifest) ServiceEnvironment(service string) (Environment, error) {
 		case 1:
 			v, ok := m.Environment[parts[0]]
 			if !ok {
-				return nil, fmt.Errorf("required env: %s", parts[0])
+				missing = append(missing, parts[0])
 			}
 			env[parts[0]] = v
 		case 2:
@@ -87,15 +94,21 @@ func (m *Manifest) ServiceEnvironment(service string) (Environment, error) {
 		}
 	}
 
+	if len(missing) > 0 {
+		sort.Strings(missing)
+
+		return nil, fmt.Errorf("required env: %s\n", strings.Join(missing, ", "))
+	}
+
 	return env, nil
 }
 
 func (m *Manifest) Validate() error {
-	// for _, s := range m.Services {
-	//   if err := s.Validate(m.Environment); err != nil {
-	//     return err
-	//   }
-	// }
+	for _, s := range m.Services {
+		if _, err := m.ServiceEnvironment(s.Name); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

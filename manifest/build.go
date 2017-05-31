@@ -224,13 +224,18 @@ func (m *Manifest) BuildSources(root, service string) ([]BuildSource, error) {
 				case "http", "https":
 					// do nothing
 				default:
+					local := parts[1]
 					remote := replaceEnv(parts[2], env)
+
+					if remote == "." || strings.HasSuffix(remote, "/") {
+						remote = filepath.Join(remote, filepath.Base(local))
+					}
 
 					if wd != "" {
 						remote = filepath.Join(wd, remote)
 					}
 
-					bs = append(bs, BuildSource{Local: parts[1], Remote: remote})
+					bs = append(bs, BuildSource{Local: local, Remote: remote})
 				}
 			}
 		case "ENV":
@@ -265,7 +270,47 @@ func (m *Manifest) BuildSources(root, service string) ([]BuildSource, error) {
 		}
 	}
 
-	return bs, nil
+	for i := range bs {
+		abs, err := filepath.Abs(bs[i].Local)
+		if err != nil {
+			return nil, err
+		}
+
+		bs[i].Local = abs
+	}
+
+	bss := []BuildSource{}
+
+	for i := range bs {
+		contained := false
+
+		for j := i + 1; j < len(bs); j++ {
+			if strings.HasPrefix(bs[i].Local, bs[j].Local) {
+				rl, err := filepath.Rel(bs[j].Local, bs[i].Local)
+				if err != nil {
+					return nil, err
+				}
+
+				rr, err := filepath.Rel(bs[j].Remote, bs[i].Remote)
+				if err != nil {
+					return nil, err
+				}
+
+				if rl == rr {
+					contained = true
+					break
+				}
+			}
+		}
+
+		if !contained {
+			bss = append(bss, bs[i])
+		}
+	}
+
+	// return nil, fmt.Errorf("stop")
+
+	return bss, nil
 }
 
 func replaceEnv(s string, env map[string]string) string {
