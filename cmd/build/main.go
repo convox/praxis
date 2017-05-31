@@ -242,6 +242,8 @@ func build() error {
 		return err
 	}
 
+	fmt.Fprintf(w, "build complete\n")
+
 	return nil
 }
 
