@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh/terminal"
@@ -13,6 +14,7 @@ import (
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
+	"github.com/convox/praxis/types"
 	homedir "github.com/mitchellh/go-homedir"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -44,6 +46,8 @@ func init() {
 	stdcli.DefaultWriter.Tags["name"] = stdcli.RenderAttributes(246)
 	stdcli.DefaultWriter.Tags["url"] = stdcli.RenderAttributes(246)
 	stdcli.DefaultWriter.Tags["version"] = stdcli.RenderAttributes(246)
+
+	cliID()
 }
 
 func main() {
@@ -129,6 +133,37 @@ func autoUpdate(ch chan error) {
 	exec.Command(ex, "update", v).Start()
 
 	ch <- nil
+}
+
+func cliID() (string, error) {
+	fn, err := homedir.Expand("~/.convox/id")
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := os.Stat(fn); os.IsNotExist(err) {
+		id, err := types.Key(32)
+		if err != nil {
+			return "", err
+		}
+
+		if err := os.MkdirAll(filepath.Dir(fn), 0755); err != nil {
+			return "", err
+		}
+
+		if err := ioutil.WriteFile(fn, []byte(id), 0644); err != nil {
+			return "", err
+		}
+
+		return id, nil
+	}
+
+	data, err := ioutil.ReadFile(fn)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(data)), nil
 }
 
 func errorExit(fn cli.ActionFunc, code int) cli.ActionFunc {
