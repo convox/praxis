@@ -206,6 +206,7 @@ func build() error {
 
 	opts := manifest.BuildOptions{
 		Cache:  cache,
+		Env:    manifest.Environment(env),
 		Push:   flagPush,
 		Root:   tmp,
 		Stdout: w,
