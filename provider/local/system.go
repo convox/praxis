@@ -123,6 +123,10 @@ func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
 			return err
 		}
 
+		if err := exec.Command("docker", "pull", fmt.Sprintf("convox/praxis:%s", v)).Run(); err != nil {
+			return err
+		}
+
 		go func() {
 			time.Sleep(1 * time.Second)
 			os.Exit(0)
