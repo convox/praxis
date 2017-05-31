@@ -31,7 +31,19 @@ func runVersion(c *cli.Context) error {
 }
 
 func latestVersion() (string, error) {
-	res, err := http.Get("https://releases.convox.com/releases/edge/next")
+	req, err := http.NewRequest("GET", "https://releases.convox.com/releases/edge/next", nil)
+	if err != nil {
+		return "", err
+	}
+
+	id, err := cliID()
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("User-Agent", fmt.Sprintf("convox/%s (%s)", Version, id))
+
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
