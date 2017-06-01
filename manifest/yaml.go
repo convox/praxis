@@ -138,7 +138,14 @@ func (v Services) MarshalYAML() (interface{}, error) {
 			} else {
 				service["build"] = s.Build.Path
 			}
+
 		}
+
+		command := make(map[string]string)
+		command["development"] = s.Command.Development
+		command["test"] = s.Command.Test
+		command["production"] = s.Command.Production
+		service["command"] = command
 
 		services[s.Name] = service
 	}
