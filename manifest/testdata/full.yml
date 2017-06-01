@@ -39,6 +39,11 @@ services:
     scale:
       count: 1
       memory: 512
+  foo:
+    command: foo
+    health:
+      timeout: 3
+    scale: 0
 tables:
   proxies:
     indexes:
