@@ -99,6 +99,8 @@ func autoUpdate(ch chan error) {
 		return
 	}
 
+	os.MkdirAll(filepath.Join(home, ".convox"), 0755)
+
 	setting := filepath.Join(home, ".convox", "updated")
 
 	if data, err := ioutil.ReadFile(setting); err == nil {
