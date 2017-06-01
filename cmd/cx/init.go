@@ -96,12 +96,19 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 		//TODO: labels
 		//TODO: links
 
+		// mem_limit
+		mb := service.Memory / (1024 * 1024) // bytes to Megabytes
+		scale := manifest.ServiceScale{
+			Memory: int(mb),
+		}
+
 		s := manifest.Service{
 			Name:        name,
 			Build:       b,
 			Command:     cmd,
 			Environment: env,
 			Image:       service.Image,
+			Scale:       scale,
 		}
 		services = append(services, s)
 	}

@@ -139,6 +139,14 @@ func (v Services) MarshalYAML() (interface{}, error) {
 
 		service["image"] = s.Image
 
+		scale := make(map[string]interface{})
+		scale["count"] = fmt.Sprintf("%d", s.Scale.Count.Min)
+		if (s.Scale.Count.Max - s.Scale.Count.Min) > 0 {
+			scale["count"] = fmt.Sprintf("%s-%d", scale["count"], s.Scale.Count.Max)
+		}
+		scale["memory"] = s.Scale.Memory
+		service["scale"] = scale
+
 		services[s.Name] = service
 	}
 
