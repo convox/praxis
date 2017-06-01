@@ -83,10 +83,21 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Println("WARNING: The entrypoint key is not supported in convox.yml. Use ENTRYPOINT in your Dockerfile instead.")
 		}
 
+		// environment
+		env := []string{}
+		for _, eItem := range service.Environment {
+			if eItem.Needed {
+				env = append(env, eItem.Name)
+			} else {
+				env = append(env, fmt.Sprintf("%s=%s", eItem.Name, eItem.Value))
+			}
+		}
+
 		s := manifest.Service{
-			Name:    name,
-			Build:   b,
-			Command: cmd,
+			Name:        name,
+			Build:       b,
+			Command:     cmd,
+			Environment: env,
 		}
 		services = append(services, s)
 	}
