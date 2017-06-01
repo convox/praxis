@@ -343,7 +343,9 @@ func build(b ServiceBuild, tag string, opts BuildOptions) error {
 	}
 
 	for _, a := range ba {
-		args = append(args, "--build-arg", fmt.Sprintf("%s=%s", a, opts.Env[a]))
+		if v, ok := opts.Env[a]; ok {
+			args = append(args, "--build-arg", fmt.Sprintf("%s=%s", a, v))
+		}
 	}
 
 	args = append(args, path)
@@ -371,9 +373,11 @@ func buildArgs(dockerfile string) ([]string, error) {
 			continue
 		}
 
+		parts := strings.Split(fields[1], "=")
+
 		switch fields[0] {
 		case "ARG":
-			args = append(args, fields[1])
+			args = append(args, strings.TrimSpace(parts[0]))
 		}
 	}
 
