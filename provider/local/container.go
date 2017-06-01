@@ -22,6 +22,7 @@ type container struct {
 	Image    string
 	Labels   map[string]string
 	Id       string
+	Memory   int
 	Name     string
 	Port     containerPort
 	Volumes  []string
@@ -118,6 +119,10 @@ func (p *Provider) containerStart(c container, app, release string) (string, err
 
 	for k, v := range c.Env {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
+	}
+
+	if m := c.Memory; m > 0 {
+		args = append(args, "--memory", fmt.Sprintf("%dm", m))
 	}
 
 	if p := c.Port.Container; p != 0 {
