@@ -60,6 +60,8 @@ func SystemOptions(w http.ResponseWriter, r *http.Request, c *api.Context) error
 }
 
 func SystemProxy(rw io.ReadWriteCloser, c *api.Context) error {
+	// defer rw.Close()
+
 	host := c.Var("host")
 	port := c.Var("port")
 

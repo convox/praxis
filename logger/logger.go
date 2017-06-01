@@ -43,6 +43,12 @@ func (l *Logger) At(at string) *Logger {
 	return l.Replace("at", at)
 }
 
+func (l *Logger) Errch() chan error {
+	ch := make(chan error)
+	go l.Error(<-ch)
+	return ch
+}
+
 func (l *Logger) Error(err error) error {
 	if st, ok := err.(stackTracer); ok {
 		l.Logf("error=%q", err.Error())

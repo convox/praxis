@@ -120,6 +120,9 @@ func runResourcesProxy(c *cli.Context) error {
 			return err
 		}
 
+		fmt.Printf("u.Hostname() = %+v\n", u.Hostname())
+		fmt.Printf("pi = %+v\n", pi)
+
 		r, err := Rack.SystemProxy(u.Hostname(), pi, cn)
 		if err != nil {
 			return err

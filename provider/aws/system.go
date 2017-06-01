@@ -12,6 +12,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 	"github.com/fatih/color"
 )
@@ -110,9 +111,12 @@ func (p *Provider) SystemProxy(host string, port int, in io.Reader) (io.ReadClos
 		return nil, err
 	}
 
-	go io.Copy(cn, in)
+	r, w := io.Pipe()
 
-	return cn, nil
+	go helpers.StreamAsync(cn, in, nil)
+	go helpers.StreamAsync(w, cn, nil)
+
+	return r, nil
 }
 
 func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {
