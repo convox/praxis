@@ -100,6 +100,25 @@ func TestManifestLoad(t *testing.T) {
 					Memory: 512,
 				},
 			},
+			manifest.Service{
+				Name: "foo",
+				Build: manifest.ServiceBuild{
+					Path: ".",
+				},
+				Command: manifest.ServiceCommand{
+					Development: "foo",
+					Production:  "foo",
+				},
+				Health: manifest.ServiceHealth{
+					Interval: 5,
+					Path:     "/",
+					Timeout:  3,
+				},
+				Scale: manifest.ServiceScale{
+					Count:  manifest.ServiceCount{Min: 0, Max: 0},
+					Memory: 256,
+				},
+			},
 		},
 		Tables: manifest.Tables{
 			manifest.Table{
