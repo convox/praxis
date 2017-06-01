@@ -56,6 +56,10 @@ func (p *Provider) AppDelete(app string) error {
 		return errors.WithStack(log.Error(err))
 	}
 
+	if err := cache.Clear("AppGet", app); err != nil {
+		return errors.WithStack(log.Error(err))
+	}
+
 	return log.Success()
 }
 

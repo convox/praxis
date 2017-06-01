@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -85,6 +86,10 @@ func (p *Provider) Init() error {
 }
 
 func (p *Provider) logger(at string) *logger.Logger {
+	if p.Test {
+		return logger.NewWriter("", ioutil.Discard)
+	}
+
 	log := logger.New("ns=local")
 
 	if id := p.Context().Value("request.id"); id != nil {
