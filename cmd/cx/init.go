@@ -73,6 +73,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			cmd.Production = service.Command.String
 		}
 
+		// cpu_shares
+		if service.Cpu != 0 {
+			fmt.Println("INFO: cpu_shares are not configurable via convox.yml")
+		}
+
 		s := manifest.Service{
 			Name:    name,
 			Build:   b,
