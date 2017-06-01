@@ -149,6 +149,8 @@ func (v Services) MarshalYAML() (interface{}, error) {
 
 		service["environment"] = s.Environment
 
+		service["image"] = s.Image
+
 		services[s.Name] = service
 	}
 
