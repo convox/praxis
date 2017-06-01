@@ -78,6 +78,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Println("INFO: cpu_shares are not configurable via convox.yml")
 		}
 
+		// entrypoint
+		if service.Entrypoint != "" {
+			fmt.Println("WARNING: The entrypoint key is not supported in convox.yml. Use ENTRYPOINT in your Dockerfile instead.")
+		}
+
 		s := manifest.Service{
 			Name:    name,
 			Build:   b,
