@@ -123,8 +123,11 @@ func (v *Resource) SetName(name string) error {
 func (v Services) MarshalYAML() (interface{}, error) {
 	services := make(map[string]interface{})
 
-	for _, service := range v {
-		services[service.Name] = ""
+	for _, s := range v {
+		service := make(map[string]interface{})
+		service["build"] = s.Build.Path
+
+		services[s.Name] = service
 	}
 
 	return services, nil

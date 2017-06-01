@@ -45,11 +45,16 @@ func runInit(c *cli.Context) error {
 func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 	var services manifest.Services
 
-	for name, _ := range mOld.Services {
-		service := manifest.Service{
-			Name: name,
+	for name, service := range mOld.Services {
+		b := manifest.ServiceBuild{
+			Path: service.Build.Context,
 		}
-		services = append(services, service)
+
+		s := manifest.Service{
+			Name:  name,
+			Build: b,
+		}
+		services = append(services, s)
 	}
 
 	m := manifest.Manifest{
