@@ -122,7 +122,7 @@ func (p *Provider) containerStart(c container, app, release string) (string, err
 	}
 
 	if m := c.Memory; m > 0 {
-		args = append(args, "--memory", fmt.Sprintf("%dm", m))
+		args = append(args, "--memory-reservation", fmt.Sprintf("%dm", m))
 	}
 
 	if p := c.Port.Container; p != 0 {
