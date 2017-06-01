@@ -107,5 +107,10 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 		Services: services,
 	}
 
+	err := m.ApplyDefaults()
+	if err != nil {
+		return nil, err
+	}
+
 	return &m, nil
 }
