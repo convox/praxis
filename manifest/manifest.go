@@ -16,15 +16,15 @@ const (
 )
 
 type Manifest struct {
-	Balancers   Balancers
-	Environment Environment
-	Keys        Keys
-	Queues      Queues
-	Resources   Resources
-	Services    Services
-	Tables      Tables
-	Timers      Timers
-	Workflows   Workflows
+	Balancers   Balancers   `yaml:"balancers,omitempty"`
+	Environment Environment `yaml:"environment,omitempty"`
+	Keys        Keys        `yaml:"keys,omitempty"`
+	Queues      Queues      `yaml:"queues,omitempty"`
+	Resources   Resources   `yaml:"resources,omitempty"`
+	Services    Services    `yaml:"services,omitempty"`
+	Tables      Tables      `yaml:"tables,omitempty"`
+	Timers      Timers      `yaml:"timers,omitempty"`
+	Workflows   Workflows   `yaml:"workflows,omitempty"`
 }
 
 func Load(data []byte, env Environment) (*Manifest, error) {
