@@ -127,19 +127,7 @@ func (v Services) MarshalYAML() (interface{}, error) {
 	for _, s := range v {
 		service := make(map[string]interface{})
 
-		// If there is a build key
-		if !reflect.DeepEqual(s.Build, ServiceBuild{}) {
-			// If there are build args make build a map
-			if len(s.Build.Args) > 0 {
-				buildMap := make(map[string]interface{})
-				buildMap["args"] = s.Build.Args
-				buildMap["path"] = s.Build.Path
-				service["build"] = buildMap
-			} else {
-				service["build"] = s.Build.Path
-			}
-
-		}
+		service["build"] = s.Build.Path
 
 		command := make(map[string]string)
 		command["development"] = s.Command.Development
