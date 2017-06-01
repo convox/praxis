@@ -91,6 +91,14 @@ func Clear(collection string, key interface{}) error {
 	return nil
 }
 
+func ClearAll() error {
+	for k := range cache {
+		delete(cache, k)
+	}
+
+	return nil
+}
+
 func hashKey(key interface{}) (string, error) {
 	data, err := json.Marshal(key)
 
