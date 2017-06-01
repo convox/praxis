@@ -393,6 +393,10 @@
         "DeploymentConfiguration": { "MinimumHealthyPercent": "50", "MaximumPercent": "200" },
         "DesiredCount": "2",
         "LoadBalancers": [ { "ContainerName": "rack", "ContainerPort": "3000", "TargetGroupArn": { "Ref": "BalancerTargetGroup" } } ],
+        "PlacementStrategies": [
+          { "Type": "spread", "Field": "attribute:ecs.availability-zone" },
+          { "Type": "spread", "Field": "instanceId" }
+        ],
         "Role": { "Ref": "RackServiceRole" },
         "TaskDefinition": { "Ref": "RackTasks" }
       }
