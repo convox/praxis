@@ -121,7 +121,13 @@ func (v *Resource) SetName(name string) error {
 }
 
 func (v Services) MarshalYAML() (interface{}, error) {
-	return nil, fmt.Errorf("unimplemented")
+	services := make(map[string]interface{})
+
+	for _, service := range v {
+		services[service.Name] = ""
+	}
+
+	return services, nil
 }
 
 func (v *Services) UnmarshalYAML(unmarshal func(interface{}) error) error {
