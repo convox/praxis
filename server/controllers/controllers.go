@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"context"
+
 	"github.com/convox/praxis/provider"
 	"github.com/convox/praxis/types"
 	"github.com/pkg/errors"
@@ -22,7 +24,7 @@ func Setup() error {
 
 	Provider = p
 
-	go p.Workers()
+	go Provider.WithContext(context.WithValue(context.Background(), "request.id", "workers")).Workers()
 
 	return nil
 }
