@@ -367,24 +367,26 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 			}
 		}
 
-		cs = append(cs, container{
-			Name:    fmt.Sprintf("%s.%s.service.%s.1", p.Name, app, s.Name),
-			Image:   fmt.Sprintf("%s/%s/%s:%s", p.Name, app, s.Name, r.Build),
-			Command: cmd,
-			Env:     e,
-			Memory:  s.Scale.Memory,
-			Volumes: s.Volumes,
-			Labels: map[string]string{
-				"convox.rack":    p.Name,
-				"convox.version": p.Version,
-				"convox.app":     app,
-				"convox.release": release,
-				"convox.type":    "service",
-				"convox.name":    s.Name,
-				"convox.service": s.Name,
-				"convox.index":   "1",
-			},
-		})
+		for i := 1; i <= s.Scale.Count.Min; i++ {
+			cs = append(cs, container{
+				Name:    fmt.Sprintf("%s.%s.service.%s.%d", p.Name, app, s.Name, i),
+				Image:   fmt.Sprintf("%s/%s/%s:%s", p.Name, app, s.Name, r.Build),
+				Command: cmd,
+				Env:     e,
+				Memory:  s.Scale.Memory,
+				Volumes: s.Volumes,
+				Labels: map[string]string{
+					"convox.rack":    p.Name,
+					"convox.version": p.Version,
+					"convox.app":     app,
+					"convox.release": release,
+					"convox.type":    "service",
+					"convox.name":    s.Name,
+					"convox.service": s.Name,
+					"convox.index":   fmt.Sprintf("%d", i),
+				},
+			})
+		}
 	}
 
 	return cs, nil

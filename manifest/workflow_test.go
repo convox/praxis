@@ -8,7 +8,7 @@ import (
 )
 
 func TestWorkflowSteps(t *testing.T) {
-	m, err := testdataManifest("full", manifest.Environment{})
+	m, err := testdataManifest("full", manifest.Environment{"SECRET": "shh"})
 	if !assert.NoError(t, err) {
 		return
 	}

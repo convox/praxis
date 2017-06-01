@@ -29,8 +29,7 @@ services:
       interval: 10
     resources:
       - database
-    scale:
-      count: 3-10
+    scale: 3-10
   proxy:
     command: bash
     image: ubuntu:16.04
@@ -38,6 +37,7 @@ services:
       - SECRET
     health: /auth
     scale:
+      count: 1
       memory: 512
 tables:
   proxies:
