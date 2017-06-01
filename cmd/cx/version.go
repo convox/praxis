@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
@@ -41,7 +42,7 @@ func latestVersion() (string, error) {
 		return "", err
 	}
 
-	req.Header.Set("User-Agent", fmt.Sprintf("convox/%s (%s)", Version, id))
+	req.Header.Set("User-Agent", fmt.Sprintf("convox/%s (%s; %s/%s)", Version, id, runtime.GOOS, runtime.GOARCH))
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
