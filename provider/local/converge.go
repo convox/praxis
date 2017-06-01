@@ -317,7 +317,6 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 					"convox.release": release,
 					"convox.type":    "endpoint",
 					"convox.name":    s.Name,
-					"convox.service": s.Name,
 					"convox.port":    strconv.Itoa(s.Port.Port),
 				},
 			})
