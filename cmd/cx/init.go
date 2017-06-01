@@ -53,11 +53,9 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 		}
 
 		// build args
-		bArgs := []string{}
-		for k, v := range service.Build.Args {
-			bArgs = append(bArgs, fmt.Sprintf("%s=%s", k, v))
+		if len(service.Build.Args) > 0 {
+			fmt.Println("WARNING: Build args are not supported in convox.yml. Use ARG in your Dockerfile instead.")
 		}
-		b.Args = bArgs
 
 		// build dockerfile
 		if service.Build.Dockerfile != "" {
