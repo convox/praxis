@@ -93,6 +93,9 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			}
 		}
 
+		//TODO: labels
+		//TODO: links
+
 		s := manifest.Service{
 			Name:        name,
 			Build:       b,
