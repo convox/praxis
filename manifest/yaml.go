@@ -287,6 +287,42 @@ func (v *ServicePort) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+func (v *ServiceScale) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var w interface{}
+
+	if err := unmarshal(&w); err != nil {
+		return err
+	}
+
+	switch t := w.(type) {
+	case int:
+		v.Count.Min = t
+		v.Count.Max = t
+	case string:
+		var c ServiceCount
+		if err := remarshal(w, &c); err != nil {
+			return err
+		}
+		v.Count = c
+	case map[interface{}]interface{}:
+		if w, ok := t["count"].(interface{}); ok {
+			var c ServiceCount
+			if err := remarshal(w, &c); err != nil {
+				return err
+			}
+			v.Count = c
+		}
+		if w, ok := t["memory"].(int); ok {
+			v.Memory = w
+		}
+	default:
+		fmt.Printf("w = %+v\n", w)
+		return fmt.Errorf("unknown type for service scale: %T", t)
+	}
+
+	return nil
+}
+
 func (v Tables) MarshalYAML() (interface{}, error) {
 	return nil, fmt.Errorf("unimplemented")
 }

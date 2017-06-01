@@ -9,7 +9,7 @@ import (
 )
 
 func TestManifestLoad(t *testing.T) {
-	m, err := testdataManifest("full", manifest.Environment{"FOO": "bar"})
+	m, err := testdataManifest("full", manifest.Environment{"FOO": "bar", "SECRET": "shh"})
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -34,7 +34,8 @@ func TestManifestLoad(t *testing.T) {
 			},
 		},
 		Environment: manifest.Environment{
-			"FOO": "bar",
+			"FOO":    "bar",
+			"SECRET": "shh",
 		},
 		Keys: manifest.Keys{
 			manifest.Key{
@@ -95,7 +96,7 @@ func TestManifestLoad(t *testing.T) {
 					"SECRET",
 				},
 				Scale: manifest.ServiceScale{
-					Count:  manifest.ServiceCount{Min: 1},
+					Count:  manifest.ServiceCount{Min: 1, Max: 1},
 					Memory: 512,
 				},
 			},
