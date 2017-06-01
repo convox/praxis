@@ -11,10 +11,10 @@ import (
 )
 
 func (p *Provider) ObjectExists(app, key string) (bool, error) {
-	log := p.logger("ObjectExists").Append("app=%s key=%q", app, key)
+	log := p.logger("ObjectExists").Append("app=%q key=%q", app, key)
 
 	if _, err := p.AppGet(app); err != nil {
-		return false, err
+		return false, log.Error(err)
 	}
 
 	fn := filepath.Join(p.Root, "apps", app, "objects", key)
@@ -32,37 +32,39 @@ func (p *Provider) ObjectExists(app, key string) (bool, error) {
 }
 
 func (p *Provider) ObjectFetch(app, key string) (io.ReadCloser, error) {
+	log := p.logger("ObjectFetch").Append("app=%q key=%q", app, key)
+
 	if _, err := p.AppGet(app); err != nil {
-		return nil, err
+		return nil, log.Error(err)
 	}
 
 	ex, err := p.ObjectExists(app, key)
 	if err != nil {
-		return nil, err
+		return nil, log.Error(err)
 	}
 	if !ex {
-		return nil, fmt.Errorf("no such key: %s", key)
+		return nil, log.Error(fmt.Errorf("no such key: %s", key))
 	}
 
 	fn := filepath.Join(p.Root, "apps", app, "objects", key)
 
 	fd, err := os.Open(fn)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
-	return fd, nil
+	return fd, log.Success()
 }
 
 func (p *Provider) ObjectStore(app, key string, r io.Reader, opts types.ObjectStoreOptions) (*types.Object, error) {
 	log := p.logger("ObjectStore").Append("app=%s key=%q", app, key)
 
 	if _, err := p.AppGet(app); err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	if key == "" {
-		return nil, fmt.Errorf("key must not be blank")
+		return nil, log.Error(fmt.Errorf("key must not be blank"))
 	}
 
 	fn := filepath.Join(p.Root, "apps", app, "objects", key)

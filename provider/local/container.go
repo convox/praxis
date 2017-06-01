@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 type container struct {
@@ -34,8 +36,6 @@ type containerPort struct {
 }
 
 func (p *Provider) containerConverge(c container, app, release string) (string, error) {
-	log := Logger.At("converge.container").Append("app=%s name=%s", app, c.Name).Start()
-
 	args := []string{}
 
 	for k, v := range c.Labels {
@@ -44,7 +44,7 @@ func (p *Provider) containerConverge(c container, app, release string) (string, 
 
 	ids, err := containerList(args...)
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 
 	id := ""
@@ -55,21 +55,16 @@ func (p *Provider) containerConverge(c container, app, release string) (string, 
 
 		i, err := p.containerStart(c, app, release)
 		if err != nil {
-			return "", err
+			return "", errors.WithStack(err)
 		}
 
 		id = i
-
-		log = log.Append("action=start")
 	case 1:
 		id = ids[0]
-
-		log = log.Append("action=found")
 	default:
 		return "", fmt.Errorf("matched more than one container")
 	}
 
-	log.Success()
 	return id, nil
 }
 

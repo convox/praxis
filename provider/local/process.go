@@ -15,34 +15,43 @@ import (
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 	"github.com/kr/pty"
+	"github.com/pkg/errors"
 )
 
 func (p *Provider) ProcessExec(app, pid, command string, opts types.ProcessExecOptions) (int, error) {
+	log := p.logger("ProcessExec").Append("app=%q pid=%q command=%q", app, pid, command)
+
 	if _, err := p.AppGet(app); err != nil {
-		return 0, err
+		return 0, log.Error(err)
 	}
 
 	cmd := exec.Command("docker", "exec", "-it", pid, "sh", "-c", command)
 
 	fd, err := pty.Start(cmd)
 	if err != nil {
-		return 0, err
+		return 0, errors.WithStack(log.Error(err))
 	}
 
 	go io.Copy(fd, opts.Input)
 	go io.Copy(opts.Output, fd)
 
 	if err := cmd.Wait(); err != nil {
-		return 0, err
+		return 0, errors.WithStack(log.Error(err))
 	}
 
-	return 0, nil
+	return 0, log.Success()
 }
 
 func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
+	log := p.logger("ProcessGet").Append("app=%q pid=%q", app, pid)
+
+	if _, err := p.AppGet(app); err != nil {
+		return nil, log.Error(err)
+	}
+
 	data, err := exec.Command("docker", "inspect", pid, "--format", "{{.ID}}").CombinedOutput()
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	fpid := strings.TrimSpace(string(data))
@@ -55,17 +64,23 @@ func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
 
 	pss, err := processList(filters, true)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	if len(pss) != 1 {
-		return nil, fmt.Errorf("no such process: %s", pid)
+		return nil, log.Error(fmt.Errorf("no such process: %s", pid))
 	}
 
-	return &pss[0], nil
+	return &pss[0], log.Success()
 }
 
 func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types.Processes, error) {
+	log := p.logger("ProcessGet").Append("app=%q", app)
+
+	if _, err := p.AppGet(app); err != nil {
+		return nil, log.Error(err)
+	}
+
 	filters := []string{
 		fmt.Sprintf("label=convox.app=%s", app),
 		fmt.Sprintf("label=convox.rack=%s", p.Name),
@@ -76,18 +91,25 @@ func (p *Provider) ProcessList(app string, opts types.ProcessListOptions) (types
 		filters = append(filters, fmt.Sprintf("label=convox.service=%s", opts.Service))
 	}
 
-	return processList(filters, false)
+	pss, err := processList(filters, false)
+	if err != nil {
+		return nil, errors.WithStack(log.Error(err))
+	}
+
+	return pss, log.Success()
 }
 
 func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.ReadCloser, error) {
+	log := p.logger("ProcessLogs").Append("app=%q pid=%q", app, pid)
+
 	_, err := p.AppGet(app)
 	if err != nil {
-		return nil, err
+		return nil, log.Error(err)
 	}
 
 	ps, err := p.ProcessGet(app, pid)
 	if err != nil {
-		return nil, err
+		return nil, log.Error(err)
 	}
 
 	cr, cw := io.Pipe()
@@ -106,7 +128,7 @@ func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.Read
 	cmd.Stderr = cw
 
 	if err := cmd.Start(); err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	s := bufio.NewScanner(cr)
@@ -129,17 +151,19 @@ func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.Read
 		cmd.Wait()
 	}()
 
-	return rr, nil
+	return rr, log.Success()
 }
 
 func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
+	log := p.logger("ProcessRun").Append("app=%q", app)
+
 	if opts.Name != "" {
 		exec.Command("docker", "rm", "-f", opts.Name).Run()
 	}
 
 	oargs, err := p.argsFromOpts(app, opts)
 	if err != nil {
-		return 0, err
+		return 0, errors.WithStack(log.Error(err))
 	}
 
 	cmd := exec.Command("docker", oargs...)
@@ -147,7 +171,7 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 	if opts.Input != nil {
 		rw, err := pty.Start(cmd)
 		if err != nil {
-			return 0, err
+			return 0, errors.WithStack(log.Error(err))
 		}
 		defer rw.Close()
 
@@ -158,22 +182,24 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 		cmd.Stderr = opts.Output
 
 		if err := cmd.Start(); err != nil {
-			return 0, err
+			return 0, errors.WithStack(log.Error(err))
 		}
 	}
 
 	if err := cmd.Wait(); err != nil {
 		if ee, ok := err.(*exec.ExitError); ok {
 			if status, ok := ee.Sys().(syscall.WaitStatus); ok {
-				return status.ExitStatus(), nil
+				return status.ExitStatus(), log.Success()
 			}
 		}
 	}
 
-	return 0, err
+	return 0, log.Success()
 }
 
 func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
+	log := p.logger("ProcessStart").Append("app=%q", app)
+
 	if opts.Name != "" {
 		exec.Command("docker", "rm", "-f", opts.Name).Run()
 	}
@@ -181,7 +207,7 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 	if opts.Name == "" {
 		rs, err := types.Key(6)
 		if err != nil {
-			return "", err
+			return "", errors.WithStack(log.Error(err))
 		}
 
 		opts.Name = fmt.Sprintf("%s.%s.process.%s.%s", p.Name, app, opts.Service, rs)
@@ -189,7 +215,7 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 
 	oargs, err := p.argsFromOpts(app, opts)
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(log.Error(err))
 	}
 
 	args := append(oargs[0:1], "--detach")
@@ -197,14 +223,20 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 
 	data, err := exec.Command("docker", args...).CombinedOutput()
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(log.Error(err))
 	}
 
-	return strings.TrimSpace(string(data)), nil
+	return strings.TrimSpace(string(data)), log.Success()
 }
 
 func (p *Provider) ProcessStop(app, pid string) error {
-	return exec.Command("docker", "stop", "-t", "2", pid).Run()
+	log := p.logger("ProcessStop").Append("app=%q pid=%q", app, pid)
+
+	if err := exec.Command("docker", "stop", "-t", "2", pid).Run(); err != nil {
+		return errors.WithStack(log.Error(err))
+	}
+
+	return log.Success()
 }
 
 func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]string, error) {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/manifest"
+	"github.com/pkg/errors"
 )
 
 var convergeLock sync.Mutex
@@ -17,32 +18,32 @@ func (p *Provider) converge(app string) error {
 	convergeLock.Lock()
 	defer convergeLock.Unlock()
 
-	log := Logger.At("converge").Append("app=%s", app).Start()
+	log := p.logger("converge").Append("app=%q", app)
 
 	m, r, err := helpers.AppManifest(p, app)
 	if err != nil {
-		return err
+		return log.Error(err)
 	}
 
 	cs := []container{}
 
 	c, err := p.balancerContainers(m.Balancers, app, r.Id, r.Stage)
 	if err != nil {
-		return err
+		return errors.WithStack(log.Error(err))
 	}
 
 	cs = append(cs, c...)
 
 	c, err = p.resourceContainers(m.Resources, app, r.Id)
 	if err != nil {
-		return err
+		return errors.WithStack(log.Error(err))
 	}
 
 	cs = append(cs, c...)
 
 	c, err = p.serviceContainers(m.Services, app, r.Id, r.Stage)
 	if err != nil {
-		return err
+		return errors.WithStack(log.Error(err))
 	}
 
 	cs = append(cs, c...)
@@ -52,14 +53,14 @@ func (p *Provider) converge(app string) error {
 	for i, c := range cs {
 		id, err := p.containerConverge(c, app, r.Id)
 		if err != nil {
-			return err
+			return errors.WithStack(log.Error(err))
 		}
 
 		cs[i].Id = id
 
 		if c.Hostname != "" {
 			if err := p.containerRegister(cs[i]); err != nil {
-				return err
+				return errors.WithStack(log.Error(err))
 			}
 		}
 	}
@@ -69,7 +70,7 @@ func (p *Provider) converge(app string) error {
 		"convox.app":  app,
 	})
 	if err != nil {
-		return err
+		return errors.WithStack(log.Error(err))
 	}
 
 	ps, err := containersByLabels(map[string]string{
@@ -78,7 +79,7 @@ func (p *Provider) converge(app string) error {
 		"convox.type": "process",
 	})
 	if err != nil {
-		return err
+		return errors.WithStack(log.Error(err))
 	}
 
 	for _, rc := range running {
@@ -106,28 +107,25 @@ func (p *Provider) converge(app string) error {
 		}
 	}
 
-	log.Success()
-	return nil
+	return log.Success()
 }
 
 func (p *Provider) convergePrune() error {
 	convergeLock.Lock()
 	defer convergeLock.Unlock()
 
-	log := Logger.At("converge.prune").Start()
+	log := p.logger("convergePrune")
 
 	apps, err := p.AppList()
 	if err != nil {
-		log.Error(err)
-		return err
+		return errors.WithStack(log.Error(err))
 	}
 
 	all, err := containersByLabels(map[string]string{
 		"convox.rack": p.Name,
 	})
 	if err != nil {
-		log.Error(err)
-		return err
+		return errors.WithStack(log.Error(err))
 	}
 
 	appc := map[string]bool{}
@@ -138,8 +136,7 @@ func (p *Provider) convergePrune() error {
 			"convox.app":  a.Name,
 		})
 		if err != nil {
-			log.Error(err)
-			return err
+			return errors.WithStack(log.Error(err))
 		}
 
 		for _, c := range ac {
@@ -154,7 +151,7 @@ func (p *Provider) convergePrune() error {
 		}
 	}
 
-	return nil
+	return log.Success()
 }
 
 func resourcePort(kind string) (int, error) {

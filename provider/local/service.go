@@ -5,12 +5,15 @@ import (
 
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
+	"github.com/pkg/errors"
 )
 
 func (p *Provider) ServiceList(app string) (types.Services, error) {
+	log := p.logger("ServiceList").Append("app=%q", app)
+
 	m, _, err := helpers.AppManifest(p, app)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	ss := types.Services{}
@@ -28,5 +31,5 @@ func (p *Provider) ServiceList(app string) (types.Services, error) {
 		})
 	}
 
-	return ss, nil
+	return ss, log.Success()
 }
