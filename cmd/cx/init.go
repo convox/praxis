@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/stdcli"
@@ -62,10 +63,20 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Println("WARNING: The dockerfile key is not supported in convox.yml. Please rename your file to \"Dockerfile\".")
 		}
 
-		// service
+		// command
+		var cmd manifest.ServiceCommand
+		if len(service.Command.Array) > 0 {
+			cmd.Development = strings.Join(service.Command.Array, " ")
+			cmd.Production = strings.Join(service.Command.Array, " ")
+		} else {
+			cmd.Development = service.Command.String
+			cmd.Production = service.Command.String
+		}
+
 		s := manifest.Service{
-			Name:  name,
-			Build: b,
+			Name:    name,
+			Build:   b,
+			Command: cmd,
 		}
 		services = append(services, s)
 	}
