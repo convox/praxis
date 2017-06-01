@@ -59,7 +59,7 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 
 		// build dockerfile
 		if service.Build.Dockerfile != "" {
-			fmt.Println("The dockerfile key is not supported in convox.yml. Please rename your file to \"Dockerfile\".")
+			fmt.Println("WARNING: The dockerfile key is not supported in convox.yml. Please rename your file to \"Dockerfile\".")
 		}
 
 		// service
