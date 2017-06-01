@@ -98,6 +98,7 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			Build:       b,
 			Command:     cmd,
 			Environment: env,
+			Image:       service.Image,
 		}
 		services = append(services, s)
 	}
