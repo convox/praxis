@@ -123,9 +123,22 @@ func (v *Resource) SetName(name string) error {
 func (v Services) MarshalYAML() (interface{}, error) {
 	services := make(map[string]interface{})
 
+	// Loop over all of the services
 	for _, s := range v {
 		service := make(map[string]interface{})
-		service["build"] = s.Build.Path
+
+		// If there is a build key
+		if !reflect.DeepEqual(s.Build, ServiceBuild{}) {
+			// If there are build args make build a map
+			if len(s.Build.Args) > 0 {
+				buildMap := make(map[string]interface{})
+				buildMap["args"] = s.Build.Args
+				buildMap["path"] = s.Build.Path
+				service["build"] = buildMap
+			} else {
+				service["build"] = s.Build.Path
+			}
+		}
 
 		services[s.Name] = service
 	}

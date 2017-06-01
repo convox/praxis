@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"github.com/convox/praxis/manifest"
@@ -46,10 +47,19 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 	var services manifest.Services
 
 	for name, service := range mOld.Services {
+		// build
 		b := manifest.ServiceBuild{
 			Path: service.Build.Context,
 		}
 
+		// build args
+		bArgs := []string{}
+		for k, v := range service.Build.Args {
+			bArgs = append(bArgs, fmt.Sprintf("%s=%s", k, v))
+		}
+		b.Args = bArgs
+
+		// service
 		s := manifest.Service{
 			Name:  name,
 			Build: b,
