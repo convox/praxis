@@ -223,6 +223,7 @@ func (p *Provider) balancerContainers(balancers manifest.Balancers, app, release
 					Host:      443,
 					Container: 3000,
 				},
+				Memory:  64,
 				Image:   sys.Image,
 				Command: command,
 				Labels: map[string]string{
@@ -306,6 +307,7 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 					Host:      443,
 					Container: 3000,
 				},
+				Memory:  64,
 				Image:   sys.Image,
 				Command: []string{"balancer", "https", "target", fmt.Sprintf("%s://%s:%d", s.Port.Scheme, s.Name, s.Port.Port)},
 				Labels: map[string]string{
@@ -371,6 +373,7 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 			Image:   fmt.Sprintf("%s/%s/%s:%s", p.Name, app, s.Name, r.Build),
 			Command: cmd,
 			Env:     e,
+			Memory:  s.Scale.Memory,
 			Volumes: s.Volumes,
 			Labels: map[string]string{
 				"convox.rack":    p.Name,
