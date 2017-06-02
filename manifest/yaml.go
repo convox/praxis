@@ -383,7 +383,15 @@ func (v *Table) SetName(name string) error {
 }
 
 func (v Timers) MarshalYAML() (interface{}, error) {
-	return nil, fmt.Errorf("unimplemented")
+	timers := make(map[string]interface{})
+	for _, t := range v {
+		timer := make(map[string]string)
+		timer["command"] = t.Command
+		timer["schedule"] = t.Schedule
+		timer["service"] = t.Service
+		timers[t.Name] = timer
+	}
+	return timers, nil
 }
 
 func (v *Timers) UnmarshalYAML(unmarshal func(interface{}) error) error {
