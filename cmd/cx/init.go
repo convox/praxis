@@ -165,6 +165,13 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Printf("INFO: %s - Setting idle timeout is not supported.\n", service.Name)
 		}
 
+		// convox.port..protocol
+		// convox.port..proxy
+		// convox.port..secure
+		if len(service.LabelsByPrefix("convox.idle.timeout")) > 0 {
+			fmt.Printf("INFO: %s - Configuring balancer via convox.port labels is not supported.\n", service.Name)
+		}
+
 		//TODO: links
 
 		// mem_limit
