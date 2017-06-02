@@ -151,7 +151,7 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 
 		// convox.health.port
 		if len(service.LabelsByPrefix("convox.health.port")) > 0 {
-			fmt.Printf("INFO: %s - Declaring health check port is not necessary.\n", service.Name)
+			fmt.Printf("INFO: %s - Setting health check port is not necessary.\n", service.Name)
 		}
 
 		//TODO: links
