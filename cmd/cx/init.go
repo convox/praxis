@@ -46,6 +46,7 @@ func runInit(c *cli.Context) error {
 
 func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 	services := manifest.Services{}
+	timers := make(manifest.Timers, 0)
 
 	for name, service := range mOld.Services {
 		// build
@@ -103,6 +104,18 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Printf("WARNING: %s - Disabling balancers with convox.balancer=false is not supported.\n", service.Name)
 		}
 
+		// convox.cron
+		for k, v := range service.LabelsByPrefix("convox.cron") {
+			timer := manifest.Timer{}
+			ks := strings.Split(k, ".")
+			tokens := strings.Fields(v)
+			timer.Name = ks[len(ks)-1]
+			timer.Command = strings.Join(tokens[5:], " ")
+			timer.Schedule = strings.Join(tokens[0:5], " ")
+			timer.Service = service.Name
+			timers = append(timers, timer)
+		}
+
 		//TODO: links
 
 		// mem_limit
@@ -155,6 +168,7 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 
 	m := manifest.Manifest{
 		Services: services,
+		Timers:   timers,
 	}
 
 	err := m.ApplyDefaults()
