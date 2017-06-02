@@ -160,6 +160,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Printf("INFO: %s - Setting health check thresholds is not supported.\n", service.Name)
 		}
 
+		// convox.idle.timeout
+		if len(service.LabelsByPrefix("convox.idle.timeout")) > 0 {
+			fmt.Printf("INFO: %s - Setting idle timeout is not supported.\n", service.Name)
+		}
+
 		//TODO: links
 
 		// mem_limit
