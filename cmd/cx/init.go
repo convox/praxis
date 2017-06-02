@@ -154,6 +154,12 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Printf("INFO: %s - Setting health check port is not necessary.\n", service.Name)
 		}
 
+		// convox.health.threshold.healthy
+		// convox.helath.threshold.unhealthy
+		if len(service.LabelsByPrefix("convox.health.threshold")) > 0 {
+			fmt.Printf("INFO: %s - Setting health check thresholds is not supported.\n", service.Name)
+		}
+
 		//TODO: links
 
 		// mem_limit
