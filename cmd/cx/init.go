@@ -98,6 +98,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Printf("WARNING: %s - Running a service as an agent is not supported.\n", service.Name)
 		}
 
+		// convox.balancer
+		if (len(service.Ports) > 0) && !service.HasBalancer() {
+			fmt.Printf("WARNING: %s - Disabling balancers with convox.balancer=false is not supported.\n", service.Name)
+		}
+
 		//TODO: links
 
 		// mem_limit
