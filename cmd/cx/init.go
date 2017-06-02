@@ -126,6 +126,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Printf("WARNING: %s - Setting deployment minimum is not supported.\n", service.Name)
 		}
 
+		// convox.draining.timeout
+		if len(service.LabelsByPrefix("convox.draining.timeout")) > 0 {
+			fmt.Printf("WARNING: %s - Setting draning timeout is not supported.\n", service.Name)
+		}
+
 		//TODO: links
 
 		// mem_limit
