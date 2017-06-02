@@ -137,7 +137,11 @@ func (v Services) MarshalYAML() (interface{}, error) {
 
 		service["environment"] = s.Environment
 
-		service["image"] = s.Image
+		health := make(map[string]interface{})
+		health["path"] = s.Health.Path
+		health["interval"] = s.Health.Interval
+		health["timeout"] = s.Health.Timeout
+		service["health"] = health
 
 		if s.Port.Scheme == "" {
 			service["port"] = fmt.Sprintf("%d", s.Port.Port)
