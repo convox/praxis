@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
 
 	"github.com/convox/praxis/manifest"
@@ -131,6 +132,23 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Printf("WARNING: %s - Setting draning timeout is not supported.\n", service.Name)
 		}
 
+		// convox.environment.secure
+		if len(service.LabelsByPrefix("convox.environment.secure")) > 0 {
+			fmt.Printf("INFO: %s - Declaring secure environment is not necessary. Praxis environments are secure by default.\n", service.Name)
+		}
+
+		// convox.health.path
+		// convox.health.timeout
+		health := manifest.ServiceHealth{}
+		if balancer := mOld.GetBalancer(service.Name); balancer != nil {
+			timeout, err := strconv.Atoi(balancer.HealthTimeout())
+			if err != nil {
+				fmt.Println("Well, shit.")
+			}
+			health.Path = balancer.HealthPath()
+			health.Timeout = timeout
+		}
+
 		//TODO: links
 
 		// mem_limit
@@ -173,6 +191,7 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			Build:       b,
 			Command:     cmd,
 			Environment: env,
+			Health:      health,
 			Image:       service.Image,
 			Port:        p,
 			Scale:       scale,
