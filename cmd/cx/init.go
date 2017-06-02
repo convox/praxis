@@ -126,6 +126,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			}
 		}
 
+		// privileged
+		if service.Privileged {
+			fmt.Printf("WARNING: %s - Privileged mode not supported.\n", service.Name)
+		}
+
 		s := manifest.Service{
 			Name:        name,
 			Build:       b,
@@ -134,6 +139,7 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			Image:       service.Image,
 			Port:        p,
 			Scale:       scale,
+			Volumes:     service.Volumes,
 		}
 		services = append(services, s)
 	}

@@ -153,6 +153,10 @@ func (v Services) MarshalYAML() (interface{}, error) {
 		scale["memory"] = s.Scale.Memory
 		service["scale"] = scale
 
+		if volumes := s.Volumes; len(volumes) > 0 {
+			service["volumes"] = volumes
+		}
+
 		services[s.Name] = service
 	}
 
