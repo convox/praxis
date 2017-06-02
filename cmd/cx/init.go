@@ -116,6 +116,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			timers = append(timers, timer)
 		}
 
+		// convox.deployment.maximum
+		if len(service.LabelsByPrefix("convox.deployment.maximum")) > 0 {
+			fmt.Printf("WARNING: %s - Setting deployment maximum is not supported.\n", service.Name)
+		}
+
 		//TODO: links
 
 		// mem_limit
