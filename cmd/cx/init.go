@@ -149,6 +149,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			health.Timeout = timeout
 		}
 
+		// convox.health.port
+		if len(service.LabelsByPrefix("convox.health.port")) > 0 {
+			fmt.Printf("INFO: %s - Declaring health check port is not necessary.\n", service.Name)
+		}
+
 		//TODO: links
 
 		// mem_limit
