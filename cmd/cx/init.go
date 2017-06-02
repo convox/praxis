@@ -102,12 +102,37 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			Memory: int(mb),
 		}
 
+		// ports
+		p := manifest.ServicePort{}
+		if len(service.Ports) > 1 {
+			fmt.Printf("WARNING: Multiple ports found for %s. Only 1 HTTP port per service is supported.\n", service.Name)
+		}
+		for _, port := range service.Ports {
+			if port.Protocol == "udp" {
+				fmt.Printf("WARNING: %s %s - UDP ports are not supported.\n", service.Name, port)
+				continue
+			}
+			switch port.Balancer {
+			case 80:
+				p.Port = port.Container
+				p.Scheme = "http"
+			case 443:
+				if p.Port != 80 {
+					p.Port = port.Container
+					p.Scheme = "https"
+				}
+			default:
+				fmt.Printf("WARNING: %s %s - Only HTTP ports supported.\n", service.Name, port)
+			}
+		}
+
 		s := manifest.Service{
 			Name:        name,
 			Build:       b,
 			Command:     cmd,
 			Environment: env,
 			Image:       service.Image,
+			Port:        p,
 			Scale:       scale,
 		}
 		services = append(services, s)
