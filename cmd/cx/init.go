@@ -121,6 +121,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Printf("WARNING: %s - Setting deployment maximum is not supported.\n", service.Name)
 		}
 
+		// convox.deployment.minimum
+		if len(service.LabelsByPrefix("convox.deployment.minimum")) > 0 {
+			fmt.Printf("WARNING: %s - Setting deployment minimum is not supported.\n", service.Name)
+		}
+
 		//TODO: links
 
 		// mem_limit
