@@ -93,7 +93,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			}
 		}
 
-		//TODO: labels
+		// convox.agent
+		if service.IsAgent() {
+			fmt.Printf("WARNING: %s - Running a service as an agent is not supported.\n", service.Name)
+		}
+
 		//TODO: links
 
 		// mem_limit
