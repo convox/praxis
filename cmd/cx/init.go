@@ -172,6 +172,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Printf("INFO: %s - Configuring balancer via convox.port labels is not supported.\n", service.Name)
 		}
 
+		// convox.start.shift
+		if len(service.LabelsByPrefix("convox.start.shift")) > 0 {
+			fmt.Printf("INFO: %s - Port shifting is no longer necessary. Use internal hostnames instead.\n", service.Name)
+		}
+
 		//TODO: links
 
 		// mem_limit
