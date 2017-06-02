@@ -45,7 +45,7 @@ func runInit(c *cli.Context) error {
 }
 
 func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
-	var services manifest.Services
+	services := manifest.Services{}
 
 	for name, service := range mOld.Services {
 		// build
