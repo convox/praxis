@@ -279,6 +279,10 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 		services = append(services, s)
 	}
 
+	if mOld.Networks != nil {
+		fmt.Println("INFO: Custom networks are not supported.")
+	}
+
 	m := manifest.Manifest{
 		Resources: resources,
 		Services:  services,
