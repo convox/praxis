@@ -108,7 +108,15 @@ func (v *Queue) SetName(name string) error {
 }
 
 func (v Resources) MarshalYAML() (interface{}, error) {
-	return nil, fmt.Errorf("unimplemented")
+	resources := make(map[string]interface{})
+
+	for _, r := range v {
+		resource := make(map[string]string)
+		resource["type"] = r.Type
+		resources[r.Name] = resource
+	}
+
+	return resources, nil
 }
 
 func (v *Resources) UnmarshalYAML(unmarshal func(interface{}) error) error {

@@ -45,11 +45,51 @@ func runInit(c *cli.Context) error {
 	return nil
 }
 
+func resourceService(service mv1.Service) bool {
+	resourceImages := []string{
+		"convox/postgres",
+		"convox/redis",
+	}
+
+	for _, image := range resourceImages {
+		if service.Image == image {
+			return true
+		}
+	}
+
+	return false
+}
+
 func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 	services := manifest.Services{}
+	resources := make(manifest.Resources, 0)
 	timers := make(manifest.Timers, 0)
 
 	for name, service := range mOld.Services {
+		// resources
+		serviceResources := []string{}
+
+		if resourceService(service) {
+			t := ""
+			switch service.Image {
+			case "convox/postgres":
+				t = "postgres"
+			case "convox/redis":
+				t = "redis"
+			default:
+				return nil, fmt.Errorf("%s is not a recognized resource image.", service.Image)
+			}
+
+			r := manifest.Resource{
+				Name: service.Name,
+				Type: t,
+			}
+			resources = append(resources, r)
+			serviceResources = append(serviceResources, service.Name)
+			fmt.Printf("INFO: Service %s has been migrated to a resource.\n", service.Name)
+			continue
+		}
+
 		// build
 		b := manifest.ServiceBuild{
 			Path: service.Build.Context,
@@ -222,6 +262,7 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			Health:      health,
 			Image:       service.Image,
 			Port:        p,
+			Resources:   serviceResources,
 			Scale:       scale,
 			Volumes:     service.Volumes,
 		}
@@ -229,8 +270,9 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 	}
 
 	m := manifest.Manifest{
-		Services: services,
-		Timers:   timers,
+		Resources: resources,
+		Services:  services,
+		Timers:    timers,
 	}
 
 	err := m.ApplyDefaults()
