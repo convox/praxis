@@ -68,7 +68,6 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 	for name, service := range mOld.Services {
 		// resources
 		serviceResources := []string{}
-
 		if resourceService(service) {
 			t := ""
 			switch service.Image {
@@ -79,13 +78,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			default:
 				return nil, fmt.Errorf("%s is not a recognized resource image.", service.Image)
 			}
-
 			r := manifest.Resource{
 				Name: service.Name,
 				Type: t,
 			}
 			resources = append(resources, r)
-			serviceResources = append(serviceResources, service.Name)
 			fmt.Printf("INFO: Service %s has been migrated to a resource.\n", service.Name)
 			continue
 		}
@@ -217,7 +214,20 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			fmt.Printf("INFO: %s - Port shifting is no longer necessary. Use internal hostnames instead.\n", service.Name)
 		}
 
-		//TODO: links
+		// links
+		for _, link := range service.Links {
+			resource := false
+			for _, sOld := range mOld.Services {
+				if (sOld.Name == link) && resourceService(sOld) {
+					serviceResources = append(serviceResources, service.Name)
+					resource = true
+					break
+				}
+			}
+			if !resource {
+				fmt.Printf("INFO: %s - Env vars not generated for linked service \"%s\". Use the internal URL https://%s.<app name>.convox instead.\n", service.Name, link, link)
+			}
+		}
 
 		// mem_limit
 		mb := service.Memory / (1024 * 1024) // bytes to Megabytes
