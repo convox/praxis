@@ -37,7 +37,6 @@ services:
       - SECRET
     health: /auth
     scale:
-      count: 1
       memory: 512
   foo:
     command: foo

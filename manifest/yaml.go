@@ -179,8 +179,6 @@ func (v *ServiceCommand) UnmarshalYAML(unmarshal func(interface{}) error) error 
 }
 
 func (v *ServiceCount) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	v.Min = 1
-
 	var w interface{}
 
 	if err := unmarshal(&w); err != nil {
@@ -291,6 +289,7 @@ func (v *ServicePort) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 func (v *ServiceScale) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	v.Count.Min = 1
+	v.Count.Max = 1
 
 	var w interface{}
 
