@@ -65,6 +65,17 @@ Runs on your laptop (or any single node). Great for development and CI.
 
 A fault-tolerant, highly scalable architecture built on modern AWS services such as ECS, ALB, and Lambda.
 
+### Docker
+
+Platform for running containers locally.  Please ensure you are sharing the following folders prior to installation (these are the default).
+```
+Docker -> Preferences -> File Sharing
+/Users
+/Volumes
+/private
+/tmp
+```
+
 ## INSTALLATION
 
 ### CLI
