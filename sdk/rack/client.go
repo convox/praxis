@@ -14,11 +14,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/convox/praxis/stdcli"
+
 	"golang.org/x/net/http2"
 	"golang.org/x/net/websocket"
 )
 
 type Client struct {
+	Debug    bool
 	Endpoint *url.URL
 	Key      string
 	Socket   string
@@ -303,9 +306,22 @@ func (c *Client) Request(method, path string, opts RequestOptions) (*http.Reques
 }
 
 func (c *Client) handleRequest(req *http.Request) (*http.Response, error) {
+	if c.Debug {
+		stdcli.DefaultWriter.Writef("<debug>%s %s </debug>", req.Method, req.URL)
+	}
+
 	res, err := c.Client().Do(req)
 	if err != nil {
 		return nil, err
+	}
+
+	if c.Debug {
+		switch res.StatusCode / 100 {
+		case 2, 3:
+			stdcli.DefaultWriter.Writef("<good>%d </good>\n", res.StatusCode)
+		default:
+			stdcli.DefaultWriter.Writef("<bad>%d </bad>\n", res.StatusCode)
+		}
 	}
 
 	if err := responseError(res); err != nil {
