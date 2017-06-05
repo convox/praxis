@@ -157,6 +157,8 @@ func (v Services) MarshalYAML() (interface{}, error) {
 			service["port"] = fmt.Sprintf("%s:%d", s.Port.Scheme, s.Port.Port)
 		}
 
+		service["resources"] = s.Resources
+
 		scale := make(map[string]interface{})
 		scale["count"] = fmt.Sprintf("%d", s.Scale.Count.Min)
 		if (s.Scale.Count.Max - s.Scale.Count.Min) > 0 {
