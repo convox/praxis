@@ -39,8 +39,11 @@ func init() {
 
 	Rack = r
 
+	stdcli.DefaultWriter.Tags["bad"] = stdcli.RenderAttributes(160)
+	stdcli.DefaultWriter.Tags["debug"] = stdcli.RenderAttributes(208)
 	stdcli.DefaultWriter.Tags["dir"] = stdcli.RenderAttributes(246)
 	stdcli.DefaultWriter.Tags["env"] = stdcli.RenderAttributes(95)
+	stdcli.DefaultWriter.Tags["good"] = stdcli.RenderAttributes(46)
 	stdcli.DefaultWriter.Tags["id"] = stdcli.RenderAttributes(246)
 	stdcli.DefaultWriter.Tags["log"] = stdcli.RenderAttributes(45)
 	stdcli.DefaultWriter.Tags["name"] = stdcli.RenderAttributes(246)

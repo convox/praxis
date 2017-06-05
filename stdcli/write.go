@@ -120,7 +120,13 @@ func (w *Writer) Sprintf(format string, args ...interface{}) string {
 }
 
 func (w *Writer) Startf(format string, args ...interface{}) (int, error) {
-	return w.Writef("<start>%s</start><start>:</start> ", w.Sprintf(format, args...))
+	finish := ""
+
+	if os.Getenv("CONVOX_DEBUG") == "true" {
+		finish = "\n"
+	}
+
+	return w.Writef("<start>%s</start><start>:</start> %s", w.Sprintf(format, args...), finish)
 }
 
 func (w *Writer) Wait(status string) (int, error) {
