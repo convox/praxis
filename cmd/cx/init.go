@@ -68,8 +68,8 @@ func resourceService(service mv1.Service) bool {
 }
 
 func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
-	services := manifest.Services{}
 	resources := make(manifest.Resources, 0)
+	services := manifest.Services{}
 	timers := make(manifest.Timers, 0)
 
 	for name, service := range mOld.Services {
