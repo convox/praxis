@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 
@@ -22,6 +23,10 @@ func init() {
 }
 
 func runInit(c *cli.Context) error {
+	if _, err := os.Stat("convox.yml"); err == nil {
+		return fmt.Errorf("ERROR: nothing generated, cannot overwrite convox.yml")
+	}
+
 	m, err := mv1.LoadFile("docker-compose.yml")
 	if err != nil {
 		return err
@@ -41,6 +46,8 @@ func runInit(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("SUCCESS: convox.yml written")
 
 	return nil
 }
