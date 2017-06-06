@@ -111,8 +111,8 @@ func (v *Queue) SetName(name string) error {
 	return nil
 }
 
-func (v Resource) MarshalYAML() (interface{}, error) {
-	return marshalMapSlice(v), nil
+func (v Resources) MarshalYAML() (interface{}, error) {
+	return marshalMapSlice(v)
 }
 
 func (v *Resources) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -124,8 +124,8 @@ func (v *Resource) SetName(name string) error {
 	return nil
 }
 
-func (v Service) MarshalYAML() (interface{}, error) {
-	return marshalMapSlice(v), nil
+func (v Services) MarshalYAML() (interface{}, error) {
+	return marshalMapSlice(v)
 }
 
 func (v *Services) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -347,8 +347,8 @@ func (v *Table) SetName(name string) error {
 	return nil
 }
 
-func (v Timer) MarshalYAML() (interface{}, error) {
-	return marshalMapSlice(v), nil
+func (v Timers) MarshalYAML() (interface{}, error) {
+	return marshalMapSlice(v)
 }
 
 func (v *Timers) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -429,26 +429,27 @@ func remarshal(in, out interface{}) error {
 	return yaml.Unmarshal(data, out)
 }
 
-func marshalMapSlice(in interface{}) interface{} {
-	if ng, ok := in.(NameGetter); ok {
-		ms := yaml.MapSlice{}
-		mi := yaml.MapItem{
-			Key: ng.GetName(),
-		}
-		r := reflect.ValueOf(ng)
-		fields := make(yaml.MapSlice, 0)
-		for i := 0; i < r.NumField(); i++ {
-			if fn := r.Type().Field(i).Name; fn == "Name" {
-				continue
-			} else {
-				fields = append(fields, yaml.MapItem{Key: strings.ToLower(fn), Value: r.Field(i).Interface()})
-			}
-		}
-		mi.Value = fields
-		ms = append(ms, mi)
-		return ms
+func marshalMapSlice(in interface{}) (interface{}, error) {
+	ms := yaml.MapSlice{}
+
+	iv := reflect.ValueOf(in)
+
+	if iv.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("not a slice")
 	}
-	return in
+
+	for i := 0; i < iv.Len(); i++ {
+		ii := iv.Index(i).Interface()
+
+		if iing, ok := ii.(NameGetter); ok {
+			ms = append(ms, yaml.MapItem{
+				Key:   iing.GetName(),
+				Value: ii,
+			})
+		}
+	}
+
+	return ms, nil
 }
 
 func unmarshalMapSlice(unmarshal func(interface{}) error, v interface{}) error {
