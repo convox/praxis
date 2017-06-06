@@ -6,7 +6,7 @@ import (
 )
 
 type Service struct {
-	Name string
+	Name string `yaml:"-"`
 
 	Build       ServiceBuild   `yaml:"build,omitempty"`
 	Certificate string         `yaml:"certificate,omitempty"`
