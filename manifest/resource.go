@@ -6,3 +6,7 @@ type Resource struct {
 }
 
 type Resources []Resource
+
+func (r Resource) GetName() string {
+	return r.Name
+}

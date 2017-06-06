@@ -14,6 +14,10 @@ type DefaultsSetter interface {
 	SetDefaults() error
 }
 
+type NameGetter interface {
+	GetName() string
+}
+
 type NameSetter interface {
 	SetName(name string) error
 }
@@ -107,16 +111,8 @@ func (v *Queue) SetName(name string) error {
 	return nil
 }
 
-func (v Resources) MarshalYAML() (interface{}, error) {
-	resources := make(map[string]interface{})
-
-	for _, r := range v {
-		resource := make(map[string]string)
-		resource["type"] = r.Type
-		resources[r.Name] = resource
-	}
-
-	return resources, nil
+func (v Resource) MarshalYAML() (interface{}, error) {
+	return marshalMapSlice(v), nil
 }
 
 func (v *Resources) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -128,53 +124,8 @@ func (v *Resource) SetName(name string) error {
 	return nil
 }
 
-func (v Services) MarshalYAML() (interface{}, error) {
-	services := make(map[string]interface{})
-
-	// Loop over all of the services
-	for _, s := range v {
-		service := make(map[string]interface{})
-
-		service["build"] = s.Build.Path
-
-		command := make(map[string]string)
-		command["development"] = s.Command.Development
-		command["test"] = s.Command.Test
-		command["production"] = s.Command.Production
-		service["command"] = command
-
-		service["environment"] = s.Environment
-
-		health := make(map[string]interface{})
-		health["path"] = s.Health.Path
-		health["interval"] = s.Health.Interval
-		health["timeout"] = s.Health.Timeout
-		service["health"] = health
-
-		if s.Port.Scheme == "" {
-			service["port"] = fmt.Sprintf("%d", s.Port.Port)
-		} else {
-			service["port"] = fmt.Sprintf("%s:%d", s.Port.Scheme, s.Port.Port)
-		}
-
-		service["resources"] = s.Resources
-
-		scale := make(map[string]interface{})
-		scale["count"] = fmt.Sprintf("%d", s.Scale.Count.Min)
-		if (s.Scale.Count.Max - s.Scale.Count.Min) > 0 {
-			scale["count"] = fmt.Sprintf("%s-%d", scale["count"], s.Scale.Count.Max)
-		}
-		scale["memory"] = s.Scale.Memory
-		service["scale"] = scale
-
-		if volumes := s.Volumes; len(volumes) > 0 {
-			service["volumes"] = volumes
-		}
-
-		services[s.Name] = service
-	}
-
-	return services, nil
+func (v Service) MarshalYAML() (interface{}, error) {
+	return marshalMapSlice(v), nil
 }
 
 func (v *Services) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -396,25 +347,12 @@ func (v *Table) SetName(name string) error {
 	return nil
 }
 
-func (v Timers) MarshalYAML() (interface{}, error) {
-	timers := make(map[string]interface{})
-	for _, t := range v {
-		timer := make(map[string]string)
-		timer["command"] = t.Command
-		timer["schedule"] = t.Schedule
-		timer["service"] = t.Service
-		timers[t.Name] = timer
-	}
-	return timers, nil
+func (v Timer) MarshalYAML() (interface{}, error) {
+	return marshalMapSlice(v), nil
 }
 
 func (v *Timers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return unmarshalMapSlice(unmarshal, v)
-}
-
-func (v *Timer) SetName(name string) error {
-	v.Name = name
-	return nil
 }
 
 func (v Workflows) MarshalYAML() (interface{}, error) {
@@ -489,6 +427,28 @@ func remarshal(in, out interface{}) error {
 	}
 
 	return yaml.Unmarshal(data, out)
+}
+
+func marshalMapSlice(in interface{}) interface{} {
+	if ng, ok := in.(NameGetter); ok {
+		ms := yaml.MapSlice{}
+		mi := yaml.MapItem{
+			Key: ng.GetName(),
+		}
+		r := reflect.ValueOf(ng)
+		fields := make(yaml.MapSlice, 0)
+		for i := 0; i < r.NumField(); i++ {
+			if fn := r.Type().Field(i).Name; fn == "Name" {
+				continue
+			} else {
+				fields = append(fields, yaml.MapItem{Key: strings.ToLower(fn), Value: r.Field(i).Interface()})
+			}
+		}
+		mi.Value = fields
+		ms = append(ms, mi)
+		return ms
+	}
+	return in
 }
 
 func unmarshalMapSlice(unmarshal func(interface{}) error, v interface{}) error {

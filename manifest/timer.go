@@ -9,3 +9,7 @@ type Timer struct {
 }
 
 type Timers []Timer
+
+func (t Timer) GetName() string {
+	return t.Name
+}
