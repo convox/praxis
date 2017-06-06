@@ -10,6 +10,7 @@ import (
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/stdcli"
 	mv1 "github.com/convox/rack/manifest"
+	shellquote "github.com/kballard/go-shellquote"
 	cli "gopkg.in/urfave/cli.v1"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -112,8 +113,8 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 		// command
 		var cmd manifest.ServiceCommand
 		if len(service.Command.Array) > 0 {
-			cmd.Development = strings.Join(service.Command.Array, " ")
-			cmd.Production = strings.Join(service.Command.Array, " ")
+			cmd.Development = shellquote.Join(service.Command.Array...)
+			cmd.Production = shellquote.Join(service.Command.Array...)
 		} else {
 			cmd.Development = service.Command.String
 			cmd.Production = service.Command.String
