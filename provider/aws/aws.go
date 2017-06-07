@@ -442,6 +442,14 @@ func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOp
 	}
 
 	for {
+		// Always make sure there is something we can write to
+		if _, err := fmt.Fprintf(w, ""); err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+
 		events := []*cloudwatchlogs.FilteredLogEvent{}
 
 		err := p.CloudWatchLogs().FilterLogEventsPages(req, func(res *cloudwatchlogs.FilterLogEventsOutput, last bool) bool {
@@ -465,10 +473,19 @@ func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOp
 				pp := strings.Split(parts[2], "-")
 				ts := time.Unix(*e.Timestamp/1000, *e.Timestamp%1000*1000).UTC()
 
+				var err error
+
 				if opts.Prefix {
-					fmt.Fprintf(w, "%s %s/%s/%s %s\n", ts.Format(helpers.PrintableTime), parts[0], parts[1], pp[len(pp)-1], *e.Message)
+					_, err = fmt.Fprintf(w, "%s %s/%s/%s %s\n", ts.Format(helpers.PrintableTime), parts[0], parts[1], pp[len(pp)-1], *e.Message)
 				} else {
-					fmt.Fprintf(w, "%s\n", *e.Message)
+					_, err = fmt.Fprintf(w, "%s\n", *e.Message)
+				}
+
+				if err != nil {
+					if err == io.EOF {
+						return nil
+					}
+					return err
 				}
 			}
 		}
