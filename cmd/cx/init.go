@@ -120,11 +120,6 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			cmd.Production = service.Command.String
 		}
 
-		// cpu_shares
-		if service.Cpu != 0 {
-			fmt.Printf("INFO: service \"%s\" cpu_shares not configurable via convox.yml\n", service.Name)
-		}
-
 		// entrypoint
 		if service.Entrypoint != "" {
 			fmt.Printf("WARN: service \"%s\" \"entrypoint\" key not supported in convox.yml, use ENTRYPOINT in Dockerfile instead\n", service.Name)
@@ -160,16 +155,6 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 			timer.Schedule = strings.Join(tokens[0:5], " ")
 			timer.Service = service.Name
 			timers = append(timers, timer)
-		}
-
-		// convox.deployment.maximum
-		if len(service.LabelsByPrefix("convox.deployment.maximum")) > 0 {
-			fmt.Printf("INFO: service \"%s\", setting deployment maximum is not supported\n", service.Name)
-		}
-
-		// convox.deployment.minimum
-		if len(service.LabelsByPrefix("convox.deployment.minimum")) > 0 {
-			fmt.Printf("INFO: service \"%s\", setting deployment minimum is not supported\n", service.Name)
 		}
 
 		// convox.draining.timeout
