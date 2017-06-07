@@ -69,6 +69,8 @@ func resourceService(service mv1.Service) bool {
 }
 
 func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
+	sw := *stdcli.DefaultWriter
+
 	resources := make(manifest.Resources, 0)
 	services := manifest.Services{}
 	timers := make(manifest.Timers, 0)
@@ -91,7 +93,8 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 				Type: t,
 			}
 			resources = append(resources, r)
-			fmt.Printf("INFO: service \"%s\" has been migrated to a resource\n", service.Name)
+
+			sw.Writef("INFO: <service>%s</service> has been migrated to a resource\n", service.Name)
 			continue
 		}
 
@@ -102,12 +105,12 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 
 		// build args
 		if len(service.Build.Args) > 0 {
-			fmt.Printf("WARN: service \"%s\" build args not migrated to convox.yml, use ARG in your Dockerfile instead\n", service.Name)
+			sw.Writef("WARN: <service>%s</service> build args not migrated to convox.yml, use ARG in your Dockerfile instead\n", service.Name)
 		}
 
 		// build dockerfile
 		if service.Build.Dockerfile != "" {
-			fmt.Printf("WARN: service \"%s\" \"dockerfile\" key is not supported in convox.yml, file must be named \"Dockerfile\"\n", service.Name)
+			sw.Writef("WARN: <service>%s</service> \"dockerfile\" key is not supported in convox.yml, file must be named \"Dockerfile\"\n", service.Name)
 		}
 
 		// command
@@ -122,7 +125,7 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 
 		// entrypoint
 		if service.Entrypoint != "" {
-			fmt.Printf("WARN: service \"%s\" \"entrypoint\" key not supported in convox.yml, use ENTRYPOINT in Dockerfile instead\n", service.Name)
+			sw.Writef("WARN: <service>%s</service> \"entrypoint\" key not supported in convox.yml, use ENTRYPOINT in Dockerfile instead\n", service.Name)
 		}
 
 		// environment
@@ -137,12 +140,12 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 
 		// convox.agent
 		if service.IsAgent() {
-			fmt.Printf("INFO: service \"%s\", running as an agent is not supported\n", service.Name)
+			sw.Writef("INFO: <service>%s</service> - running as an agent is not supported\n", service.Name)
 		}
 
 		// convox.balancer
 		if (len(service.Ports) > 0) && !service.HasBalancer() {
-			fmt.Printf("INFO: service \"%s\", disabling balancers is not supported\n", service.Name)
+			sw.Writef("INFO: <service>%s</service> - disabling balancers is not supported\n", service.Name)
 		}
 
 		// convox.cron
@@ -159,12 +162,12 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 
 		// convox.draining.timeout
 		if len(service.LabelsByPrefix("convox.draining.timeout")) > 0 {
-			fmt.Printf("INFO: service \"%s\", setting draning timeout is not supported\n", service.Name)
+			sw.Writef("INFO: <service>%s</service> - setting draning timeout is not supported\n", service.Name)
 		}
 
 		// convox.environment.secure
 		if len(service.LabelsByPrefix("convox.environment.secure")) > 0 {
-			fmt.Printf("INFO: service \"%s\", setting secure environment is not necessary\n", service.Name)
+			sw.Writef("INFO: <service>%s</service> - setting secure environment is not necessary\n", service.Name)
 		}
 
 		// convox.health.path
@@ -181,30 +184,30 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 
 		// convox.health.port
 		if len(service.LabelsByPrefix("convox.health.port")) > 0 {
-			fmt.Printf("INFO: service \"%s\", setting health check port is not necessary\n", service.Name)
+			sw.Writef("INFO: <service>%s</service> - setting health check port is not necessary\n", service.Name)
 		}
 
 		// convox.health.threshold.healthy
 		// convox.helath.threshold.unhealthy
 		if len(service.LabelsByPrefix("convox.health.threshold")) > 0 {
-			fmt.Printf("INFO: service \"%s\", setting health check thresholds is not supported\n", service.Name)
+			sw.Writef("INFO: <service>%s</service> - setting health check thresholds is not supported\n", service.Name)
 		}
 
 		// convox.idle.timeout
 		if len(service.LabelsByPrefix("convox.idle.timeout")) > 0 {
-			fmt.Printf("INFO: service \"%s\", setting idle timeout is not supported\n", service.Name)
+			sw.Writef("INFO: <service>%s</service> - setting idle timeout is not supported\n", service.Name)
 		}
 
 		// convox.port..protocol
 		// convox.port..proxy
 		// convox.port..secure
 		if len(service.LabelsByPrefix("convox.idle.timeout")) > 0 {
-			fmt.Printf("INFO: service \"%s\", configuring balancer via convox.port labels is not supported\n", service.Name)
+			sw.Writef("INFO: <service>%s</service> - configuring balancer via convox.port labels is not supported\n", service.Name)
 		}
 
 		// convox.start.shift
 		if len(service.LabelsByPrefix("convox.start.shift")) > 0 {
-			fmt.Printf("WARN: service \"%s\", port shifting is not supported, use internal hostnames instead\n", service.Name)
+			sw.Writef("WARN: <service>%s</service> - port shifting is not supported, use internal hostnames instead\n", service.Name)
 		}
 
 		// links
@@ -218,7 +221,7 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 				}
 			}
 			if !resource {
-				fmt.Printf("WARN: service \"%s\", environment variables not generated for linked service \"%s\", use internal URL https://%s.<app name>.convox instead\n", service.Name, link, link)
+				sw.Writef("WARN: <service>%s</service> - environment variables not generated for linked service <service>%s</service>, use internal URL https://%s.<app name>.convox instead\n", service.Name, link, link)
 			}
 		}
 
@@ -231,11 +234,11 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 		// ports
 		p := manifest.ServicePort{}
 		if len(service.Ports) > 1 {
-			fmt.Printf("WARN: service \"%s\", multiple ports found, only 1 HTTP port per service is supported\n", service.Name)
+			sw.Writef("WARN: <service>%s</service> - multiple ports found, only 1 HTTP port per service is supported\n", service.Name)
 		}
 		for _, port := range service.Ports {
 			if port.Protocol == "udp" {
-				fmt.Printf("WARN: service \"%s\", UDP ports are not supported\n", service.Name)
+				sw.Writef("WARN: <service>%s</service> - UDP ports are not supported\n", service.Name)
 				continue
 			}
 			switch port.Balancer {
@@ -248,13 +251,13 @@ func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 					p.Scheme = "https"
 				}
 			default:
-				fmt.Printf("WARN: service \"%s\", only HTTP ports supported\n", service.Name)
+				sw.Writef("WARN: <service>%s</service> - only HTTP ports supported\n", service.Name)
 			}
 		}
 
 		// privileged
 		if service.Privileged {
-			fmt.Printf("WARN: service \"%s\", privileged mode not supported\n", service.Name)
+			sw.Writef("WARN: <service>%s</service> - privileged mode not supported\n", service.Name)
 		}
 
 		s := manifest.Service{

@@ -46,6 +46,7 @@ func init() {
 	stdcli.DefaultWriter.Tags["id"] = stdcli.RenderAttributes(246)
 	stdcli.DefaultWriter.Tags["log"] = stdcli.RenderAttributes(45)
 	stdcli.DefaultWriter.Tags["name"] = stdcli.RenderAttributes(246)
+	stdcli.DefaultWriter.Tags["service"] = stdcli.RenderAttributes(33)
 	stdcli.DefaultWriter.Tags["url"] = stdcli.RenderAttributes(246)
 	stdcli.DefaultWriter.Tags["version"] = stdcli.RenderAttributes(246)
 
