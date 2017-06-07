@@ -24,8 +24,11 @@ func init() {
 }
 
 func runInit(c *cli.Context) error {
+	sw := *stdcli.DefaultWriter
+
 	if _, err := os.Stat("convox.yml"); err == nil {
-		return fmt.Errorf("ERROR: nothing generated, cannot overwrite convox.yml")
+		sw.Writef("<error>nothing generated, cannot overwrite convox.yml</error>\n")
+		return err
 	}
 
 	m, err := mv1.LoadFile("docker-compose.yml")
@@ -48,7 +51,7 @@ func runInit(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("SUCCESS: convox.yml written")
+	sw.Writef("<ok>SUCCESS</ok>: convox.yml written\n")
 
 	return nil
 }
