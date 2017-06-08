@@ -218,33 +218,58 @@ func (v *ServiceHealth) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 func (v *ServicePort) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var s string
+	var w interface{}
 
-	if err := unmarshal(&s); err != nil {
+	if err := unmarshal(&w); err != nil {
 		return err
 	}
 
-	parts := strings.Split(s, ":")
-
-	switch len(parts) {
-	case 1:
-		p, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return err
+	switch t := w.(type) {
+	case map[interface{}]interface{}:
+		if port := t["port"]; port != nil {
+			switch port.(type) {
+			case int:
+				v.Port = port.(int)
+			case string:
+				ports, err := strconv.Atoi(port.(string))
+				if err != nil {
+					return err
+				}
+				v.Port = ports
+			default:
+				return fmt.Errorf("invalid port: %v", w)
+			}
 		}
-
-		v.Scheme = "http"
-		v.Port = p
-	case 2:
-		p, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return err
+		if scheme := t["scheme"]; (scheme == nil) || (scheme.(string) == "") {
+			v.Scheme = "http"
+		} else {
+			v.Scheme = scheme.(string)
 		}
+	case string:
+		parts := strings.Split(t, ":")
 
-		v.Scheme = parts[0]
-		v.Port = p
+		switch len(parts) {
+		case 1:
+			p, err := strconv.Atoi(parts[0])
+			if err != nil {
+				return err
+			}
+
+			v.Scheme = "http"
+			v.Port = p
+		case 2:
+			p, err := strconv.Atoi(parts[1])
+			if err != nil {
+				return err
+			}
+
+			v.Scheme = parts[0]
+			v.Port = p
+		default:
+			return fmt.Errorf("invalid port: %s", t)
+		}
 	default:
-		return fmt.Errorf("invalid port: %s", s)
+		return fmt.Errorf("invalid port: %s", t)
 	}
 
 	return nil
