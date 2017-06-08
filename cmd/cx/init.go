@@ -36,7 +36,7 @@ func runInit(c *cli.Context) error {
 		return err
 	}
 
-	mNew, err := convert(m)
+	mNew, err := ManifestConvert(m)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func resourceService(service mv1.Service) bool {
 	return false
 }
 
-func convert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
+func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, error) {
 	sw := *stdcli.DefaultWriter
 
 	resources := make(manifest.Resources, 0)

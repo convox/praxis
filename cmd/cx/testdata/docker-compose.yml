@@ -1,0 +1,56 @@
+version: "2"
+services:
+  web:
+    build:
+      args:
+        FOO: bar
+      context: .
+      dockerfile: Dockerfile.dev
+    command: bin/web
+    cpu_shares: 10
+    entrypoint: bin/entrypoint
+    environment:
+      - FOO=bar
+      - BAZ
+      - QUX=
+    image: httpd
+    labels:
+      - convox.agent=true
+      - convox.cron.myjob=30 18 ? * MON-FRI bin/myjob
+      - convox.deployment.maximum=150
+      - convox.deployment.minimum=50
+      - convox.draining.timeout=300
+      - convox.environment.secure=true
+      - convox.health.path=/health
+      - convox.health.port=80
+      - convox.health.threshold.healthy=3
+      - convox.health.threshold.unhealthy=3
+      - convox.health.timeout=60
+      - convox.idle.timeout=3000
+      - convox.port.80.protocol=tls
+      - convox.port.80.proxy=true
+      - convox.port.80.secure=true
+      - convox.start.shift=8000
+    links:
+      - database
+      - worker
+    mem_limit: 50MB
+    ports:
+      - 80:80
+      - 443:3000
+      - 444:4000 
+      - 5000/udp
+      - 6000
+    privileged: true
+    volumes:
+      - /var/lib/postgresql/data
+      - /foo:/bar
+  database:
+    image: convox/postgres
+  worker:
+    build: .
+    command: bin/work
+networks:
+  outside:
+    external:
+      name: foo-bar
