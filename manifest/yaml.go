@@ -327,6 +327,35 @@ func (v *ServiceScaleCount) UnmarshalYAML(unmarshal func(interface{}) error) err
 		default:
 			return fmt.Errorf("invalid scale: %v", w)
 		}
+	case map[interface{}]interface{}:
+		if min := t["min"]; min != nil {
+			switch min.(type) {
+			case int:
+				v.Min = min.(int)
+			case string:
+				mins, err := strconv.Atoi(min.(string))
+				if err != nil {
+					return err
+				}
+				v.Min = mins
+			default:
+				return fmt.Errorf("invalid scale: %v", w)
+			}
+		}
+		if max := t["max"]; max != nil {
+			switch max.(type) {
+			case int:
+				v.Max = max.(int)
+			case string:
+				maxs, err := strconv.Atoi(max.(string))
+				if err != nil {
+					return err
+				}
+				v.Max = maxs
+			default:
+				return fmt.Errorf("invalid scale: %v", w)
+			}
+		}
 	default:
 		return fmt.Errorf("invalid scale: %v", w)
 	}
