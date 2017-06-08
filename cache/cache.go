@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 )
@@ -21,13 +20,17 @@ var (
 	lock  = sync.Mutex{}
 )
 
+func init() {
+	go func() {
+		for range time.Tick(1 * time.Minute) {
+			Prune()
+		}
+	}()
+}
+
 func Get(collection string, key interface{}) interface{} {
 	lock.Lock()
 	defer lock.Unlock()
-
-	if os.Getenv("PROVIDER") == "test" {
-		return nil
-	}
 
 	hash, err := hashKey(key)
 
@@ -97,6 +100,18 @@ func ClearAll() error {
 	}
 
 	return nil
+}
+
+func Prune() {
+	now := time.Now()
+
+	for k := range cache {
+		for l := range cache[k] {
+			if cache[k][l].Expires.Before(now) {
+				delete(cache[k], l)
+			}
+		}
+	}
 }
 
 func hashKey(key interface{}) (string, error) {

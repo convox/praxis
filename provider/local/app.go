@@ -9,10 +9,13 @@ import (
 	"time"
 
 	"github.com/convox/praxis/api"
-	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 	"github.com/pkg/errors"
+)
+
+const (
+	AppCacheDuration = 5 * time.Minute
 )
 
 func (p *Provider) AppCreate(name string) (*types.App, error) {
@@ -56,23 +59,15 @@ func (p *Provider) AppDelete(app string) error {
 		return errors.WithStack(log.Error(err))
 	}
 
-	if err := cache.Clear("AppGet", app); err != nil {
-		return errors.WithStack(log.Error(err))
-	}
-
 	return log.Success()
 }
 
 func (p *Provider) AppGet(name string) (*types.App, error) {
 	log := p.logger("AppGet").Append("name=%q", name)
 
-	if v, ok := cache.Get("AppGet", name).(*types.App); ok {
-		return v, log.Successf("cache=hit")
-	}
-
 	var app types.App
 
-	if err := p.storageLoad(fmt.Sprintf("apps/%s/app.json", name), &app); err != nil {
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/app.json", name), &app, AppCacheDuration); err != nil {
 		if strings.HasPrefix(err.Error(), "no such key:") {
 			return nil, log.Error(api.Errorf(404, "no such app: %s", name))
 		} else {
@@ -80,11 +75,7 @@ func (p *Provider) AppGet(name string) (*types.App, error) {
 		}
 	}
 
-	if err := cache.Set("AppGet", name, &app, 10*time.Second); err != nil {
-		return nil, err
-	}
-
-	return &app, log.Successf("cache=miss")
+	return &app, log.Success()
 }
 
 func (p *Provider) AppList() (types.Apps, error) {
