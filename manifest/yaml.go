@@ -10,6 +10,14 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+type DefaultsSetter interface {
+	SetDefaults() error
+}
+
+type NameSetter interface {
+	SetName(name string) error
+}
+
 func (v Balancers) MarshalYAML() (interface{}, error) {
 	return nil, fmt.Errorf("unimplemented")
 }
@@ -121,8 +129,6 @@ func (v *Services) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 func (v *Service) SetName(name string) error {
-	v.Scale.Count.Min = 1
-	v.Scale.Count.Max = 1
 	v.Name = name
 	return nil
 }
@@ -175,55 +181,6 @@ func (v *ServiceCommand) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		v.Production = t
 	default:
 		return fmt.Errorf("unknown type for service command: %T", t)
-	}
-
-	return nil
-}
-
-func (v *ServiceCount) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var w interface{}
-
-	if err := unmarshal(&w); err != nil {
-		return err
-	}
-
-	switch t := w.(type) {
-	case int:
-		v.Min = t
-		v.Max = t
-	case string:
-		parts := strings.Split(t, "-")
-
-		switch len(parts) {
-		case 1:
-			i, err := strconv.Atoi(parts[0])
-			if err != nil {
-				return err
-			}
-
-			v.Min = i
-
-			if !strings.HasSuffix(parts[0], "+") {
-				v.Max = i
-			}
-		case 2:
-			i, err := strconv.Atoi(parts[0])
-			if err != nil {
-				return err
-			}
-
-			j, err := strconv.Atoi(parts[1])
-			if err != nil {
-				return err
-			}
-
-			v.Min = i
-			v.Max = j
-		default:
-			return fmt.Errorf("invalid scale: %v", w)
-		}
-	default:
-		return fmt.Errorf("invalid scale: %v", w)
 	}
 
 	return nil
@@ -290,9 +247,6 @@ func (v *ServicePort) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 func (v *ServiceScale) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	v.Count.Min = 1
-	v.Count.Max = 1
-
 	var w interface{}
 
 	if err := unmarshal(&w); err != nil {
@@ -301,21 +255,20 @@ func (v *ServiceScale) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	switch t := w.(type) {
 	case int:
-		v.Count.Min = t
-		v.Count.Max = t
+		v.Count = &ServiceScaleCount{Min: t, Max: t}
 	case string:
-		var c ServiceCount
+		var c ServiceScaleCount
 		if err := remarshal(w, &c); err != nil {
 			return err
 		}
-		v.Count = c
+		v.Count = &c
 	case map[interface{}]interface{}:
 		if w, ok := t["count"].(interface{}); ok {
-			var c ServiceCount
+			var c ServiceScaleCount
 			if err := remarshal(w, &c); err != nil {
 				return err
 			}
-			v.Count = c
+			v.Count = &c
 		}
 		if w, ok := t["memory"].(int); ok {
 			v.Memory = w
@@ -323,6 +276,55 @@ func (v *ServiceScale) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	default:
 		fmt.Printf("w = %+v\n", w)
 		return fmt.Errorf("unknown type for service scale: %T", t)
+	}
+
+	return nil
+}
+
+func (v *ServiceScaleCount) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var w interface{}
+
+	if err := unmarshal(&w); err != nil {
+		return err
+	}
+
+	switch t := w.(type) {
+	case int:
+		v.Min = t
+		v.Max = t
+	case string:
+		parts := strings.Split(t, "-")
+
+		switch len(parts) {
+		case 1:
+			i, err := strconv.Atoi(parts[0])
+			if err != nil {
+				return err
+			}
+
+			v.Min = i
+
+			if !strings.HasSuffix(parts[0], "+") {
+				v.Max = i
+			}
+		case 2:
+			i, err := strconv.Atoi(parts[0])
+			if err != nil {
+				return err
+			}
+
+			j, err := strconv.Atoi(parts[1])
+			if err != nil {
+				return err
+			}
+
+			v.Min = i
+			v.Max = j
+		default:
+			return fmt.Errorf("invalid scale: %v", w)
+		}
+	default:
+		return fmt.Errorf("invalid scale: %v", w)
 	}
 
 	return nil
@@ -419,10 +421,6 @@ func (v *Workflows) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-type NameSetter interface {
-	SetName(name string) error
-}
-
 func remarshal(in, out interface{}) error {
 	data, err := yaml.Marshal(in)
 	if err != nil {
@@ -447,6 +445,12 @@ func unmarshalMapSlice(unmarshal func(interface{}) error, v interface{}) error {
 
 		if err := remarshal(msi.Value, item); err != nil {
 			return err
+		}
+
+		if ds, ok := item.(DefaultsSetter); ok {
+			if err := ds.SetDefaults(); err != nil {
+				return err
+			}
 		}
 
 		if ns, ok := item.(NameSetter); ok {

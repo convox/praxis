@@ -33,11 +33,6 @@ type ServiceCommand struct {
 	Production  string
 }
 
-type ServiceCount struct {
-	Min int
-	Max int
-}
-
 type ServiceHealth struct {
 	Interval int
 	Path     string
@@ -50,10 +45,23 @@ type ServicePort struct {
 }
 
 type ServiceScale struct {
-	Count  ServiceCount
+	Count  *ServiceScaleCount
 	Memory int
+}
+
+type ServiceScaleCount struct {
+	Min int
+	Max int
 }
 
 func (s Service) BuildHash() string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(fmt.Sprintf("build[path=%q, args=%v] image=%q", s.Build.Path, s.Build.Args, s.Image))))
+}
+
+func (s *Service) SetDefaults() error {
+	if s.Scale.Count == nil {
+		s.Scale.Count = &ServiceScaleCount{Min: 1, Max: 1}
+	}
+
+	return nil
 }
