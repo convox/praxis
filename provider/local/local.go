@@ -110,9 +110,9 @@ func (p *Provider) shutdown() error {
 
 	var wg sync.WaitGroup
 
-	for _, id := range cs {
+	for _, c := range cs {
 		wg.Add(1)
-		go p.containerStopAsync(id, &wg)
+		go p.containerStopAsync(c.Id, &wg)
 	}
 
 	wg.Wait()

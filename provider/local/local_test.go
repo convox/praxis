@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/provider/local"
 )
 
@@ -31,6 +30,4 @@ func testProviderCleanup(p *local.Provider) {
 	if p.Root != "" {
 		os.RemoveAll(p.Root)
 	}
-
-	cache.ClearAll()
 }

@@ -45,7 +45,7 @@ func (p *Provider) workerConverge() error {
 		}
 	}
 
-	if err := p.convergePrune(); err != nil {
+	if err := p.prune(); err != nil {
 		return err
 	}
 

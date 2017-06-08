@@ -3,6 +3,7 @@ package local
 import (
 	"fmt"
 	"os/exec"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,47 +26,32 @@ func (p *Provider) converge(app string) error {
 		return log.Error(err)
 	}
 
-	cs := []container{}
+	desired := []container{}
 
 	c, err := p.balancerContainers(m.Balancers, app, r.Id, r.Stage)
 	if err != nil {
 		return errors.WithStack(log.Error(err))
 	}
 
-	cs = append(cs, c...)
+	desired = append(desired, c...)
 
 	c, err = p.resourceContainers(m.Resources, app, r.Id)
 	if err != nil {
 		return errors.WithStack(log.Error(err))
 	}
 
-	cs = append(cs, c...)
+	desired = append(desired, c...)
 
 	c, err = p.serviceContainers(m.Services, app, r.Id, r.Stage)
 	if err != nil {
 		return errors.WithStack(log.Error(err))
 	}
 
-	cs = append(cs, c...)
+	desired = append(desired, c...)
 
 	// TODO: timers
 
-	for i, c := range cs {
-		id, err := p.containerConverge(c, app, r.Id)
-		if err != nil {
-			return errors.WithStack(log.Error(err))
-		}
-
-		cs[i].Id = id
-
-		if c.Hostname != "" {
-			if err := p.containerRegister(cs[i]); err != nil {
-				return errors.WithStack(log.Error(err))
-			}
-		}
-	}
-
-	running, err := containersByLabels(map[string]string{
+	current, err := containersByLabels(map[string]string{
 		"convox.rack": p.Name,
 		"convox.app":  app,
 	})
@@ -73,48 +59,52 @@ func (p *Provider) converge(app string) error {
 		return errors.WithStack(log.Error(err))
 	}
 
-	ps, err := containersByLabels(map[string]string{
-		"convox.rack": p.Name,
-		"convox.app":  app,
-		"convox.type": "process",
-	})
-	if err != nil {
-		return errors.WithStack(log.Error(err))
-	}
+	needed := []container{}
 
-	for _, rc := range running {
+	for _, c := range desired {
 		found := false
 
-		for _, c := range cs {
-			if c.Id == rc {
-				found = true
-				break
-			}
-		}
-
-		// dont stop oneoff processes
-		for _, pc := range ps {
-			if rc == pc {
+		for _, d := range current {
+			if reflect.DeepEqual(c.Labels, d.Labels) {
 				found = true
 				break
 			}
 		}
 
 		if !found {
-			p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, r.Id), []byte(fmt.Sprintf("stopping: %s\n", rc)))
-			log.Successf("action=kill id=%s", rc)
-			exec.Command("docker", "stop", rc).Run()
+			needed = append(needed, c)
+		}
+	}
+
+	for _, c := range needed {
+		p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, r.Id), []byte(fmt.Sprintf("starting: %s\n", c.Name)))
+
+		id, err := p.containerStart(c, app, r.Id)
+		if err != nil {
+			return errors.WithStack(log.Error(err))
+		}
+
+		c.Id = id
+
+		if err := p.containerRegister(c); err != nil {
+			return errors.WithStack(log.Error(err))
+		}
+	}
+
+	for _, c := range current {
+		if err := p.containerRegister(c); err != nil {
+			return errors.WithStack(log.Error(err))
 		}
 	}
 
 	return log.Success()
 }
 
-func (p *Provider) convergePrune() error {
+func (p *Provider) prune() error {
 	convergeLock.Lock()
 	defer convergeLock.Unlock()
 
-	log := p.logger("convergePrune")
+	log := p.logger("prune")
 
 	apps, err := p.AppList()
 	if err != nil {
@@ -128,26 +118,19 @@ func (p *Provider) convergePrune() error {
 		return errors.WithStack(log.Error(err))
 	}
 
-	appc := map[string]bool{}
-
-	for _, a := range apps {
-		ac, err := containersByLabels(map[string]string{
-			"convox.rack": p.Name,
-			"convox.app":  a.Name,
-		})
-		if err != nil {
-			return errors.WithStack(log.Error(err))
-		}
-
-		for _, c := range ac {
-			appc[c] = true
-		}
-	}
-
 	for _, c := range all {
-		if !appc[c] {
-			log.Successf("action=kill id=%s", c)
-			exec.Command("docker", "stop", c).Run()
+		found := false
+
+		for _, a := range apps {
+			if a.Name == c.Labels["convox.app"] {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			log.Successf("action=kill id=%s", c.Id)
+			exec.Command("docker", "stop", c.Id).Run()
 		}
 	}
 
