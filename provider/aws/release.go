@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"strconv"
 	"strings"
 	"time"
 
@@ -30,8 +29,6 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 	if opts.Env != nil {
 		r.Env = opts.Env
 	}
-
-	r.Stage = opts.Stage
 
 	if err := p.releaseStore(r); err != nil {
 		return nil, err
@@ -293,12 +290,6 @@ func (p *Provider) releaseFromAttributes(id string, attrs []*simpledb.Attribute)
 					return nil, err
 				}
 			}
-		case "stage":
-			s, err := strconv.Atoi(*attr.Value)
-			if err != nil {
-				return nil, err
-			}
-			release.Stage = s
 		case "status":
 			release.Status = *attr.Value
 		}
@@ -338,7 +329,6 @@ func (p *Provider) releaseStore(release *types.Release) error {
 		{Replace: aws.Bool(true), Name: aws.String("app"), Value: aws.String(release.App)},
 		{Replace: aws.Bool(true), Name: aws.String("build"), Value: aws.String(release.Build)},
 		{Replace: aws.Bool(true), Name: aws.String("created"), Value: aws.String(release.Created.Format(helpers.SortableTime))},
-		{Replace: aws.Bool(true), Name: aws.String("stage"), Value: aws.String(strconv.Itoa(release.Stage))},
 		{Replace: aws.Bool(true), Name: aws.String("status"), Value: aws.String(release.Status)},
 	}
 

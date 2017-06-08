@@ -19,9 +19,6 @@ services:
     build:
       path: api
     certificate: foo.example.org
-    command:
-      development: rerun ${FOO} github.com/convox/praxis
-      test: make ${BAR} test
     environment:
       - DEVELOPMENT=false
       - SECRET
@@ -30,6 +27,7 @@ services:
     resources:
       - database
     scale: 3-10
+    test: make ${BAR} test
   proxy:
     command: bash
     image: ubuntu:16.04

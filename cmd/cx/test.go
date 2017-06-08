@@ -68,19 +68,19 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	build, err := buildDirectory(app.Name, ".", types.BuildCreateOptions{Stage: manifest.StageTest}, m.Writer("build", os.Stdout))
+	build, err := buildDirectory(app.Name, ".", types.BuildCreateOptions{Development: true}, m.Writer("build", os.Stdout))
 	if err != nil {
 		return err
 	}
 
 	for _, s := range m.Services {
-		if s.Command.Test == "" {
+		if s.Test == "" {
 			continue
 		}
 
 		w := m.Writer(s.Name, os.Stdout)
 
-		if err := w.Writef("running: %s\n", s.Command.Test); err != nil {
+		if err := w.Writef("running: %s\n", s.Test); err != nil {
 			return err
 		}
 
@@ -90,7 +90,7 @@ func runTest(c *cli.Context) error {
 		}
 
 		code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{
-			Command:     s.Command.Test,
+			Command:     s.Test,
 			Environment: senv,
 			Release:     build.Release,
 			Service:     s.Name,

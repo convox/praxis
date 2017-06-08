@@ -17,6 +17,7 @@ type Service struct {
 	Port        ServicePort    `yaml:"port,omitempty"`
 	Resources   []string       `yaml:"resources,omitempty"`
 	Scale       ServiceScale   `yaml:"scale,omitempty"`
+    Test        string         `yaml:"test,omitempty"
 	Volumes     []string       `yaml:"volumes,omitempty"`
 }
 

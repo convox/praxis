@@ -60,11 +60,7 @@ func TestManifestLoad(t *testing.T) {
 					Path: "api",
 				},
 				Certificate: "foo.example.org",
-				Command: manifest.ServiceCommand{
-					Development: "rerun bar github.com/convox/praxis",
-					Test:        "make  test",
-					Production:  "",
-				},
+				Command:     "",
 				Environment: []string{
 					"DEVELOPMENT=false",
 					"SECRET",
@@ -79,13 +75,11 @@ func TestManifestLoad(t *testing.T) {
 					Count:  &manifest.ServiceScaleCount{Min: 3, Max: 10},
 					Memory: 256,
 				},
+				Test: "make  test",
 			},
 			manifest.Service{
-				Name: "proxy",
-				Command: manifest.ServiceCommand{
-					Development: "bash",
-					Production:  "bash",
-				},
+				Name:    "proxy",
+				Command: "bash",
 				Health: manifest.ServiceHealth{
 					Path:     "/auth",
 					Interval: 5,
@@ -105,10 +99,7 @@ func TestManifestLoad(t *testing.T) {
 				Build: manifest.ServiceBuild{
 					Path: ".",
 				},
-				Command: manifest.ServiceCommand{
-					Development: "foo",
-					Production:  "foo",
-				},
+				Command: "foo",
 				Health: manifest.ServiceHealth{
 					Interval: 5,
 					Path:     "/",
@@ -124,7 +115,7 @@ func TestManifestLoad(t *testing.T) {
 				Build: manifest.ServiceBuild{
 					Path: ".",
 				},
-				Command: manifest.ServiceCommand{},
+				Command: "",
 				Health: manifest.ServiceHealth{
 					Interval: 5,
 					Path:     "/",

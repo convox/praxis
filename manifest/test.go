@@ -9,8 +9,8 @@ type TestOptions struct {
 
 func (m *Manifest) Test(ns string, opts TestOptions) error {
 	for _, s := range m.Services {
-		if s.Command.Test != "" {
-			err := s.run(ns, s.Command.Test, RunOptions{
+		if s.Test != "" {
+			err := s.run(ns, s.Test, RunOptions{
 				Stdout: opts.Stdout,
 				Stderr: opts.Stderr,
 			})
