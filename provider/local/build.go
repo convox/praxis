@@ -9,9 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/types"
 	"github.com/pkg/errors"
+)
+
+const (
+	BuildCacheDuration = 5 * time.Minute
 )
 
 func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error) {
@@ -75,6 +78,8 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, errors.WithStack(log.Error(err))
 	}
 
+	fmt.Printf("pid = %+v\n", pid)
+
 	b.Process = pid
 
 	if err := p.storageStore(fmt.Sprintf("apps/%s/builds/%s", app, id), b); err != nil {
@@ -87,15 +92,9 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 func (p *Provider) BuildGet(app, id string) (*types.Build, error) {
 	log := p.logger("BuildGet").Append("app=%q id=%q", app, id)
 
-	key := fmt.Sprintf("%s.%s", app, id)
-
-	if v, ok := cache.Get("BuildGet", key).(*types.Build); ok {
-		return v, log.Successf("cache=hit")
-	}
-
 	var b *types.Build
 
-	if err := p.storageLoad(fmt.Sprintf("apps/%s/builds/%s", app, id), &b); err != nil {
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/builds/%s", app, id), &b, BuildCacheDuration); err != nil {
 		if strings.HasPrefix(err.Error(), "no such key:") {
 			return nil, log.Error(fmt.Errorf("no such build: %s", id))
 		} else {
@@ -103,11 +102,7 @@ func (p *Provider) BuildGet(app, id string) (*types.Build, error) {
 		}
 	}
 
-	if err := cache.Set("BuildGet", key, &app, 10*time.Second); err != nil {
-		return nil, err
-	}
-
-	return b, log.Successf("cache=miss")
+	return b, log.Success()
 }
 
 func (p *Provider) BuildList(app string) (types.Builds, error) {
@@ -181,10 +176,6 @@ func (p *Provider) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*
 	}
 
 	if err := p.storageStore(fmt.Sprintf("apps/%s/builds/%s", app, id), build); err != nil {
-		return nil, errors.WithStack(log.Error(err))
-	}
-
-	if err := cache.Clear("BuildGet", fmt.Sprintf("%s.%s", app, id)); err != nil {
 		return nil, errors.WithStack(log.Error(err))
 	}
 

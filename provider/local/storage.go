@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/convox/praxis/cache"
 )
 
 var lock sync.Mutex
@@ -47,6 +49,10 @@ func (p *Provider) storageDelete(key string) error {
 		return err
 	}
 
+	if err := cache.Clear("storage", key); err != nil {
+		return err
+	}
+
 	return p.storageBucket(path, func(bucket *bolt.Bucket) error {
 		return bucket.Delete([]byte(name))
 	})
@@ -73,7 +79,7 @@ func (p *Provider) storageExists(key string) bool {
 	}
 
 	var buf map[string]interface{}
-	err = p.storageLoad(key, &buf)
+	err = p.storageLoad(key, &buf, 0)
 
 	err = p.storageBucket(path, func(bucket *bolt.Bucket) error {
 		item := bucket.Get([]byte(name))
@@ -102,13 +108,22 @@ func (p *Provider) storageList(prefix string) ([]string, error) {
 	return items, nil
 }
 
-func (p *Provider) storageLoad(key string, v interface{}) error {
+func (p *Provider) storageLoad(key string, v interface{}, d time.Duration) error {
+	if w := cache.Get("storage", key); w != nil {
+		reflect.ValueOf(v).Elem().Set(reflect.ValueOf(w).Elem())
+		return nil
+	}
+
 	data, err := p.storageRead(key)
 	if err != nil {
 		return err
 	}
 
 	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+
+	if err := cache.Set("storage", key, v, d); err != nil {
 		return err
 	}
 
@@ -143,6 +158,10 @@ func (p *Provider) storageStore(key string, v interface{}) error {
 		return err
 	}
 
+	if err := cache.Clear("storage", key); err != nil {
+		return err
+	}
+
 	var data []byte
 
 	switch t := v.(type) {
@@ -154,6 +173,9 @@ func (p *Provider) storageStore(key string, v interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("path = %+v\n", path)
+	fmt.Printf("name = %+v\n", name)
 
 	return p.storageBucket(path, func(bucket *bolt.Bucket) error {
 		return bucket.Put([]byte(name), data)

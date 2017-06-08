@@ -1,7 +1,6 @@
 package local
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -13,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/pkg/errors"
 )
 
 type container struct {
@@ -35,38 +32,38 @@ type containerPort struct {
 	Host      int
 }
 
-func (p *Provider) containerConverge(c container, app, release string) (string, error) {
-	args := []string{}
+// func (p *Provider) containerConverge(c container, app, release string) (string, error) {
+//   args := []string{}
 
-	for k, v := range c.Labels {
-		args = append(args, "--filter", fmt.Sprintf("label=%s=%s", k, v))
-	}
+//   for k, v := range c.Labels {
+//     args = append(args, "--filter", fmt.Sprintf("label=%s=%s", k, v))
+//   }
 
-	ids, err := containerList(args...)
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
+//   ids, err := containerList(args...)
+//   if err != nil {
+//     return "", errors.WithStack(err)
+//   }
 
-	id := ""
+//   id := ""
 
-	switch len(ids) {
-	case 0:
-		p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, release), []byte(fmt.Sprintf("starting: %s\n", c.Name)))
+//   switch len(ids) {
+//   case 0:
+//     p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, release), []byte(fmt.Sprintf("starting: %s\n", c.Name)))
 
-		i, err := p.containerStart(c, app, release)
-		if err != nil {
-			return "", errors.WithStack(err)
-		}
+//     i, err := p.containerStart(c, app, release)
+//     if err != nil {
+//       return "", errors.WithStack(err)
+//     }
 
-		id = i
-	case 1:
-		id = ids[0]
-	default:
-		return "", fmt.Errorf("matched more than one container")
-	}
+//     id = i
+//   case 1:
+//     id = ids[0]
+//   default:
+//     return "", fmt.Errorf("matched more than one container")
+//   }
 
-	return id, nil
-}
+//   return id, nil
+// }
 
 func (p *Provider) containerRegister(c container) error {
 	if c.Hostname == "" || c.Port.Container == 0 || c.Port.Host == 0 {
@@ -191,7 +188,7 @@ func containerBinding(id string, bind string) (string, error) {
 	return b[0].HostPort, nil
 }
 
-func containersByLabels(labels map[string]string) ([]string, error) {
+func containersByLabels(labels map[string]string) ([]container, error) {
 	args := []string{}
 
 	for k, v := range labels {
@@ -201,8 +198,8 @@ func containersByLabels(labels map[string]string) ([]string, error) {
 	return containerList(args...)
 }
 
-func containerList(args ...string) ([]string, error) {
-	as := []string{"ps", "--format", "{{.ID}}"}
+func containerList(args ...string) ([]container, error) {
+	as := []string{"ps", "--format", "{{json .}}"}
 	as = append(as, args...)
 
 	data, err := exec.Command("docker", as...).CombinedOutput()
@@ -210,12 +207,35 @@ func containerList(args ...string) ([]string, error) {
 		return nil, err
 	}
 
-	cs := []string{}
+	cs := []container{}
 
-	s := bufio.NewScanner(bytes.NewReader(data))
+	d := json.NewDecoder(bytes.NewReader(data))
 
-	for s.Scan() {
-		cs = append(cs, s.Text())
+	for d.More() {
+		var c struct {
+			ID     string
+			Labels string
+			Names  string
+		}
+
+		if err := d.Decode(&c); err != nil {
+			return nil, err
+		}
+
+		labels := map[string]string{}
+
+		for _, p := range strings.Split(c.Labels, ",") {
+			pp := strings.SplitN(p, "=", 2)
+			if len(pp) == 2 {
+				labels[pp[0]] = pp[1]
+			}
+		}
+
+		cs = append(cs, container{
+			Id:     c.ID,
+			Labels: labels,
+			Name:   strings.Split(c.Names, ",")[0],
+		})
 	}
 
 	return cs, nil

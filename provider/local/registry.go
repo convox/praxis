@@ -2,9 +2,14 @@ package local
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/convox/praxis/types"
 	"github.com/pkg/errors"
+)
+
+const (
+	RegistryCacheDuration = 1 * time.Hour
 )
 
 func (p *Provider) RegistryAdd(hostname, username, password string) (*types.Registry, error) {
@@ -42,7 +47,7 @@ func (p *Provider) RegistryList() (types.Registries, error) {
 	var r types.Registry
 
 	for i, name := range names {
-		if err := p.storageLoad(fmt.Sprintf("registries/%s", name), &r); err != nil {
+		if err := p.storageLoad(fmt.Sprintf("registries/%s", name), &r, RegistryCacheDuration); err != nil {
 			return nil, errors.WithStack(log.Error(err))
 		}
 

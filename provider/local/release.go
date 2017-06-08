@@ -11,6 +11,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	ReleaseCacheDuration = 1 * time.Hour
+)
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
@@ -49,7 +53,7 @@ func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
 
 	var r *types.Release
 
-	if err := p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), &r); err != nil {
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), &r, ReleaseCacheDuration); err != nil {
 		return nil, errors.WithStack(log.Error(err))
 	}
 	if r == nil {
@@ -125,7 +129,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 	go func() {
 		defer lw.Close()
 
-		var since time.Time
+		since := opts.Since
 
 		for {
 			time.Sleep(200 * time.Millisecond)

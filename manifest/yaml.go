@@ -121,6 +121,8 @@ func (v *Services) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 func (v *Service) SetName(name string) error {
+	v.Scale.Count.Min = 1
+	v.Scale.Count.Max = 1
 	v.Name = name
 	return nil
 }
