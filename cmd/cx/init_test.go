@@ -56,6 +56,10 @@ func TestManifestConvert(t *testing.T) {
 				},
 				Resources: []string{"database"},
 				Scale: manifest.ServiceScale{
+					Count: &manifest.ServiceScaleCount{
+						Min: 1,
+						Max: 1,
+					},
 					Memory: 50,
 				},
 				Volumes: []string{
@@ -86,6 +90,10 @@ func TestManifestConvert(t *testing.T) {
 				Resources: []string{},
 				Scale: manifest.ServiceScale{
 					Memory: 256,
+					Count: &manifest.ServiceScaleCount{
+						Min: 1,
+						Max: 1,
+					},
 				},
 			},
 		},
