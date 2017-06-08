@@ -53,25 +53,8 @@ func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
 		return nil, fmt.Errorf("pid cannot be blank")
 	}
 
-	// docker inspect sometimes seems to fail just after process creation
-	// loop until we get it
-	for i := 0; ; i++ {
-		if i > 3 {
-			return nil, fmt.Errorf("unable to get process: %s", pid)
-		}
-
-		fmt.Printf("attempt: %d\n", i)
-
-		if err := exec.Command("docker", "inspect", pid, "--format", "{{.ID}}").Run(); err == nil {
-			break
-		}
-
-		time.Sleep(50 * time.Millisecond)
-	}
-
 	data, err := exec.Command("docker", "inspect", pid, "--format", "{{.ID}}").CombinedOutput()
 	if err != nil {
-		fmt.Printf("string(data) = %+v\n", string(data))
 		return nil, errors.WithStack(log.Error(err))
 	}
 
@@ -243,9 +226,6 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 	args = append(args, oargs[1:]...)
 
 	data, err := exec.Command("docker", args...).CombinedOutput()
-	fmt.Printf("args = %+v\n", args)
-	fmt.Printf("string(data) = %+v\n", string(data))
-	fmt.Printf("err = %+v\n", err)
 	if err != nil {
 		return "", errors.WithStack(log.Error(err))
 	}
