@@ -27,6 +27,9 @@ type Provider interface {
 	FilesDelete(app, pid string, files []string) error
 	FilesUpload(app, pid string, r io.Reader) error
 
+	ImageCreate(name, url string, opts ImageCreateOptions) (*Image, error)
+	ImageList() (Images, error)
+
 	// InstanceList() (structs.Instances, error)
 	// InstanceTerminate(id string) error
 
