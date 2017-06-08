@@ -88,8 +88,8 @@ func main() {
 		flagUrl = v
 	}
 
-	fmt.Printf("os.Environ() = %+v\n", os.Environ())
-	fmt.Printf("flagDevelopment = %+v\n", flagDevelopment)
+	// fmt.Printf("os.Environ() = %+v\n", os.Environ())
+	// fmt.Printf("flagDevelopment = %+v\n", flagDevelopment)
 
 	if err := auth(); err != nil {
 		fail(err)
