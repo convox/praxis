@@ -11,7 +11,6 @@ import (
 
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
@@ -94,34 +93,23 @@ func appName(c *cli.Context, dir string) (string, error) {
 }
 
 func autoUpdate(ch chan error) {
-	var updated time.Time
-
 	home, err := homedir.Dir()
 	if err != nil {
 		ch <- err
 		return
 	}
 
-	os.MkdirAll(filepath.Join(home, ".convox"), 0755)
+	updated := filepath.Join(home, ".convox", "updated")
 
-	setting := filepath.Join(home, ".convox", "updated")
-
-	if data, err := ioutil.ReadFile(setting); err == nil {
-		up, err := time.Parse(helpers.SortableTime, string(data))
-		if err != nil {
-			ch <- err
+	if stat, err := os.Stat(updated); err == nil {
+		if stat.ModTime().After(time.Now().Add(-1 * time.Hour)) {
+			ch <- nil
 			return
 		}
-		updated = up
 	}
 
-	if updated.After(time.Now().UTC().Add(-1 * time.Hour)) {
-		ch <- nil
-		return
-	}
-
-	os.MkdirAll(filepath.Dir(setting), 0755)
-	ioutil.WriteFile(setting, []byte(time.Now().UTC().Format(helpers.SortableTime)), 0644)
+	os.MkdirAll(filepath.Dir(updated), 0755)
+	ioutil.WriteFile(updated, []byte{}, 0644)
 
 	ex, err := os.Executable()
 	if err != nil {
