@@ -119,6 +119,10 @@ func (m *Manifest) ApplyDefaults() error {
 			m.Services[i].Build.Path = "."
 		}
 
+		if s.Scale.Count == nil {
+			m.Services[i].Scale.Count = &ServiceScaleCount{Min: 1, Max: 1}
+		}
+
 		if s.Health.Path == "" {
 			m.Services[i].Health.Path = "/"
 		}
