@@ -174,9 +174,6 @@ func (p *Provider) storageStore(key string, v interface{}) error {
 		return err
 	}
 
-	fmt.Printf("path = %+v\n", path)
-	fmt.Printf("name = %+v\n", name)
-
 	return p.storageBucket(path, func(bucket *bolt.Bucket) error {
 		return bucket.Put([]byte(name), data)
 	})
