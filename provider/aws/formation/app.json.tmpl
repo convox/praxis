@@ -1,6 +1,14 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Outputs": {
+    {{ range .Manifest.Caches }}
+      "Cache{{ resource .Name }}Endpoint": {
+        "Value": { "Fn::GetAtt": [ "Cache{{ resource .Name }}", "RedisEndpoint.Address" ] }
+      },
+      "Cache{{ resource .Name }}Port": {
+        "Value": { "Fn::GetAtt": [ "Cache{{ resource .Name }}", "RedisEndpoint.Port" ] }
+      },
+    {{ end }}
     {{ range .Manifest.Services }}
       "Endpoint{{ resource .Name }}": {
         "Value": {{ if .Certificate }}
@@ -34,6 +42,7 @@
   },
   "Resources": {
     {{ template "balancers" . }}
+    {{ template "caches" . }}
     {{ template "keys" . }}
     {{ template "queues" . }}
     {{ template "resources" . }}
@@ -137,6 +146,50 @@
         }
       },
     {{ end }}
+  {{ end }}
+{{ end }}
+
+{{ define "caches" }}
+  {{ with .Manifest.Caches }}
+  "CacheSubnetGroup" : {
+    "Type" : "AWS::ElastiCache::SubnetGroup",
+    "Properties" : {
+      "Description": "Cache Subnet group",
+      "SubnetIds" : [
+        { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Subnet0" } },
+        { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Subnet1" } }
+      ]
+    }
+  },
+  "CacheSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription": "Cache security group",
+        "VpcId" : { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Vpc" } },
+        "SecurityGroupIngress" : [
+          {"IpProtocol" : "tcp","ToPort" : "6379", "FromPort" : "6379", "CidrIp" : { "Fn::ImportValue": { "Fn::Sub": "${Rack}:VpcCidr" } } }
+        ]
+      }
+  },
+  {{ range . }}
+    "Cache{{ resource .Name }}": {
+      "Type": "AWS::ElastiCache::CacheCluster",
+      "Properties": {
+        "CacheSubnetGroupName" : { "Ref" : "CacheSubnetGroup" },
+        "CacheNodeType": "cache.t2.medium",
+        "Engine": "redis",
+        "EngineVersion": "3.2.4",
+        "NumCacheNodes": 1,
+        "Tags": [
+          { "Key": "Name", "Value": "{{ .Name }}" },
+          { "Key": "Rack", "Value": { "Ref": "Rack" } },
+          { "Key": "System", "Value": "convox" },
+          { "Key": "Type", "Value": "cache" }
+        ],
+        "VpcSecurityGroupIds"  : [ { "Ref" : "CacheSecurityGroup" } ]
+      }
+    },
+  {{ end }}
   {{ end }}
 {{ end }}
 

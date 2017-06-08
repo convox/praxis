@@ -262,6 +262,9 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 		return "", err
 	}
 	if len(res.Tasks) != 1 {
+		if len(res.Failures) > 0 {
+			return "", fmt.Errorf("unable to start process: %s", *res.Failures[0].Reason)
+		}
 		return "", fmt.Errorf("unable to start process")
 	}
 

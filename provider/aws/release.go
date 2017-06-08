@@ -144,13 +144,6 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 		return fmt.Errorf("no build for release: %s", r.Id)
 	}
 
-	// group, err := p.appResource(app, "Logs")
-	// if err != nil {
-	//   return err
-	// }
-
-	// stream := fmt.Sprintf("convox/release/%s", r.Id)
-
 	topic, err := p.rackResource("NotificationTopic")
 	if err != nil {
 		return err
@@ -168,10 +161,6 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("string(data) = %+v\n", string(data))
-
-	// return nil, fmt.Errorf("stop")
 
 	domain, err := p.rackOutput("Domain")
 	if err != nil {
@@ -226,8 +215,6 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 	// if err != nil {
 	//   return nil, err
 	// }
-
-	// p.writeLogf(group, stream, "updating: %s", stack)
 
 	rs, err := types.Key(4)
 	if err != nil {

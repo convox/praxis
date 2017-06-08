@@ -17,6 +17,7 @@ const (
 
 type Manifest struct {
 	Balancers   Balancers
+	Caches      Caches
 	Environment Environment
 	Keys        Keys
 	Queues      Queues
