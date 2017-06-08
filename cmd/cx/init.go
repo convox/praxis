@@ -64,12 +64,15 @@ func runInit(c *cli.Context) error {
 
 	report.Print()
 
-	err = ioutil.WriteFile("convox.yml", ymNew, 0644)
-	if err != nil {
-		return err
+	if report.Success {
+		err = ioutil.WriteFile("convox.yml", ymNew, 0644)
+		if err != nil {
+			return err
+		}
+		sw.Writef("<ok>SUCCESS</ok>: convox.yml written\n")
+	} else {
+		sw.Writef("<fail>FAIL</fail>: convox.yml not written, please address FAIL messages and try again\n")
 	}
-
-	sw.Writef("<ok>SUCCESS</ok>: convox.yml written\n")
 
 	return nil
 }
@@ -126,12 +129,14 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 
 		// build args
 		if len(service.Build.Args) > 0 {
-			report.Append(fmt.Sprintf("WARN: <service>%s</service> build args not migrated to convox.yml, use ARG in your Dockerfile instead\n", service.Name))
+			report.Append(fmt.Sprintf("<fail>FAIL</fail>: <service>%s</service> build args not migrated to convox.yml, use ARG in your Dockerfile instead\n", service.Name))
+			report.Success = false
 		}
 
 		// build dockerfile
 		if service.Build.Dockerfile != "" {
-			report.Append(fmt.Sprintf("WARN: <service>%s</service> \"dockerfile\" key is not supported in convox.yml, file must be named \"Dockerfile\"\n", service.Name))
+			report.Append(fmt.Sprintf("<fail>FAIL</fail>: <service>%s</service> \"dockerfile\" key is not supported in convox.yml, file must be named \"Dockerfile\"\n", service.Name))
+			report.Success = false
 		}
 
 		// command
@@ -146,7 +151,8 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 
 		// entrypoint
 		if service.Entrypoint != "" {
-			report.Append(fmt.Sprintf("WARN: <service>%s</service> \"entrypoint\" key not supported in convox.yml, use ENTRYPOINT in Dockerfile instead\n", service.Name))
+			report.Append(fmt.Sprintf("<fail>FAIL</fail>: <service>%s</service> \"entrypoint\" key not supported in convox.yml, use ENTRYPOINT in Dockerfile instead\n", service.Name))
+			report.Success = false
 		}
 
 		// environment
@@ -228,7 +234,8 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 
 		// convox.start.shift
 		if len(service.LabelsByPrefix("convox.start.shift")) > 0 {
-			report.Append(fmt.Sprintf("WARN: <service>%s</service> - port shifting is not supported, use internal hostnames instead\n", service.Name))
+			report.Append(fmt.Sprintf("<fail>FAIL</fail>: <service>%s</service> - port shifting is not supported, use internal hostnames instead\n", service.Name))
+			report.Success = false
 		}
 
 		// links
@@ -242,7 +249,7 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 				}
 			}
 			if !resource {
-				report.Append(fmt.Sprintf("WARN: <service>%s</service> - environment variables not generated for linked service <service>%s</service>, use internal URL https://%s.<app name>.convox instead\n", service.Name, link, link))
+				report.Append(fmt.Sprintf("INFO: <service>%s</service> - environment variables not generated for linked service <service>%s</service>, use internal URL https://%s.<app name>.convox instead\n", service.Name, link, link))
 			}
 		}
 
@@ -255,11 +262,11 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 		// ports
 		p := manifest.ServicePort{}
 		if len(service.Ports) > 1 {
-			report.Append(fmt.Sprintf("WARN: <service>%s</service> - multiple ports found, only 1 HTTP port per service is supported\n", service.Name))
+			report.Append(fmt.Sprintf("INFO: <service>%s</service> - multiple ports found, only 1 HTTP port per service is supported\n", service.Name))
 		}
 		for _, port := range service.Ports {
 			if port.Protocol == "udp" {
-				report.Append(fmt.Sprintf("WARN: <service>%s</service> - UDP ports are not supported\n", service.Name))
+				report.Append(fmt.Sprintf("INFO: <service>%s</service> - UDP ports are not supported\n", service.Name))
 				continue
 			}
 			switch port.Balancer {
@@ -272,13 +279,13 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 					p.Scheme = "https"
 				}
 			default:
-				report.Append(fmt.Sprintf("WARN: <service>%s</service> - only HTTP ports supported\n", service.Name))
+				report.Append(fmt.Sprintf("INFO: <service>%s</service> - only HTTP ports supported\n", service.Name))
 			}
 		}
 
 		// privileged
 		if service.Privileged {
-			report.Append(fmt.Sprintf("WARN: <service>%s</service> - privileged mode not supported\n", service.Name))
+			report.Append(fmt.Sprintf("INFO: <service>%s</service> - privileged mode not supported\n", service.Name))
 		}
 
 		s := manifest.Service{
