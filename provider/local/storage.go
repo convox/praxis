@@ -64,6 +64,10 @@ func (p *Provider) storageDeleteAll(prefix string) error {
 		return err
 	}
 
+	if err := cache.ClearPrefix("storage", prefix); err != nil {
+		return err
+	}
+
 	return p.storageBucket(path, func(bucket *bolt.Bucket) error {
 		if bucket.Bucket([]byte(name)) == nil {
 			return nil
@@ -78,8 +82,10 @@ func (p *Provider) storageExists(key string) bool {
 		return false
 	}
 
-	var buf map[string]interface{}
-	err = p.storageLoad(key, &buf, 0)
+	err = p.storageLoad(key, nil, 0)
+	if err != nil {
+		return false
+	}
 
 	err = p.storageBucket(path, func(bucket *bolt.Bucket) error {
 		item := bucket.Get([]byte(name))
@@ -110,7 +116,9 @@ func (p *Provider) storageList(prefix string) ([]string, error) {
 
 func (p *Provider) storageLoad(key string, v interface{}, d time.Duration) error {
 	if w := cache.Get("storage", key); w != nil {
-		reflect.ValueOf(v).Elem().Set(reflect.ValueOf(w).Elem())
+		if v != nil {
+			reflect.ValueOf(v).Elem().Set(reflect.ValueOf(w).Elem())
+		}
 		return nil
 	}
 

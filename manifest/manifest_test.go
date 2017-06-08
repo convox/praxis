@@ -76,7 +76,7 @@ func TestManifestLoad(t *testing.T) {
 				},
 				Resources: []string{"database"},
 				Scale: manifest.ServiceScale{
-					Count:  manifest.ServiceCount{Min: 3, Max: 10},
+					Count:  &manifest.ServiceScaleCount{Min: 3, Max: 10},
 					Memory: 256,
 				},
 			},
@@ -96,7 +96,7 @@ func TestManifestLoad(t *testing.T) {
 					"SECRET",
 				},
 				Scale: manifest.ServiceScale{
-					Count:  manifest.ServiceCount{Min: 1, Max: 1},
+					Count:  &manifest.ServiceScaleCount{Min: 1, Max: 1},
 					Memory: 512,
 				},
 			},
@@ -115,7 +115,23 @@ func TestManifestLoad(t *testing.T) {
 					Timeout:  3,
 				},
 				Scale: manifest.ServiceScale{
-					Count:  manifest.ServiceCount{Min: 0, Max: 0},
+					Count:  &manifest.ServiceScaleCount{Min: 0, Max: 0},
+					Memory: 256,
+				},
+			},
+			manifest.Service{
+				Name: "bar",
+				Build: manifest.ServiceBuild{
+					Path: ".",
+				},
+				Command: manifest.ServiceCommand{},
+				Health: manifest.ServiceHealth{
+					Interval: 5,
+					Path:     "/",
+					Timeout:  4,
+				},
+				Scale: manifest.ServiceScale{
+					Count:  &manifest.ServiceScaleCount{Min: 1, Max: 1},
 					Memory: 256,
 				},
 			},
