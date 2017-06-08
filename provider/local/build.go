@@ -7,6 +7,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/convox/praxis/types"
@@ -16,6 +17,8 @@ import (
 const (
 	BuildCacheDuration = 5 * time.Minute
 )
+
+var buildUpdateLock sync.Mutex
 
 func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error) {
 	log := p.logger("BuildCreate").Append("app=%q url=%q", app, url)
@@ -53,6 +56,9 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, errors.WithStack(log.Error(err))
 	}
 
+	buildUpdateLock.Lock()
+	defer buildUpdateLock.Unlock()
+
 	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{
@@ -77,8 +83,6 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 	if err != nil {
 		return nil, errors.WithStack(log.Error(err))
 	}
-
-	fmt.Printf("pid = %+v\n", pid)
 
 	b.Process = pid
 
@@ -148,6 +152,9 @@ func (p *Provider) BuildLogs(app, id string) (io.ReadCloser, error) {
 }
 
 func (p *Provider) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*types.Build, error) {
+	buildUpdateLock.Lock()
+	defer buildUpdateLock.Unlock()
+
 	log := p.logger("BuildUpdate").Append("app=%q id=%q", app, id)
 
 	build, err := p.BuildGet(app, id)
