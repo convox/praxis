@@ -320,6 +320,52 @@ func (_m *Provider) FilesUpload(app string, pid string, r io.Reader) error {
 	return r0
 }
 
+// ImageCreate provides a mock function with given fields: name, url, opts
+func (_m *Provider) ImageCreate(name string, url string, opts types.ImageCreateOptions) (*types.Image, error) {
+	ret := _m.Called(name, url, opts)
+
+	var r0 *types.Image
+	if rf, ok := ret.Get(0).(func(string, string, types.ImageCreateOptions) *types.Image); ok {
+		r0 = rf(name, url, opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Image)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, types.ImageCreateOptions) error); ok {
+		r1 = rf(name, url, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ImageList provides a mock function with given fields:
+func (_m *Provider) ImageList() (types.Images, error) {
+	ret := _m.Called()
+
+	var r0 types.Images
+	if rf, ok := ret.Get(0).(func() types.Images); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Images)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // KeyDecrypt provides a mock function with given fields: app, key, data
 func (_m *Provider) KeyDecrypt(app string, key string, data []byte) ([]byte, error) {
 	ret := _m.Called(app, key, data)
