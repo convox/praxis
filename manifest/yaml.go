@@ -268,6 +268,9 @@ func (v *ServicePort) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		default:
 			return fmt.Errorf("invalid port: %s", t)
 		}
+	case int:
+		v.Scheme = "http"
+		v.Port = t
 	default:
 		return fmt.Errorf("invalid port: %s", t)
 	}
