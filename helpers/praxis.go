@@ -5,6 +5,7 @@ import (
 
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
+	"github.com/pkg/errors"
 )
 
 func AppEnvironment(p types.Provider, app string) (types.Environment, error) {
@@ -27,7 +28,7 @@ func AppManifest(p types.Provider, app string) (*manifest.Manifest, *types.Relea
 	}
 
 	if a.Release == "" {
-		return nil, nil, fmt.Errorf("no release for app: %s", app)
+		return nil, nil, errors.WithStack(fmt.Errorf("no release for app: %s", app))
 	}
 
 	return ReleaseManifest(p, app, a.Release)
@@ -40,7 +41,7 @@ func ReleaseManifest(p types.Provider, app, release string) (*manifest.Manifest,
 	}
 
 	if r.Build == "" {
-		return nil, nil, fmt.Errorf("no builds for app: %s", app)
+		return nil, nil, errors.WithStack(fmt.Errorf("no builds for app: %s", app))
 	}
 
 	b, err := p.BuildGet(app, r.Build)
