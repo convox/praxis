@@ -338,7 +338,22 @@ func build(b ServiceBuild, tag string, opts BuildOptions) error {
 		return err
 	}
 
-	ba, err := buildArgs(filepath.Join(path, "Dockerfile"), opts)
+	df := filepath.Join(path, "Dockerfile")
+
+	if opts.Development {
+		data, err := ioutil.ReadFile(df)
+		if err != nil {
+			return err
+		}
+
+		dev := bytes.SplitN(data, []byte("## convox:production"), 2)
+
+		if err := ioutil.WriteFile(df, dev[0], 0644); err != nil {
+			return err
+		}
+	}
+
+	ba, err := buildArgs(df, opts)
 	if err != nil {
 		return err
 	}
