@@ -73,6 +73,10 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
+	if err := Rack.ReleasePromote(app.Name, build.Release); err != nil {
+		return err
+	}
+
 	for _, s := range m.Services {
 		if s.Test == "" {
 			continue
