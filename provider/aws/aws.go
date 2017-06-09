@@ -670,6 +670,11 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 			return "", fmt.Errorf("no release for app: %s", app)
 		}
 
+		req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
+			Name:  aws.String("RELEASE"),
+			Value: aws.String(opts.Release),
+		})
+
 		account, err := p.accountID()
 		if err != nil {
 			return "", err
