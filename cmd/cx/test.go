@@ -77,6 +77,19 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
+	if err := releaseLogs(app.Name, build.Release, m.Writer("release", os.Stdout), types.LogsOptions{Follow: true}); err != nil {
+		return err
+	}
+
+	r, err := Rack.ReleaseGet(app.Name, build.Release)
+	if err != nil {
+		return err
+	}
+
+	if r.Status != "promoted" {
+		return fmt.Errorf("promote failed")
+	}
+
 	for _, s := range m.Services {
 		if s.Test == "" {
 			continue
