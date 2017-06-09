@@ -172,24 +172,18 @@ func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.Read
 
 	r, w := io.Pipe()
 
-	go p.subscribeLogs(group, stream, opts, w)
-
-	go func() {
-		for {
-			t, err := p.taskForPid(pid)
-			if err != nil {
-				w.Close()
-				return
-			}
-
-			if *t.LastStatus == "STOPPED" {
-				w.Close()
-				return
-			}
-
-			time.Sleep(2 * time.Second)
+	go p.subscribeLogsCallback(group, stream, opts, w, func() bool {
+		t, err := p.taskForPid(pid)
+		if err != nil {
+			return false
 		}
-	}()
+
+		if *t.LastStatus == "STOPPED" {
+			return false
+		}
+
+		return true
+	})
 
 	return r, nil
 }
