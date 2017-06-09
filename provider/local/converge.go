@@ -28,7 +28,7 @@ func (p *Provider) converge(app string) error {
 
 	desired := []container{}
 
-	c, err := p.balancerContainers(m.Balancers, app, r.Id, r.Stage)
+	c, err := p.balancerContainers(m.Balancers, app, r.Id)
 	if err != nil {
 		return errors.WithStack(log.Error(err))
 	}
@@ -42,7 +42,7 @@ func (p *Provider) converge(app string) error {
 
 	desired = append(desired, c...)
 
-	c, err = p.serviceContainers(m.Services, app, r.Id, r.Stage)
+	c, err = p.serviceContainers(m.Services, app, r.Id)
 	if err != nil {
 		return errors.WithStack(log.Error(err))
 	}
@@ -170,13 +170,8 @@ func resourceVolumes(app, kind, name string) ([]string, error) {
 	return []string{}, fmt.Errorf("unknown resource type: %s", kind)
 }
 
-func (p *Provider) balancerContainers(balancers manifest.Balancers, app, release string, stage int) ([]container, error) {
+func (p *Provider) balancerContainers(balancers manifest.Balancers, app, release string) ([]container, error) {
 	cs := []container{}
-
-	// don't run balancers in test stage
-	if stage == manifest.StageTest {
-		return cs, nil
-	}
 
 	sys, err := p.SystemGet()
 	if err != nil {
@@ -260,13 +255,8 @@ func (p *Provider) resourceContainers(resources manifest.Resources, app, release
 	return cs, nil
 }
 
-func (p *Provider) serviceContainers(services manifest.Services, app, release string, stage int) ([]container, error) {
+func (p *Provider) serviceContainers(services manifest.Services, app, release string) ([]container, error) {
 	cs := []container{}
-
-	// don't run background services in test stage
-	if stage == manifest.StageTest {
-		return cs, nil
-	}
 
 	sys, err := p.SystemGet()
 	if err != nil {
@@ -302,22 +292,9 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 			})
 		}
 
-		var command string
-
-		switch stage {
-		case manifest.StageDevelopment:
-			command = s.Command.Development
-		case manifest.StageTest:
-			return nil, fmt.Errorf("can not run background services in test")
-		case manifest.StageProduction:
-			command = s.Command.Production
-		default:
-			return nil, fmt.Errorf("unknown stage: %d", stage)
-		}
-
 		cmd := []string{}
 
-		if c := strings.TrimSpace(command); c != "" {
+		if c := strings.TrimSpace(s.Command); c != "" {
 			cmd = append(cmd, "sh", "-c", c)
 		}
 

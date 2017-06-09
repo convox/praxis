@@ -35,8 +35,6 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		r.Env = opts.Env
 	}
 
-	r.Stage = opts.Stage
-
 	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, r.Id), r); err != nil {
 		return nil, errors.WithStack(log.Error(err))
 	}

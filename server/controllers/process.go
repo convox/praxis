@@ -28,9 +28,7 @@ func ProcessExec(rw io.ReadWriteCloser, c *api.Context) error {
 		Output: rw,
 	}
 
-	if c.Header("Input") == "true" {
-		opts.Input = rw
-	}
+	opts.Input = ioutil.NopCloser(rw)
 
 	if height != "" {
 		h, err := strconv.Atoi(height)
@@ -194,9 +192,7 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 		Output:      rw,
 	}
 
-	if c.Header("Input") == "true" {
-		opts.Input = ioutil.NopCloser(rw)
-	}
+	opts.Input = ioutil.NopCloser(rw)
 
 	if height != "" {
 		h, err := strconv.Atoi(height)

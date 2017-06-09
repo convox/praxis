@@ -34,11 +34,7 @@ func TestManifestConvert(t *testing.T) {
 				Build: manifest.ServiceBuild{
 					Path: ".",
 				},
-				Command: manifest.ServiceCommand{
-					Development: "bin/web",
-					Production:  "bin/web",
-					Test:        "",
-				},
+				Command: "bin/web",
 				Environment: []string{
 					"BAZ",
 					"FOO=bar",
@@ -72,11 +68,7 @@ func TestManifestConvert(t *testing.T) {
 				Build: manifest.ServiceBuild{
 					Path: ".",
 				},
-				Command: manifest.ServiceCommand{
-					Development: "bin/work",
-					Test:        "",
-					Production:  "bin/work",
-				},
+				Command:     "bin/work",
 				Environment: []string{},
 				Health: manifest.ServiceHealth{
 					Path:     "/",

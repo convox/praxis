@@ -67,7 +67,7 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment}, m.Writer("build", os.Stdout))
+	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Development: true}, m.Writer("build", os.Stdout))
 	if err != nil {
 		return err
 	}
