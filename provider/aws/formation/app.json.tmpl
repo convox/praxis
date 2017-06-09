@@ -306,6 +306,12 @@
             }
           },
           "Memory": "{{ .Scale.Memory }}",
+          "MountPoints": [
+            {
+              "ContainerPath": "/var/run/docker.sock",
+              "SourceVolume": "docker"
+            }
+          ],
           {{ with .Port.Port }}
             "PortMappings": [ { "ContainerPort": "{{ . }}", "Protocol": "tcp" } ],
           {{ end }}
