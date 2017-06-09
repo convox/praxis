@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
@@ -54,6 +55,13 @@ func init() {
 }
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	app := stdcli.New()
 
 	app.Name = "cx"
@@ -66,14 +74,20 @@ func main() {
 
 	ch := make(chan error)
 
-	if Version != "dev" {
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+
+	if Version != "dev" && u.Uid != "0" {
 		go autoUpdate(ch)
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		return err
 	}
+
+	return nil
 }
 
 func appName(c *cli.Context, dir string) (string, error) {
@@ -100,17 +114,17 @@ func autoUpdate(ch chan error) {
 		return
 	}
 
-	updated := filepath.Join(home, ".convox", "updated")
+	lock := filepath.Join(home, ".convox", "autoupdate")
 
-	if stat, err := os.Stat(updated); err == nil {
+	if stat, err := os.Stat(lock); err == nil {
 		if stat.ModTime().After(time.Now().Add(-1 * time.Hour)) {
 			ch <- nil
 			return
 		}
 	}
 
-	os.MkdirAll(filepath.Dir(updated), 0755)
-	ioutil.WriteFile(updated, []byte{}, 0644)
+	os.MkdirAll(filepath.Dir(lock), 0755)
+	ioutil.WriteFile(lock, []byte{}, 0644)
 
 	ex, err := os.Executable()
 	if err != nil {
