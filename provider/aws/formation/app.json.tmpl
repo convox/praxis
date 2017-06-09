@@ -267,8 +267,8 @@
       {{ end }}
       "Properties": {
         "ContainerDefinitions": [ {
-          {{ if .Command.Production }}
-            "Command": [ "sh", "-c", "{{ .Command.Production }}" ],
+          {{ with .Command }}
+            "Command": [ "sh", "-c", "{{ . }}" ],
           {{ end }}
           "DockerLabels": {
             "convox.app": "{{ $.App.Name }}",

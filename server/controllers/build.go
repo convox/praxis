@@ -3,7 +3,6 @@ package controllers
 import (
 	"net/http"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/convox/praxis/api"
@@ -13,15 +12,13 @@ import (
 
 func BuildCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
-	url := c.Form("url")
 	cache := c.Form("cache") == "true"
+	development := c.Form("development") == "true"
+	url := c.Form("url")
 
 	opts := types.BuildCreateOptions{
-		Cache: cache,
-	}
-
-	if s, err := strconv.Atoi(c.Form("stage")); err == nil {
-		opts.Stage = s
+		Cache:       cache,
+		Development: development,
 	}
 
 	build, err := Provider.WithContext(c.Context()).BuildCreate(app, url, opts)

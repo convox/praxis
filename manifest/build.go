@@ -18,12 +18,13 @@ import (
 )
 
 type BuildOptions struct {
-	Cache  string
-	Env    Environment
-	Push   string
-	Root   string
-	Stdout io.Writer
-	Stderr io.Writer
+	Cache       string
+	Development bool
+	Env         Environment
+	Push        string
+	Root        string
+	Stdout      io.Writer
+	Stderr      io.Writer
 }
 
 type BuildSource struct {
@@ -337,16 +338,27 @@ func build(b ServiceBuild, tag string, opts BuildOptions) error {
 		return err
 	}
 
-	ba, err := buildArgs(filepath.Join(path, "Dockerfile"))
+	df := filepath.Join(path, "Dockerfile")
+
+	if opts.Development {
+		data, err := ioutil.ReadFile(df)
+		if err != nil {
+			return err
+		}
+
+		dev := bytes.SplitN(data, []byte("## convox:production"), 2)
+
+		if err := ioutil.WriteFile(df, dev[0], 0644); err != nil {
+			return err
+		}
+	}
+
+	ba, err := buildArgs(df, opts)
 	if err != nil {
 		return err
 	}
 
-	for _, a := range ba {
-		if v, ok := opts.Env[a]; ok {
-			args = append(args, "--build-arg", fmt.Sprintf("%s=%s", a, v))
-		}
-	}
+	args = append(args, ba...)
 
 	args = append(args, path)
 
@@ -355,7 +367,7 @@ func build(b ServiceBuild, tag string, opts BuildOptions) error {
 	return opts.docker(args...)
 }
 
-func buildArgs(dockerfile string) ([]string, error) {
+func buildArgs(dockerfile string, opts BuildOptions) ([]string, error) {
 	fd, err := os.Open(dockerfile)
 	if err != nil {
 		return nil, err
@@ -376,8 +388,15 @@ func buildArgs(dockerfile string) ([]string, error) {
 		parts := strings.Split(fields[1], "=")
 
 		switch fields[0] {
+		case "FROM":
+			if opts.Development && strings.Contains(strings.ToLower(s.Text()), "as development") {
+				args = append(args, "--target", "development")
+			}
 		case "ARG":
-			args = append(args, strings.TrimSpace(parts[0]))
+			k := strings.TrimSpace(parts[0])
+			if v, ok := opts.Env[k]; ok {
+				args = append(args, "--build-args", fmt.Sprintf("%s=%s", k, v))
+			}
 		}
 	}
 

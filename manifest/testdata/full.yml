@@ -1,12 +1,3 @@
-balancers:
-  api:
-    80/http/301: https://:443
-    443/https: http://api:3000
-  proxy:
-    80: proxy:3001
-    443: proxy:3002
-    1080: proxy:3003
-    2133: proxy:3000
 keys:
   master:
 queues:
@@ -19,9 +10,6 @@ services:
     build:
       path: api
     certificate: foo.example.org
-    command:
-      development: rerun ${FOO} github.com/convox/praxis
-      test: make ${BAR} test
     environment:
       - DEVELOPMENT=false
       - SECRET
@@ -29,19 +17,25 @@ services:
       interval: 10
     resources:
       - database
+    port: 1000
     scale: 3-10
+    test: make ${BAR} test
   proxy:
     command: bash
     image: ubuntu:16.04
     environment:
       - SECRET
     health: /auth
+    port: https:2000
     scale:
       memory: 512
   foo:
     command: foo
     health:
       timeout: 3
+    port:
+      scheme: https
+      port: 3000
     scale: 0
   bar:
 tables:

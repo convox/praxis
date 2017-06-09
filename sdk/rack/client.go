@@ -55,7 +55,7 @@ func (o *RequestOptions) Reader() (io.Reader, error) {
 	}
 
 	if o.Body == nil && len(o.Params) == 0 {
-		return nil, nil
+		return bytes.NewReader(nil), nil
 	}
 
 	if o.Body != nil {
@@ -127,7 +127,9 @@ func (c *Client) Stream(path string, opts RequestOptions) (io.ReadCloser, error)
 			return nil, err
 		}
 
-		go io.Copy(ws, r)
+		if r != nil {
+			go io.Copy(ws, r)
+		}
 
 		return ws, nil
 	case "http2":

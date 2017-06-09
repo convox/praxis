@@ -140,13 +140,11 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 		}
 
 		// command
-		var cmd manifest.ServiceCommand
+		var cmd string
 		if len(service.Command.Array) > 0 {
-			cmd.Development = shellquote.Join(service.Command.Array...)
-			cmd.Production = shellquote.Join(service.Command.Array...)
+			cmd = shellquote.Join(service.Command.Array...)
 		} else {
-			cmd.Development = service.Command.String
-			cmd.Production = service.Command.String
+			cmd = service.Command.String
 		}
 
 		// entrypoint

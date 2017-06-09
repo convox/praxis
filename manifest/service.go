@@ -8,16 +8,17 @@ import (
 type Service struct {
 	Name string `yaml:"-"`
 
-	Build       ServiceBuild   `yaml:"build,omitempty"`
-	Certificate string         `yaml:"certificate,omitempty"`
-	Command     ServiceCommand `yaml:"command,omitempty"`
-	Environment []string       `yaml:"environment,omitempty"`
-	Health      ServiceHealth  `yaml:"health,omitempty"`
-	Image       string         `yaml:"image,omitempty"`
-	Port        ServicePort    `yaml:"port,omitempty"`
-	Resources   []string       `yaml:"resources,omitempty"`
-	Scale       ServiceScale   `yaml:"scale,omitempty"`
-	Volumes     []string       `yaml:"volumes,omitempty"`
+	Build       ServiceBuild  `yaml:"build,omitempty"`
+	Certificate string        `yaml:"certificate,omitempty"`
+	Command     string        `yaml:"command,omitempty"`
+	Environment []string      `yaml:"environment,omitempty"`
+	Health      ServiceHealth `yaml:"health,omitempty"`
+	Image       string        `yaml:"image,omitempty"`
+	Port        ServicePort   `yaml:"port,omitempty"`
+	Resources   []string      `yaml:"resources,omitempty"`
+	Scale       ServiceScale  `yaml:"scale,omitempty"`
+	Test        string        `yaml:"test,omitempty"`
+	Volumes     []string      `yaml:"volumes,omitempty"`
 }
 
 type Services []Service

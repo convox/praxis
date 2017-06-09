@@ -19,7 +19,6 @@ func (c *Client) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (rel
 		Params: Params{
 			"build": opts.Build,
 			"env":   string(data),
-			"stage": strconv.Itoa(opts.Stage),
 		},
 	}
 
