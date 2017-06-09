@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -99,7 +100,15 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 	services := manifest.Services{}
 	timers := make(manifest.Timers, 0)
 
-	for name, service := range mOld.Services {
+	sk := make([]string, 0)
+	for k, _ := range mOld.Services {
+		sk = append(sk, k)
+	}
+	sort.Strings(sk)
+
+	for _, k := range sk {
+		service := mOld.Services[k]
+
 		// resources
 		serviceResources := []string{}
 		if resourceService(service) {
@@ -287,7 +296,7 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 		}
 
 		s := manifest.Service{
-			Name:        name,
+			Name:        k,
 			Build:       b,
 			Command:     cmd,
 			Environment: env,

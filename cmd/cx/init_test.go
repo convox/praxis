@@ -101,6 +101,7 @@ func TestManifestConvert(t *testing.T) {
 
 	r := cx.Report{
 		Messages: []string{
+			"INFO: <service>database</service> has been migrated to a resource\n",
 			"<fail>FAIL</fail>: <service>web</service> build args not migrated to convox.yml, use ARG in your Dockerfile instead\n",
 			"<fail>FAIL</fail>: <service>web</service> \"dockerfile\" key is not supported in convox.yml, file must be named \"Dockerfile\"\n",
 			"<fail>FAIL</fail>: <service>web</service> \"entrypoint\" key not supported in convox.yml, use ENTRYPOINT in Dockerfile instead\n",
@@ -118,7 +119,6 @@ func TestManifestConvert(t *testing.T) {
 			"INFO: <service>web</service> - UDP ports are not supported\n",
 			"INFO: <service>web</service> - only HTTP ports supported\n",
 			"INFO: <service>web</service> - privileged mode not supported\n",
-			"INFO: <service>database</service> has been migrated to a resource\n",
 			"INFO: custom networks not supported, use service hostnames instead\n",
 		},
 		Success: false,
