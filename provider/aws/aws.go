@@ -654,6 +654,18 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		})
 	}
 
+	rs, err := p.ResourceList(app)
+	if err != nil {
+		return "", err
+	}
+
+	for _, r := range rs {
+		req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
+			Name:  aws.String(strings.ToUpper(fmt.Sprintf("%s_URL", r.Name))),
+			Value: aws.String(r.Endpoint),
+		})
+	}
+
 	if opts.Service != "" && opts.Image == "" {
 		if opts.Release == "" {
 			a, err := p.AppGet(app)
