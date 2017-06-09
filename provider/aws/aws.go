@@ -734,6 +734,18 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		})
 	}
 
+	req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{
+		ContainerPath: aws.String("/var/run/docker.sock"),
+		SourceVolume:  aws.String("docker"),
+	})
+
+	req.Volumes = append(req.Volumes, &ecs.Volume{
+		Host: &ecs.HostVolumeProperties{
+			SourcePath: aws.String("/var/run/docker.sock"),
+		},
+		Name: aws.String("docker"),
+	})
+
 	res, err := p.ECS().RegisterTaskDefinition(req)
 	if err != nil {
 		return "", err
