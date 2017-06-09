@@ -723,6 +723,10 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	for from, to := range opts.Volumes {
 		name := fmt.Sprintf("volume-%d", i)
 
+		if from == "/var/run/docker.sock" && to == "/var/run/docker.sock" {
+			name = "docker"
+		}
+
 		req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{
 			ContainerPath: aws.String(to),
 			SourceVolume:  aws.String(name),
@@ -736,17 +740,19 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		})
 	}
 
-	req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{
-		ContainerPath: aws.String("/var/run/docker.sock"),
-		SourceVolume:  aws.String("docker"),
-	})
+	// req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{
+	// 	ContainerPath: aws.String("/var/run/docker.sock"),
+	// 	SourceVolume:  aws.String("docker"),
+	// })
 
-	req.Volumes = append(req.Volumes, &ecs.Volume{
-		Host: &ecs.HostVolumeProperties{
-			SourcePath: aws.String("/var/run/docker.sock"),
-		},
-		Name: aws.String("docker"),
-	})
+	// req.Volumes = append(req.Volumes, &ecs.Volume{
+	// 	Host: &ecs.HostVolumeProperties{
+	// 		SourcePath: aws.String("/var/run/docker.sock"),
+	// 	},
+	// 	Name: aws.String("docker"),
+	// })
+
+	fmt.Printf("REQ: %+v\n", req)
 
 	res, err := p.ECS().RegisterTaskDefinition(req)
 	if err != nil {
