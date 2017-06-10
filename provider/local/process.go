@@ -283,6 +283,19 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 	}
 
+	if opts.Release != "" {
+		rs, err := p.ResourceList(app)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, r := range rs {
+			k := strings.ToUpper(fmt.Sprintf("%s_URL", r.Name))
+			v := r.Endpoint
+			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
+		}
+	}
+
 	for k, v := range opts.Environment {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 	}
