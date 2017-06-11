@@ -245,8 +245,6 @@ func (p *Provider) ProcessStop(app, pid string) error {
 }
 
 func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]string, error) {
-	fmt.Printf("OPTS: %+v\n", opts)
-
 	args := []string{"run", "--rm", "-i"}
 
 	if opts.Input != nil {
