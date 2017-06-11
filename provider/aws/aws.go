@@ -583,8 +583,6 @@ func (p *Provider) fetchTaskDefinition(arn string) (*ecs.TaskDefinition, error) 
 }
 
 func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (string, error) {
-	fmt.Printf("OPTS: %+v\n", opts)
-
 	logs, err := p.appResource(app, "Logs")
 	if err != nil {
 		return "", err
@@ -771,8 +769,6 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 			SourceVolume:  aws.String(name),
 		})
 	}
-
-	fmt.Printf("REQ: %+v\n", req)
 
 	res, err := p.ECS().RegisterTaskDefinition(req)
 	if err != nil {
