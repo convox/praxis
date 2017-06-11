@@ -581,6 +581,8 @@ func (p *Provider) fetchTaskDefinition(arn string) (*ecs.TaskDefinition, error) 
 }
 
 func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (string, error) {
+	fmt.Printf("OPTS: %+v\n", opts)
+
 	logs, err := p.appResource(app, "Logs")
 	if err != nil {
 		return "", err
@@ -606,28 +608,74 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		Family: aws.String(fmt.Sprintf("%s-%s", p.Name, app)),
 	}
 
+	// get release and manifest for initial environment and volumes
+	var release *types.Release
+	if opts.Release != "" {
+		m, r, err := helpers.ReleaseManifest(p, app, opts.Release)
+		if err != nil {
+			return "", err
+		}
+		release = r
+
+		// app / manifest environment
+		env, err := m.ServiceEnvironment(opts.Service)
+		if err != nil {
+			return "", err
+		}
+
+		for k, v := range env {
+			req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
+				Name:  aws.String(k),
+				Value: aws.String(v),
+			})
+		}
+
+		// resource environment
+		rs, err := p.ResourceList(app)
+		if err != nil {
+			return "", err
+		}
+
+		for _, r := range rs {
+			req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
+				Name:  aws.String(strings.ToUpper(fmt.Sprintf("%s_URL", r.Name))),
+				Value: aws.String(r.Endpoint),
+			})
+		}
+
+		// volumes for service
+		s, err := m.Service(opts.Service)
+		if err != nil {
+			return "", err
+		}
+
+		for i, v := range s.Volumes {
+			parts := strings.Split(v, ":")
+			if len(parts) != 2 {
+				return "", fmt.Errorf("invalid volume definition: %s", v)
+			}
+			name := fmt.Sprintf("mvolume-%d", i) // manifest volumes
+
+			req.Volumes = append(req.Volumes, &ecs.Volume{
+				Host: &ecs.HostVolumeProperties{
+					SourcePath: aws.String(parts[0]),
+				},
+				Name: aws.String(name),
+			})
+
+			req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{
+				ContainerPath: aws.String(parts[1]),
+				SourceVolume:  aws.String(name),
+			})
+		}
+	}
+
 	if opts.Command != "" {
 		req.ContainerDefinitions[0].Command = []*string{aws.String("sh"), aws.String("-c"), aws.String(opts.Command)}
 	}
 
 	if opts.Output != nil {
 		req.ContainerDefinitions[0].Command = []*string{aws.String("sleep"), aws.String("3600")}
-	}
-
-	env, err := helpers.AppEnvironment(p, app)
-	if err != nil {
-		return "", err
-	}
-
-	for k, v := range opts.Environment {
-		env[k] = v
-	}
-
-	for k, v := range env {
-		req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
-			Name:  aws.String(k),
-			Value: aws.String(v),
-		})
 	}
 
 	endpoint, err := p.stackOutput(p.Name, "Endpoint")
@@ -655,24 +703,13 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	}
 
 	if opts.Service != "" && opts.Image == "" {
-		if opts.Release == "" {
-			a, err := p.AppGet(app)
-			if err != nil {
-				return "", err
-			}
-
-			opts.Release = a.Release
-		}
-
-		fmt.Printf("opts = %+v\n", opts)
-
-		if opts.Release == "" {
+		if release == nil {
 			return "", fmt.Errorf("no release for app: %s", app)
 		}
 
 		req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
 			Name:  aws.String("RELEASE"),
-			Value: aws.String(opts.Release),
+			Value: aws.String(release.Id),
 		})
 
 		account, err := p.accountID()
@@ -685,30 +722,11 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 			return "", err
 		}
 
-		r, err := p.ReleaseGet(app, opts.Release)
-		if err != nil {
-			return "", err
-		}
-
-		req.ContainerDefinitions[0].Image = aws.String(fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s:%s.%s", account, p.Region, repo, opts.Service, r.Build))
+		req.ContainerDefinitions[0].Image = aws.String(fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s:%s.%s", account, p.Region, repo, opts.Service, release.Build))
 	}
 
 	if opts.Image != "" {
 		req.ContainerDefinitions[0].Image = aws.String(opts.Image)
-	}
-
-	if opts.Release != "" {
-		rs, err := p.ResourceList(app)
-		if err != nil {
-			return "", err
-		}
-
-		for _, r := range rs {
-			req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
-				Name:  aws.String(strings.ToUpper(fmt.Sprintf("%s_URL", r.Name))),
-				Value: aws.String(r.Endpoint),
-			})
-		}
 	}
 
 	for from, to := range opts.Ports {
@@ -721,16 +739,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	i := 0
 
 	for from, to := range opts.Volumes {
-		name := fmt.Sprintf("volume-%d", i)
-
-		if from == "/var/run/docker.sock" && to == "/var/run/docker.sock" {
-			name = "docker"
-		}
-
-		req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{
-			ContainerPath: aws.String(to),
-			SourceVolume:  aws.String(name),
-		})
+		name := fmt.Sprintf("ovolume-%d", i) // one-off volumes
 
 		req.Volumes = append(req.Volumes, &ecs.Volume{
 			Host: &ecs.HostVolumeProperties{
@@ -738,19 +747,12 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 			},
 			Name: aws.String(name),
 		})
+
+		req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{
+			ContainerPath: aws.String(to),
+			SourceVolume:  aws.String(name),
+		})
 	}
-
-	// req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{
-	// 	ContainerPath: aws.String("/var/run/docker.sock"),
-	// 	SourceVolume:  aws.String("docker"),
-	// })
-
-	// req.Volumes = append(req.Volumes, &ecs.Volume{
-	// 	Host: &ecs.HostVolumeProperties{
-	// 		SourcePath: aws.String("/var/run/docker.sock"),
-	// 	},
-	// 	Name: aws.String("docker"),
-	// })
 
 	fmt.Printf("REQ: %+v\n", req)
 
