@@ -201,6 +201,7 @@
 {{ end }}
 
 {{ define "services" }}
+  {{ $m := .Manifest }}
   {{ range $s := .Manifest.Services }}
     "Service{{ resource .Name }}": {
       "Type": "AWS::ECS::Service",
@@ -290,7 +291,7 @@
             {{ range .Resources }}
               { "Name": "{{ upper . }}_URL", "Value": { "Fn::GetAtt": [ "Resource{{resource . }}", "Outputs.Url" ] } },
             {{ end }}
-            {{ range $k, $v := $.Env }}
+            {{ range $k, $v := $m.ServiceEnvironment $s.Name }}
               { "Name": "{{ $k }}", "Value": "{{ safe $v }}" },
             {{ end }}
             { "Ref": "AWS::NoValue" }
@@ -307,10 +308,13 @@
           },
           "Memory": "{{ .Scale.Memory }}",
           "MountPoints": [
-            {
-              "ContainerPath": "/var/run/docker.sock",
-              "SourceVolume": "docker"
-            }
+            {{ range $i, $v := .Volumes }}
+              {
+                "ContainerPath": "{{ split $v ":" 1 }}",
+                "SourceVolume": "volume-{{ $i }}"
+              },
+            {{ end }}
+            { "Ref": "AWS::NoValue" }
           ],
           {{ with .Port.Port }}
             "PortMappings": [ { "ContainerPort": "{{ . }}", "Protocol": "tcp" } ],
@@ -319,7 +323,15 @@
         } ],
         "Family": { "Fn::Sub": "${AWS::StackName}-{{ .Name }}" },
         "TaskRoleArn": { "Ref": "Role" },
-        "Volumes": [ { "Name": "docker", "Host": { "SourcePath": "/var/run/docker.sock" } } ]
+        "Volumes": [
+            {{ range $i, $v := .Volumes }}
+              {
+                "Name": "volume-{{ $i }}",
+                "Host": { "SourcePath": "{{ split $v ":" 0 }}" }
+              },
+            {{ end }}
+            { "Ref": "AWS::NoValue" }
+        ]
       }
     },
   {{ end }}

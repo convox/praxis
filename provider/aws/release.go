@@ -155,7 +155,6 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 
 	tp := map[string]interface{}{
 		"App":      a,
-		"Env":      r.Env,
 		"Manifest": m,
 		"Release":  r,
 		"Version":  p.Version,

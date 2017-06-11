@@ -34,6 +34,13 @@ func formationHelpers() template.FuncMap {
 		"safe": func(s string) template.HTML {
 			return template.HTML(s)
 		},
+		"split": func(s, sep string, n int) string {
+			parts := strings.Split(s, sep)
+			if n < len(parts) {
+				return parts[n]
+			}
+			return fmt.Sprintf("missing part %d", n)
+		},
 		"upper": func(s string) string {
 			return strings.ToUpper(s)
 		},
