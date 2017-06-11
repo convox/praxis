@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/convox/praxis/helpers"
+	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
 	"github.com/kr/pty"
 	"github.com/pkg/errors"
@@ -256,25 +257,36 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	if opts.Release == "" {
 		a, err := p.AppGet(app)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 
 		opts.Release = a.Release
 	}
 
 	// get release and manifest for initial environment and volumes
+	var m *manifest.Manifest
 	var release *types.Release
-	if opts.Release != "" {
-		m, r, err := helpers.ReleaseManifest(p, app, opts.Release)
-		if err != nil {
-			return nil, err
-		}
-		release = r
+	var service *manifest.Service
+	var err error
 
-		// app / manifest environment
-		env, err := m.ServiceEnvironment(opts.Service)
+	if opts.Release != "" {
+		m, release, err = helpers.ReleaseManifest(p, app, opts.Release)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
+		}
+
+		// if service is not defined in manifest, i.e. "build", carry on
+		service, err = m.Service(opts.Service)
+		if err != nil && !strings.Contains(err.Error(), "no such service") {
+			return nil, errors.WithStack(err)
+		}
+	}
+
+	if service != nil {
+		// app / manifest environment
+		env, err := m.ServiceEnvironment(service.Name)
+		if err != nil {
+			return nil, errors.WithStack(err)
 		}
 
 		for k, v := range env {
@@ -284,7 +296,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		// resource environment
 		rs, err := p.ResourceList(app)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 
 		for _, r := range rs {
@@ -293,10 +305,10 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 		}
 
-		// volumes for service
-		s, err := m.Service(opts.Service)
+		// volumes
+		s, err := m.Service(service.Name)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 
 		for _, v := range s.Volumes {
@@ -335,7 +347,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	args = append(args, "-e", fmt.Sprintf("APP=%s", app))
