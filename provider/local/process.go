@@ -276,11 +276,12 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		if err != nil {
 			return nil, err
 		}
+
 		for k, v := range env {
 			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 		}
 
-		// environment for resources
+		// resource environment
 		rs, err := p.ResourceList(app)
 		if err != nil {
 			return nil, err
