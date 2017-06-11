@@ -29,8 +29,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/helpers"
+	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/pkg/errors"
 )
 
 const ()
@@ -609,15 +611,24 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	}
 
 	// get release and manifest for initial environment and volumes
+	var m *manifest.Manifest
 	var release *types.Release
-	if opts.Release != "" {
-		m, r, err := helpers.ReleaseManifest(p, app, opts.Release)
-		if err != nil {
-			return "", err
-		}
-		release = r
+	var service *manifest.Service
 
-		// app / manifest environment
+	if opts.Release != "" {
+		m, release, err = helpers.ReleaseManifest(p, app, opts.Release)
+		if err != nil {
+			return "", errors.WithStack(err)
+		}
+
+		// if service is not defined in manifest, i.e. "build", carry on
+		service, err = m.Service(opts.Service)
+		if err != nil && !strings.Contains(err.Error(), "no such service") {
+			return "", errors.WithStack(err)
+		}
+	}
+
+	if service != nil {
 		env, err := m.ServiceEnvironment(opts.Service)
 		if err != nil {
 			return "", err
@@ -668,6 +679,13 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 				SourceVolume:  aws.String(name),
 			})
 		}
+	}
+
+	for k, v := range opts.Environment {
+		req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
+			Name:  aws.String(k),
+			Value: aws.String(v),
+		})
 	}
 
 	if opts.Command != "" {
