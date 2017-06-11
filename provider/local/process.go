@@ -244,46 +244,43 @@ func (p *Provider) ProcessStop(app, pid string) error {
 }
 
 func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]string, error) {
+	fmt.Printf("OPTS: %+v\n", opts)
+
 	args := []string{"run", "--rm", "-i"}
 
 	if opts.Input != nil {
 		args = append(args, "-t")
 	}
 
-	image := opts.Image
+	// if no release specified, use current release
+	if opts.Release == "" {
+		a, err := p.AppGet(app)
+		if err != nil {
+			return nil, err
+		}
 
-	if image == "" {
+		opts.Release = a.Release
+	}
+
+	// get release and manifest for initial environment and volumes
+	var release *types.Release
+	if opts.Release != "" {
 		m, r, err := helpers.ReleaseManifest(p, app, opts.Release)
 		if err != nil {
 			return nil, err
 		}
+		release = r
 
-		s, err := m.Service(opts.Service)
+		// app / manifest environment
+		env, err := m.ServiceEnvironment(opts.Service)
 		if err != nil {
 			return nil, err
 		}
-
-		for _, v := range s.Volumes {
-			args = append(args, "-v", v)
+		for k, v := range env {
+			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 		}
 
-		image = fmt.Sprintf("%s/%s/%s:%s", p.Name, app, opts.Service, r.Build)
-	}
-
-	if p.Frontend != "none" {
-		args = append(args, "--dns", p.Frontend)
-	}
-
-	env, err := helpers.AppEnvironment(p, app)
-	if err != nil {
-		return nil, err
-	}
-
-	for k, v := range env {
-		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
-	}
-
-	if opts.Release != "" {
+		// environment for resources
 		rs, err := p.ResourceList(app)
 		if err != nil {
 			return nil, err
@@ -294,6 +291,25 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 			v := r.Endpoint
 			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 		}
+
+		// volumes for service
+		s, err := m.Service(opts.Service)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range s.Volumes {
+			args = append(args, "-v", v)
+		}
+	}
+
+	image := opts.Image
+	if image == "" {
+		image = fmt.Sprintf("%s/%s/%s:%s", p.Name, app, opts.Service, release.Build)
+	}
+
+	if p.Frontend != "none" {
+		args = append(args, "--dns", p.Frontend)
 	}
 
 	for k, v := range opts.Environment {
