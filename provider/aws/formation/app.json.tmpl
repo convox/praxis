@@ -310,7 +310,7 @@
           "MountPoints": [
             {{ range $i, $v := .Volumes }}
               {
-                "ContainerPath": "{{ split $v ":" 1 }}",
+                "ContainerPath": "{{ volumeTo $v }}",
                 "SourceVolume": "volume-{{ $i }}"
               },
             {{ end }}
@@ -327,7 +327,7 @@
             {{ range $i, $v := .Volumes }}
               {
                 "Name": "volume-{{ $i }}",
-                "Host": { "SourcePath": "{{ split $v ":" 0 }}" }
+                "Host": { "SourcePath": "{{ volumeFrom $v }}" }
               },
             {{ end }}
             { "Ref": "AWS::NoValue" }
