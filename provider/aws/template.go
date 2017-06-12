@@ -7,6 +7,7 @@ import (
 	"hash/crc32"
 	"html/template"
 	"net"
+	"path"
 	"strings"
 )
 
@@ -34,15 +35,28 @@ func formationHelpers() template.FuncMap {
 		"safe": func(s string) template.HTML {
 			return template.HTML(s)
 		},
-		"split": func(s, sep string, n int) string {
-			parts := strings.Split(s, sep)
-			if n < len(parts) {
-				return parts[n]
-			}
-			return fmt.Sprintf("missing part %d", n)
-		},
 		"upper": func(s string) string {
 			return strings.ToUpper(s)
+		},
+		"volumeFrom": func(s string) string {
+			parts := strings.SplitN(s, ":", 2)
+			switch len(parts) {
+			case 1:
+				return path.Join("/volumes", s)
+			case 2:
+				return parts[0]
+			}
+			return fmt.Sprintf("invalid volume %q", s)
+		},
+		"volumeTo": func(s string) string {
+			parts := strings.SplitN(s, ":", 2)
+			switch len(parts) {
+			case 1:
+				return s
+			case 2:
+				return parts[1]
+			}
+			return fmt.Sprintf("invalid volume %q", s)
 		},
 	}
 }
