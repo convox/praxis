@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -659,21 +660,31 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		}
 
 		for i, v := range s.Volumes {
-			parts := strings.Split(v, ":")
-			if len(parts) != 2 {
+			var from, to string
+			parts := strings.SplitN(v, ":", 2)
+			switch len(parts) {
+			case 1:
+				from = path.Join("/volumes", v)
+				to = v
+			case 2:
+				from = parts[0]
+				to = parts[1]
+			default:
 				return "", fmt.Errorf("invalid volume definition: %s", v)
+
 			}
-			name := fmt.Sprintf("mvolume-%d", i) // manifest volumes
+
+			name := fmt.Sprintf("volume-%d", i) // manifest volumes
 
 			req.Volumes = append(req.Volumes, &ecs.Volume{
 				Host: &ecs.HostVolumeProperties{
-					SourcePath: aws.String(parts[0]),
+					SourcePath: aws.String(from),
 				},
 				Name: aws.String(name),
 			})
 
 			req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{
-				ContainerPath: aws.String(parts[1]),
+				ContainerPath: aws.String(to),
 				SourceVolume:  aws.String(name),
 			})
 		}
@@ -755,7 +766,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	i := 0
 
 	for from, to := range opts.Volumes {
-		name := fmt.Sprintf("ovolume-%d", i) // one-off volumes
+		name := fmt.Sprintf("volume-o-%d", i) // one-off volumes
 
 		req.Volumes = append(req.Volumes, &ecs.Volume{
 			Host: &ecs.HostVolumeProperties{
