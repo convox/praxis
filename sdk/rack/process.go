@@ -1,6 +1,7 @@
 package rack
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -30,10 +31,6 @@ func (c *Client) ProcessExec(app, pid, command string, opts types.ProcessExecOpt
 	if err := helpers.Stream(opts.Output, r); err != nil {
 		return 0, err
 	}
-
-	// if code, err := strconv.Atoi(res.Trailer.Get("Exit-Code")); err == nil {
-	//   return code, nil
-	// }
 
 	return 0, nil
 }
@@ -134,12 +131,13 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 	defer r.Close()
 
 	var code int
+	var rerr string
 
-	if err := helpers.Stream(helpers.CodeGrabber(opts.Output, &code), r); err != nil {
+	if err := helpers.Stream(helpers.CodeGrabber(opts.Output, &code, &rerr), r); err != nil {
 		return 0, err
 	}
 
-	return code, nil
+	return code, errors.New(rerr)
 }
 
 func (c *Client) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
