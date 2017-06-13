@@ -141,6 +141,7 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 
 	ev, err := url.ParseQuery(c.Header("Environment"))
 	if err != nil {
+		helpers.CodeError(rw, 1, err)
 		return err
 	}
 
@@ -152,17 +153,20 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 
 	pv, err := url.ParseQuery(c.Header("Ports"))
 	if err != nil {
+		helpers.CodeError(rw, 1, err)
 		return err
 	}
 
 	for k := range pv {
 		ki, err := strconv.Atoi(k)
 		if err != nil {
+			helpers.CodeError(rw, 1, err)
 			return err
 		}
 
 		vi, err := strconv.Atoi(pv.Get(k))
 		if err != nil {
+			helpers.CodeError(rw, 1, err)
 			return err
 		}
 
@@ -173,6 +177,7 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 
 	vv, err := url.ParseQuery(c.Header("Volumes"))
 	if err != nil {
+		helpers.CodeError(rw, 1, err)
 		return err
 	}
 
@@ -197,6 +202,7 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 	if height != "" {
 		h, err := strconv.Atoi(height)
 		if err != nil {
+			helpers.CodeError(rw, 1, err)
 			return err
 		}
 
@@ -206,6 +212,7 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 	if width != "" {
 		w, err := strconv.Atoi(width)
 		if err != nil {
+			helpers.CodeError(rw, 1, err)
 			return err
 		}
 
@@ -219,10 +226,12 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 	if opts.Release == "" {
 		a, err := Provider.AppGet(app)
 		if err != nil {
+			helpers.CodeError(rw, 1, err)
 			return err
 		}
 
 		if a.Release == "" {
+			helpers.CodeError(rw, 1, fmt.Errorf("no releases for app: %s", app))
 			return fmt.Errorf("no releases for app: %s", app)
 		}
 
@@ -231,15 +240,13 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 
 	c.Logf("at=params release=%q service=%q height=%d width=%d", opts.Release, opts.Service, opts.Height, opts.Width)
 
-	// w.Header().Add("Trailer", "Exit-Code")
-
 	code, err := Provider.ProcessRun(app, opts)
 	if err != nil {
+		helpers.CodeError(rw, code, err)
 		return err
 	}
 
 	helpers.CodeWrite(rw, code)
-	// w.Header().Set("Exit-Code", fmt.Sprintf("%d", code))
 
 	return err
 }
