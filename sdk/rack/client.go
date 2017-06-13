@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -98,7 +99,7 @@ func (c *Client) Stream(path string, opts RequestOptions) (io.ReadCloser, error)
 
 	switch so["streaming"] {
 	case "websocket":
-		u, err := url.Parse(fmt.Sprintf("wss://%s%s?%s", c.Endpoint.Host, path, opts.Querystring()))
+		u, err := url.Parse(fmt.Sprintf("wss://%s%s%s?%s", c.Endpoint.Host, c.Endpoint.Path, path, opts.Querystring()))
 		if err != nil {
 			return nil, err
 		}
@@ -108,8 +109,15 @@ func (c *Client) Stream(path string, opts RequestOptions) (io.ReadCloser, error)
 			return nil, err
 		}
 
+		header := http.Header{}
+		for k, v := range opts.Headers {
+			header.Add(k, v)
+		}
+		creds := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:", c.Endpoint.User.Username())))
+		header.Add("Authorization", fmt.Sprintf("Basic %s", creds))
+
 		config := &websocket.Config{
-			Header:   http.Header{},
+			Header:   header,
 			Location: u,
 			Origin:   u,
 			Version:  websocket.ProtocolVersionHybi13,
