@@ -256,7 +256,12 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 		return "", err
 	}
 	if len(res.Tasks) != 1 {
-		return "", fmt.Errorf("unable to start process")
+		msg := "unable to start process"
+		if len(res.Failures) > 0 {
+			msg = fmt.Sprintf("%s: %s", msg, *res.Failures[0].Reason)
+		}
+
+		return "", fmt.Errorf(msg)
 	}
 
 	parts := strings.Split(*res.Tasks[0].TaskArn, "/")
