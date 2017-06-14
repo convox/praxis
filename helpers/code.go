@@ -23,8 +23,9 @@ func CodeWrite(w io.Writer, code int) {
 	fmt.Fprintf(w, "26bda8cd-ad49-4e4b-8bb3-2f19e197b3bd[%d][]", code)
 }
 
-func CodeError(w io.Writer, code int, err error) {
+func CodeError(w io.Writer, code int, err error) error {
 	_, err = fmt.Fprintf(w, "26bda8cd-ad49-4e4b-8bb3-2f19e197b3bd[%d][%s]", code, err.Error())
+	return err
 }
 
 func (w codeGrabber) Write(data []byte) (int, error) {
