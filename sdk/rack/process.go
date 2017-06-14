@@ -137,7 +137,12 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 		return 0, err
 	}
 
-	return code, errors.New(rerr)
+	err = nil
+	if rerr != "" {
+		err = errors.New(rerr)
+	}
+
+	return code, err
 }
 
 func (c *Client) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
