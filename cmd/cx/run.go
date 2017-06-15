@@ -24,7 +24,7 @@ func init() {
 func runRun(c *cli.Context) error {
 	app, err := appName(c, ".")
 	if err != nil {
-		return err
+		return stdcli.Error(err)
 	}
 
 	if len(c.Args()) < 1 {
@@ -47,13 +47,13 @@ func runRun(c *cli.Context) error {
 
 	state, err := terminalRaw(os.Stdin)
 	if err != nil {
-		return err
+		return stdcli.Error(err)
 	}
 	defer terminalRestore(os.Stdin, state)
 
 	code, err := Rack.ProcessRun(app, opts)
 	if err != nil {
-		return err
+		return stdcli.Error(err)
 	}
 
 	terminalRestore(os.Stdin, state)
