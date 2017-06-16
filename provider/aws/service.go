@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
@@ -16,9 +17,15 @@ func (p *Provider) ServiceList(app string) (types.Services, error) {
 	ss := types.Services{}
 
 	for _, s := range m.Services {
-		endpoint, err := p.appOutput(app, fmt.Sprintf("Endpoint%s", upperName(s.Name)))
-		if err != nil {
+		endpoint := ""
+
+		o, err := p.appOutput(app, fmt.Sprintf("Endpoint%s", upperName(s.Name)))
+		if err != nil && !strings.Contains(err.Error(), "no such output for stack") {
 			return nil, err
+		}
+
+		if o != "" {
+			endpoint = fmt.Sprintf("https://%s", o)
 		}
 
 		ss = append(ss, types.Service{
