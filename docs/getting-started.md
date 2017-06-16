@@ -50,18 +50,23 @@ The first thing to take note of in the project is the `convox.yml` file. This is
 ```yaml
 services:
   web:
-    command:
-      test: make test
-    port: 1313
+    certificate: ${HOST}
+    port: http:1313
+    scale: 2
+    test: make test
 ```
 
-The `convox.yml` for this site is pretty simple. It defines a single service called "web".
+The `convox.yml` for this site is pretty straightfoward. It defines a single service called "web".
 
-Containers for the web service will listen on port 1313 for requests.
+An SSL certificate will be automatically configured for the domain specified by the app's `HOST` environment variable.
 
-By default, the project will be built from a `Dockerfile` in the same directory.
+Containers for the web service will listen on port 1313 for http requests.
 
-Commands for different environments can be defined. Here we define a a custom test command.
+Two copies of the container will be run.
+
+The command run by `cx test` for the web service will be `make test`.
+
+The `convox.yml` you cloned also has a `workflows` section. You can ignore that for the purposes of this guide.
 
 ### Deploy the app
 
