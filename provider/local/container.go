@@ -66,7 +66,7 @@ type containerPort struct {
 // }
 
 func (p *Provider) containerRegister(c container) error {
-	if c.Hostname == "" || c.Port.Container == 0 || c.Port.Host == 0 {
+	if p.Frontend == "none" || c.Hostname == "" || c.Port.Container == 0 || c.Port.Host == 0 {
 		return nil
 	}
 
