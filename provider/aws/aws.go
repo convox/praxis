@@ -592,6 +592,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	req := &ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			{
+				Cpu:       aws.Int64(128),
 				Essential: aws.Bool(true),
 				Image:     aws.String(""),
 				LogConfiguration: &ecs.LogConfiguration{
@@ -602,7 +603,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 						"awslogs-stream-prefix": aws.String("convox"),
 					},
 				},
-				MemoryReservation: aws.Int64(256),
+				MemoryReservation: aws.Int64(int64(coalescei(opts.Memory, 256))),
 				Name:              aws.String(opts.Service),
 			},
 		},

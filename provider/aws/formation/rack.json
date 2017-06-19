@@ -407,7 +407,7 @@
         "ContainerDefinitions": [
           {
             "Command": [ "bin/rack" ],
-            "Cpu": "128",
+            "Cpu": "32",
             "DockerLabels": {
               "convox.rack": { "Ref": "AWS::StackName" },
               "convox.release": { "Fn::FindInMap": [ "Constants", "Values", "Version" ] },
