@@ -12,7 +12,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 	"github.com/pkg/errors"
 )
@@ -117,11 +116,9 @@ func (p *Provider) SystemProxy(host string, port int, in io.Reader) (io.ReadClos
 		return nil, errors.WithStack(log.Error(err))
 	}
 
-	a, b := net.Pipe()
+	go io.Copy(cn, in)
 
-	go helpers.Pipe(cn, a)
-
-	return b, log.Success()
+	return cn, log.Success()
 }
 
 func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {

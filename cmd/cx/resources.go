@@ -103,6 +103,7 @@ func runResourcesProxy(c *cli.Context) error {
 
 	uc := *u
 	uc.Host = fmt.Sprintf("localhost:%s", local)
+
 	stdcli.Writef("connect to: <url>%s</url>\n\n", &uc)
 
 	for {
@@ -113,27 +114,26 @@ func runResourcesProxy(c *cli.Context) error {
 
 		stdcli.Startf("connection from <url>%s</url>", cn.RemoteAddr())
 
-		defer cn.Close()
-
-		pi, err := strconv.Atoi(u.Port())
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("u.Hostname() = %+v\n", u.Hostname())
-		fmt.Printf("pi = %+v\n", pi)
-
-		r, err := Rack.SystemProxy(u.Hostname(), pi, cn)
-		if err != nil {
-			return err
-		}
-
-		stdcli.OK()
-
-		defer r.Close()
-
-		go helpers.StreamAsync(cn, r, nil)
+		go handleProxyConnection(cn, u)
 	}
 
 	return nil
+}
+
+func handleProxyConnection(cn net.Conn, target *url.URL) error {
+	defer cn.Close()
+
+	pi, err := strconv.Atoi(target.Port())
+	if err != nil {
+		return err
+	}
+
+	r, err := Rack.SystemProxy(target.Hostname(), pi, cn)
+	if err != nil {
+		return err
+	}
+
+	stdcli.OK()
+
+	return helpers.Stream(cn, r)
 }
