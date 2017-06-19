@@ -75,7 +75,7 @@ func SystemProxy(rw io.ReadWriteCloser, c *api.Context) error {
 
 	defer p.Close()
 
-	if err := helpers.Stream(rw, p); err != nil {
+	if _, err := io.Copy(rw, p); err != nil {
 		return err
 	}
 
