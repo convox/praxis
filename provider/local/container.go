@@ -198,9 +198,37 @@ func containersByLabels(labels map[string]string) ([]container, error) {
 	return containerList(args...)
 }
 
-func containerList(args ...string) ([]container, error) {
-	as := []string{"ps", "--format", "{{json .}}"}
+func containerIDs(args ...string) ([]string, error) {
+	as := []string{"ps", "--format", "{{.ID}}"}
+
 	as = append(as, args...)
+
+	data, err := exec.Command("docker", as...).CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	all := strings.TrimSpace(string(data))
+
+	if all == "" {
+		return []string{}, nil
+	}
+
+	return strings.Split(all, "\n"), nil
+}
+
+func containerList(args ...string) ([]container, error) {
+	ids, err := containerIDs(args...)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ids) == 0 {
+		return []container{}, nil
+	}
+
+	as := []string{"inspect", "--format", "{{json .}}"}
+	as = append(as, ids...)
 
 	data, err := exec.Command("docker", as...).CombinedOutput()
 	if err != nil {
@@ -213,29 +241,59 @@ func containerList(args ...string) ([]container, error) {
 
 	for d.More() {
 		var c struct {
-			ID     string
-			Labels string
-			Names  string
+			Id     string
+			Config struct {
+				Labels map[string]string
+			}
+			HostConfig struct {
+				PortBindings map[string][]struct {
+					HostIp   string
+					HostPort string
+				}
+			}
+			Name string
 		}
 
 		if err := d.Decode(&c); err != nil {
 			return nil, err
 		}
 
-		labels := map[string]string{}
+		cc := container{
+			Id:     c.Id,
+			Labels: c.Config.Labels,
+			Name:   c.Name[1:],
+			Port: containerPort{
+				Container: 0,
+				Host:      0,
+			},
+		}
 
-		for _, p := range strings.Split(c.Labels, ",") {
-			pp := strings.SplitN(p, "=", 2)
-			if len(pp) == 2 {
-				labels[pp[0]] = pp[1]
+		if len(c.HostConfig.PortBindings) == 1 {
+			for k, v := range c.HostConfig.PortBindings {
+				if len(v) != 1 {
+					continue
+				}
+
+				cps := strings.Split(k, "/")[0]
+
+				cpi, err := strconv.Atoi(cps)
+				if err != nil {
+					return nil, err
+				}
+
+				hpi, err := strconv.Atoi(v[0].HostPort)
+				if err != nil {
+					return nil, err
+				}
+
+				cc.Port = containerPort{
+					Container: cpi,
+					Host:      hpi,
+				}
 			}
 		}
 
-		cs = append(cs, container{
-			Id:     c.ID,
-			Labels: labels,
-			Name:   strings.Split(c.Names, ",")[0],
-		})
+		cs = append(cs, cc)
 	}
 
 	return cs, nil
