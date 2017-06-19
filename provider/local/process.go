@@ -281,7 +281,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	}
 
 	if service != nil {
-		// app / manifest environment
+		// manifest environment
 		env, err := m.ServiceEnvironment(service.Name)
 		if err != nil {
 			return nil, errors.WithStack(err)
@@ -300,6 +300,16 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		for _, r := range rs {
 			k := strings.ToUpper(fmt.Sprintf("%s_URL", r.Name))
 			v := r.Endpoint
+			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
+		}
+
+		// app environment
+		menv, err := helpers.AppEnvironment(p, app)
+		if err != nil {
+			return nil, err
+		}
+
+		for k, v := range menv {
 			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 		}
 
