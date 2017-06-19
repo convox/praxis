@@ -271,6 +271,7 @@
           {{ with .Command }}
             "Command": [ "sh", "-c", "{{ . }}" ],
           {{ end }}
+          "Cpu": "64",
           "DockerLabels": {
             "convox.app": "{{ $.App.Name }}",
             "convox.rack": { "Ref": "Rack" },
@@ -306,7 +307,7 @@
               "awslogs-stream-prefix": "{{ $.App.Name }}"
             }
           },
-          "Memory": "{{ .Scale.Memory }}",
+          "MemoryReservation": "{{ .Scale.Memory }}",
           "MountPoints": [
             {{ range $i, $v := .Volumes }}
               {
