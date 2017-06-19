@@ -133,14 +133,14 @@ func ProcessProxy(rw io.ReadWriteCloser, c *api.Context) error {
 		return err
 	}
 
-	r, err := Provider.ProcessProxy(app, pid, pi, rw)
+	p, err := Provider.ProcessProxy(app, pid, pi, rw)
 	if err != nil {
 		return err
 	}
 
-	defer r.Close()
+	defer p.Close()
 
-	if err := helpers.Stream(rw, r); err != nil {
+	if err := helpers.Stream(rw, p); err != nil {
 		return err
 	}
 
