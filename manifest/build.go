@@ -400,6 +400,8 @@ func buildArgs(dockerfile string, opts BuildOptions) ([]string, error) {
 		}
 	}
 
+	args = append(args, "--cpu-shares", "128")
+
 	return args, nil
 }
 
