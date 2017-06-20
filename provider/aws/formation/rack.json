@@ -434,7 +434,7 @@
                 "awslogs-stream-prefix": "rack"
               }
             },
-            "Memory": "256",
+            "MemoryReservation": "64",
             "MountPoints": [ { "SourceVolume": "docker", "ContainerPath": "/var/run/docker.sock" } ],
             "Name": "rack",
             "PortMappings": [ { "ContainerPort": "3000", "Protocol": "tcp" } ]
