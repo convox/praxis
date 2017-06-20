@@ -97,7 +97,7 @@ func (p *Provider) workerAutoscale() error {
 
 				if *d.Status == "PRIMARY" {
 					for _, cd := range td.ContainerDefinitions {
-						if *cd.Cpu > single["CPU"] || *cd.Memory > single["MEMORY"] {
+						if *cd.Cpu > single["CPU"] || *cd.MemoryReservation > single["MEMORY"] {
 							fmt.Printf("ns=provider.aws at=autoscale error=%q\n", fmt.Sprintf("instance type too small for %s", *s.ServiceName))
 							fits = false
 						}
