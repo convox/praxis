@@ -81,12 +81,11 @@ func Routes(server *api.Server) {
 	auth.Stream("system.proxy", "/system/proxy/{host}/{port}", controllers.SystemProxy)
 	auth.Route("POST", "/system", controllers.SystemUpdate)
 
-	if os.Getenv("DEVELOPMENT") == "true" {
-		server.Router.HandleFunc("/debug/pprof/profile", pprof.Profile)
-		server.Router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-		server.Router.HandleFunc("/debug/pprof/trace", pprof.Trace)
-		server.Router.HandleFunc("/debug/pprof/{topic:.*}", pprof.Index)
-	}
+	// pprof
+	auth.Router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	auth.Router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	auth.Router.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	auth.Router.HandleFunc("/debug/pprof/{topic:.*}", pprof.Index)
 }
 
 func authenticate(password string) api.Middleware {
