@@ -97,9 +97,19 @@ func (p *Provider) workerAutoscale() error {
 
 				if *d.Status == "PRIMARY" {
 					for _, cd := range td.ContainerDefinitions {
-						if *cd.Cpu > single["CPU"] || *cd.MemoryReservation > single["MEMORY"] {
-							fmt.Printf("ns=provider.aws at=autoscale error=%q\n", fmt.Sprintf("instance type too small for %s", *s.ServiceName))
-							fits = false
+						if cd.Cpu != nil && *cd.Cpu > single["CPU"] {
+							fmt.Printf("ns=provider.aws at=autoscale service=%s error=%q\n", *s.ServiceName, "cpu too large for instance")
+							continue
+						}
+
+						if cd.Memory != nil && *cd.Memory > single["CPU"] {
+							fmt.Printf("ns=provider.aws at=autoscale service=%s error=%q\n", *s.ServiceName, "memory too large for instance")
+							continue
+						}
+
+						if cd.MemoryReservation != nil && *cd.MemoryReservation > single["CPU"] {
+							fmt.Printf("ns=provider.aws at=autoscale service=%s error=%q\n", *s.ServiceName, "memory reservation too large for instance")
+							continue
 						}
 					}
 				}
