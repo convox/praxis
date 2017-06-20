@@ -592,7 +592,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	req := &ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			{
-				Cpu:       aws.Int64(128),
+				Cpu:       aws.Int64(256),
 				Essential: aws.Bool(true),
 				Image:     aws.String(""),
 				LogConfiguration: &ecs.LogConfiguration{
