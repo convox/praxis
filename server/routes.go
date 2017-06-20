@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 	"os"
 
 	"github.com/convox/praxis/api"
@@ -79,6 +80,13 @@ func Routes(server *api.Server) {
 	auth.Route("OPTIONS", "/system", controllers.SystemOptions)
 	auth.Stream("system.proxy", "/system/proxy/{host}/{port}", controllers.SystemProxy)
 	auth.Route("POST", "/system", controllers.SystemUpdate)
+
+	if os.Getenv("DEVELOPMENT") == "true" {
+		server.Router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		server.Router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		server.Router.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		server.Router.HandleFunc("/debug/pprof/{topic:.*}", pprof.Index)
+	}
 }
 
 func authenticate(password string) api.Middleware {
