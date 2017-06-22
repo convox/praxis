@@ -47,7 +47,7 @@ func TestManifestConvert(t *testing.T) {
 				},
 				Image: "httpd",
 				Port: manifest.ServicePort{
-					Port:   80,
+					Port:   3000,
 					Scheme: "http",
 				},
 				Resources: []string{"database"},
