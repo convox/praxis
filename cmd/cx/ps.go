@@ -12,15 +12,15 @@ func init() {
 		Name:        "ps",
 		Description: "list processes",
 		Action:      runPs,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Before:      beforeCmd,
+		Flags:       globalFlags,
 		Subcommands: cli.Commands{
 			cli.Command{
 				Name:        "stop",
 				Description: "stop a process",
 				Usage:       "<pid>",
 				Action:      runPsStop,
+				Flags:       globalFlags,
 			},
 		},
 	})

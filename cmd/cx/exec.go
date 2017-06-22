@@ -15,9 +15,8 @@ func init() {
 		Description: "run command inside running process",
 		Usage:       "<pid> <command>",
 		Action:      runExec,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Before:      beforeCmd,
+		Flags:       globalFlags,
 	})
 }
 

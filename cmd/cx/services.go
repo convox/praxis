@@ -12,14 +12,15 @@ func init() {
 		Name:        "services",
 		Description: "list services",
 		Action:      runServices,
-		Flags:       []cli.Flag{appFlag},
+		Before:      beforeCmd,
+		Flags:       globalFlags,
 		Subcommands: cli.Commands{
 			cli.Command{
 				Name:        "url",
 				Description: "output url for a service",
 				Usage:       "<name>",
 				Action:      runServicesUrl,
-				Flags:       []cli.Flag{appFlag},
+				Flags:       globalFlags,
 			},
 		},
 	})

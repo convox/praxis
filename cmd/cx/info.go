@@ -10,6 +10,7 @@ func init() {
 		Name:        "info",
 		Description: "get application info",
 		Action:      runAppsInfo,
-		Flags:       []cli.Flag{appFlag},
+		Before:      beforeCmd,
+		Flags:       globalFlags,
 	})
 }

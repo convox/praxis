@@ -15,27 +15,22 @@ func init() {
 		Name:        "env",
 		Description: "display current env",
 		Action:      runEnv,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Before:      beforeCmd,
+		Flags:       globalFlags,
 		Subcommands: []cli.Command{
 			cli.Command{
 				Name:        "set",
 				Description: "change env values",
 				Usage:       "<KEY=value> [KEY=value]...",
 				Action:      runEnvSet,
-				Flags: []cli.Flag{
-					appFlag,
-				},
+				Flags:       globalFlags,
 			},
 			cli.Command{
 				Name:        "unset",
 				Description: "remove env values",
 				Usage:       "<KEY> [KEY]...",
 				Action:      runEnvUnset,
-				Flags: []cli.Flag{
-					appFlag,
-				},
+				Flags:       globalFlags,
 			},
 		},
 	})

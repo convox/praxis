@@ -20,9 +20,8 @@ func init() {
 		Name:        "diff",
 		Description: "show changes to be promoted",
 		Action:      runDiff,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Before:      beforeCmd,
+		Flags:       globalFlags,
 	})
 }
 
