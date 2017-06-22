@@ -276,17 +276,19 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 				report.Append(fmt.Sprintf("INFO: <service>%s</service> - UDP ports are not supported\n", service.Name))
 				continue
 			}
+
 			switch port.Balancer {
-			case 80:
-				p.Port = port.Container
-				p.Scheme = "http"
-			case 443:
-				if p.Port != 80 {
-					p.Port = port.Container
-					p.Scheme = "https"
-				}
+			case 80, 443:
 			default:
 				report.Append(fmt.Sprintf("INFO: <service>%s</service> - only HTTP ports supported\n", service.Name))
+				continue
+			}
+
+			p.Port = port.Container
+			p.Scheme = "http"
+
+			if service.Labels[fmt.Sprintf("convox.port.%d.secure", port.Balancer)] == "true" {
+				p.Scheme = "https"
 			}
 		}
 
