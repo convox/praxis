@@ -15,9 +15,8 @@ func init() {
 		Name:        "promote",
 		Description: "promote a release",
 		Action:      runPromote,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Before:      beforeCmd,
+		Flags:       globalFlags,
 	})
 }
 

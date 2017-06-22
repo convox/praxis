@@ -12,12 +12,15 @@ func init() {
 		Name:        "apps",
 		Description: "list applications",
 		Action:      runApps,
+		Before:      beforeCmd,
+		Flags:       globalFlags,
 		Subcommands: cli.Commands{
 			cli.Command{
 				Name:        "create",
 				Description: "create an application",
 				Usage:       "<name>",
 				Action:      runAppsCreate,
+				Flags:       globalFlags,
 			},
 			cli.Command{
 				Name:        "delete",
@@ -25,13 +28,14 @@ func init() {
 				Description: "delete an application",
 				Usage:       "<name>",
 				Action:      runAppsDelete,
+				Flags:       globalFlags,
 			},
 			cli.Command{
 				Name:        "info",
 				Description: "get application info",
 				Usage:       "[name]",
 				Action:      runAppsInfo,
-				Flags:       []cli.Flag{appFlag},
+				Flags:       globalFlags,
 			},
 		},
 	})

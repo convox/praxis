@@ -19,25 +19,22 @@ func init() {
 		Name:        "build",
 		Description: "build an application",
 		Action:      runBuild,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Before:      beforeCmd,
+		Flags:       globalFlags,
 	})
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "builds",
 		Description: "list builds",
 		Action:      runBuilds,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Before:      beforeCmd,
+		Flags:       globalFlags,
 		Subcommands: []cli.Command{
 			cli.Command{
 				Name:        "logs",
 				Description: "show build logs",
+				Usage:       "BUILD",
 				Action:      runBuildsLogs,
-				Flags: []cli.Flag{
-					appFlag,
-				},
+				Flags:       globalFlags,
 			},
 		},
 	})

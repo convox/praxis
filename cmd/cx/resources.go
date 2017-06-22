@@ -11,25 +11,26 @@ import (
 )
 
 func init() {
+	flags := []cli.Flag{
+		cli.StringFlag{
+			Name:  "port, p",
+			Usage: "local port",
+			Value: "",
+		},
+	}
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "resources",
 		Description: "list resources",
 		Action:      runResources,
-		Flags:       []cli.Flag{appFlag},
+		Before:      beforeCmd,
+		Flags:       globalFlags,
 		Subcommands: cli.Commands{
 			cli.Command{
 				Name:        "proxy",
 				Description: "proxy connections to a resource",
 				Usage:       "<name>",
 				Action:      runResourcesProxy,
-				Flags: []cli.Flag{
-					appFlag,
-					cli.StringFlag{
-						Name:  "port, p",
-						Usage: "local port",
-						Value: "",
-					},
-				},
+				Flags:       append(flags, globalFlags...),
 			},
 		},
 	})
