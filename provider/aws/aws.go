@@ -629,6 +629,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	}
 
 	if service != nil {
+		// manifest environment
 		env, err := m.ServiceEnvironment(opts.Service)
 		if err != nil {
 			return "", err
@@ -651,6 +652,19 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 			req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
 				Name:  aws.String(strings.ToUpper(fmt.Sprintf("%s_URL", r.Name))),
 				Value: aws.String(r.Endpoint),
+			})
+		}
+
+		// app environment
+		menv, err := helpers.AppEnvironment(p, app)
+		if err != nil {
+			return "", err
+		}
+
+		for k, v := range menv {
+			req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
+				Name:  aws.String(k),
+				Value: aws.String(v),
 			})
 		}
 
