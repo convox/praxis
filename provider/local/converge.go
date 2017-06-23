@@ -153,7 +153,7 @@ func resourcePort(kind string) (int, error) {
 func resourceURL(app, kind, name string) (string, error) {
 	switch kind {
 	case "mysql":
-		return fmt.Sprintf("mysql://mysql:password@%s.resource.%s.convox:5432/app", name, app), nil
+		return fmt.Sprintf("mysql://mysql:password@%s.resource.%s.convox:3306/app", name, app), nil
 	case "postgres":
 		return fmt.Sprintf("postgres://postgres:password@%s.resource.%s.convox:5432/app?sslmode=disable", name, app), nil
 	case "redis":
