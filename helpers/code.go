@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-var regexpCodeGrabber = regexp.MustCompile(`^26bda8cd-ad49-4e4b-8bb3-2f19e197b3bd\[(\d+)\]\[(.*?)\]$`)
+var regexpCodeGrabber = regexp.MustCompile(`^26bda8cd-ad49-4e4b-8bb3-2f19e197b3bd\[(\d+)\](\[(.*?)\])?$`)
 
 type codeGrabber struct {
 	code *int
@@ -31,7 +31,7 @@ func CodeError(w io.Writer, code int, err error) error {
 func (w codeGrabber) Write(data []byte) (int, error) {
 	match := regexpCodeGrabber.FindSubmatch(data)
 
-	if len(match) == 3 {
+	if len(match) == 4 {
 		i, err := strconv.Atoi(string(match[1]))
 		if err != nil {
 			return 0, err
@@ -40,7 +40,7 @@ func (w codeGrabber) Write(data []byte) (int, error) {
 		*w.code = i
 
 		*w.err = ""
-		if string(match[2]) != "" {
+		if string(match[3]) != "" {
 			*w.err = string(match[2])
 		}
 
