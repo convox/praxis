@@ -57,7 +57,10 @@ func init() {
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(-1)
+		if ee, ok := err.(*cli.ExitError); ok {
+			os.Exit(ee.ExitCode())
+		}
+		os.Exit(255) // 255 used to indicate system error
 	}
 }
 

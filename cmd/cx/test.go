@@ -117,8 +117,7 @@ func runTest(c *cli.Context) error {
 			return err
 		}
 		if code > 0 {
-			fmt.Printf("exit %d\n", code)
-			os.Exit(code)
+			return cli.NewExitError(fmt.Sprintf("exit %d", code), code)
 		}
 	}
 
