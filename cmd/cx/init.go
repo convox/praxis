@@ -80,6 +80,7 @@ func runInit(c *cli.Context) error {
 
 func resourceService(service mv1.Service) bool {
 	resourceImages := []string{
+		"convox/mysql",
 		"convox/postgres",
 		"convox/redis",
 	}
@@ -114,6 +115,8 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 		if resourceService(service) {
 			t := ""
 			switch service.Image {
+			case "convox/mysql":
+				t = "mysql"
 			case "convox/postgres":
 				t = "postgres"
 			case "convox/redis":
