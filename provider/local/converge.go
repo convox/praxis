@@ -139,6 +139,8 @@ func (p *Provider) prune() error {
 
 func resourcePort(kind string) (int, error) {
 	switch kind {
+	case "mysql":
+		return 3306, nil
 	case "postgres":
 		return 5432, nil
 	case "redis":
@@ -150,6 +152,8 @@ func resourcePort(kind string) (int, error) {
 
 func resourceURL(app, kind, name string) (string, error) {
 	switch kind {
+	case "mysql":
+		return fmt.Sprintf("mysql://mysql:password@%s.resource.%s.convox:5432/app", name, app), nil
 	case "postgres":
 		return fmt.Sprintf("postgres://postgres:password@%s.resource.%s.convox:5432/app?sslmode=disable", name, app), nil
 	case "redis":
@@ -161,6 +165,8 @@ func resourceURL(app, kind, name string) (string, error) {
 
 func resourceVolumes(app, kind, name string) ([]string, error) {
 	switch kind {
+	case "mysql":
+		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/var/lib/mysql", app, name)}, nil
 	case "postgres":
 		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/var/lib/postgresql/data", app, name)}, nil
 	case "redis":
