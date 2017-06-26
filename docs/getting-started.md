@@ -56,15 +56,15 @@ services:
     test: make test
 ```
 
-The `convox.yml` for this site is pretty straightfoward. It defines a single service called "web".
+The `convox.yml` for this site is pretty straightfoward. It defines a single service called `web`.
 
-An SSL certificate will be automatically configured for the domain specified by the app's `HOST` environment variable.
+Nested under `web` is a `certificte` config. An SSL certificate will be automatically configured for the domain specified by the app's `HOST` environment variable. `HOST` is automatically set and can be overridden for a custom domain.
 
-Containers for the web service will listen on port 1313 for http requests.
+The `port` configuration means containers for the web service will listen on port 1313 for http requests.
 
-Two copies of the container will be run.
+Two copies of the container will be run, according to the `scale` setting.
 
-The command run by `cx test` for the web service will be `make test`.
+The app's default test command is `make test` as configured by `test`. This will be used later in the guide.
 
 The `convox.yml` you cloned also has a `workflows` section. You can ignore that for the purposes of this guide.
 
