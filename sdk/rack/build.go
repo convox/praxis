@@ -3,7 +3,6 @@ package rack
 import (
 	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/convox/praxis/types"
 )
@@ -11,8 +10,9 @@ import (
 func (c *Client) BuildCreate(app, url string, opts types.BuildCreateOptions) (build *types.Build, err error) {
 	ro := RequestOptions{
 		Params: Params{
-			"stage": strconv.Itoa(opts.Stage),
-			"url":   url,
+			"cache":       fmt.Sprintf("%t", opts.Cache),
+			"development": fmt.Sprintf("%t", opts.Development),
+			"url":         url,
 		},
 	}
 

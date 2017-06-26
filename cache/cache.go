@@ -1,10 +1,7 @@
 package cache
 
 import (
-	"crypto/sha256"
-	"encoding/json"
-	"fmt"
-	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -21,13 +18,17 @@ var (
 	lock  = sync.Mutex{}
 )
 
-func Get(collection string, key interface{}) interface{} {
+func init() {
+	go func() {
+		for range time.Tick(1 * time.Minute) {
+			Prune()
+		}
+	}()
+}
+
+func Get(collection string, key string) interface{} {
 	lock.Lock()
 	defer lock.Unlock()
-
-	if os.Getenv("PROVIDER") == "test" {
-		return nil
-	}
 
 	hash, err := hashKey(key)
 
@@ -52,7 +53,7 @@ func Get(collection string, key interface{}) interface{} {
 	return item.Item
 }
 
-func Set(collection string, key, value interface{}, ttl time.Duration) error {
+func Set(collection string, key string, value interface{}, ttl time.Duration) error {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -74,7 +75,7 @@ func Set(collection string, key, value interface{}, ttl time.Duration) error {
 	return nil
 }
 
-func Clear(collection string, key interface{}) error {
+func Clear(collection string, key string) error {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -91,12 +92,39 @@ func Clear(collection string, key interface{}) error {
 	return nil
 }
 
-func hashKey(key interface{}) (string, error) {
-	data, err := json.Marshal(key)
+func ClearPrefix(collection string, prefix string) error {
+	lock.Lock()
+	defer lock.Unlock()
 
-	if err != nil {
-		return "", err
+	for k := range cache[collection] {
+		if strings.HasPrefix(k, prefix) {
+			delete(cache[collection], k)
+		}
 	}
 
-	return fmt.Sprintf("%x", sha256.Sum256(data))[0:32], nil
+	return nil
+}
+
+func ClearAll() error {
+	for k := range cache {
+		delete(cache, k)
+	}
+
+	return nil
+}
+
+func Prune() {
+	now := time.Now()
+
+	for k := range cache {
+		for l := range cache[k] {
+			if cache[k][l].Expires.Before(now) {
+				delete(cache[k], l)
+			}
+		}
+	}
+}
+
+func hashKey(key string) (string, error) {
+	return key, nil
 }

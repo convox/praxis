@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -11,6 +13,15 @@ func init() {
 		Description: "list services",
 		Action:      runServices,
 		Flags:       []cli.Flag{appFlag},
+		Subcommands: cli.Commands{
+			cli.Command{
+				Name:        "url",
+				Description: "output url for a service",
+				Usage:       "<name>",
+				Action:      runServicesUrl,
+				Flags:       []cli.Flag{appFlag},
+			},
+		},
 	})
 }
 
@@ -32,6 +43,28 @@ func runServices(c *cli.Context) error {
 	}
 
 	t.Print()
+
+	return nil
+}
+
+func runServicesUrl(c *cli.Context) error {
+	app, err := appName(c, ".")
+	if err != nil {
+		return err
+	}
+
+	if len(c.Args()) < 1 {
+		return stdcli.Usage(c)
+	}
+
+	name := c.Args()[0]
+
+	s, err := Rack.ServiceGet(app, name)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(s.Endpoint)
 
 	return nil
 }

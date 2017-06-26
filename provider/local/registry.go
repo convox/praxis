@@ -2,11 +2,19 @@ package local
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/convox/praxis/types"
+	"github.com/pkg/errors"
+)
+
+const (
+	RegistryCacheDuration = 1 * time.Hour
 )
 
 func (p *Provider) RegistryAdd(hostname, username, password string) (*types.Registry, error) {
+	log := p.logger("RegistryAdd").Append("hostname=%q username=%q", hostname, username)
+
 	r := &types.Registry{
 		Hostname: hostname,
 		Username: username,
@@ -16,20 +24,22 @@ func (p *Provider) RegistryAdd(hostname, username, password string) (*types.Regi
 	key := fmt.Sprintf("registries/%s", hostname)
 
 	if p.storageExists(key) {
-		return nil, fmt.Errorf("registry already exists: %s", hostname)
+		return nil, log.Error(fmt.Errorf("registry already exists: %s", hostname))
 	}
 
 	if err := p.storageStore(fmt.Sprintf("registries/%s", hostname), r); err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
-	return r, nil
+	return r, log.Success()
 }
 
 func (p *Provider) RegistryList() (types.Registries, error) {
+	log := p.logger("RegistryList")
+
 	names, err := p.storageList("registries")
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	registries := make(types.Registries, len(names))
@@ -37,22 +47,28 @@ func (p *Provider) RegistryList() (types.Registries, error) {
 	var r types.Registry
 
 	for i, name := range names {
-		if err := p.storageLoad(fmt.Sprintf("registries/%s", name), &r); err != nil {
-			return nil, err
+		if err := p.storageLoad(fmt.Sprintf("registries/%s", name), &r, RegistryCacheDuration); err != nil {
+			return nil, errors.WithStack(log.Error(err))
 		}
 
 		registries[i] = r
 	}
 
-	return registries, nil
+	return registries, log.Success()
 }
 
 func (p *Provider) RegistryRemove(hostname string) error {
+	log := p.logger("RegistryAdd").Append("hostname=%q", hostname)
+
 	key := fmt.Sprintf("registries/%s", hostname)
 
 	if !p.storageExists(key) {
-		return fmt.Errorf("no such registry: %s", hostname)
+		return log.Error(fmt.Errorf("no such registry: %s", hostname))
 	}
 
-	return p.storageDelete(key)
+	if err := p.storageDelete(key); err != nil {
+		errors.WithStack(log.Error(err))
+	}
+
+	return log.Success()
 }

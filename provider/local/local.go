@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -85,6 +86,10 @@ func (p *Provider) Init() error {
 }
 
 func (p *Provider) logger(at string) *logger.Logger {
+	if p.Test {
+		return logger.NewWriter("", ioutil.Discard)
+	}
+
 	log := logger.New("ns=local")
 
 	if id := p.Context().Value("request.id"); id != nil {
@@ -105,9 +110,9 @@ func (p *Provider) shutdown() error {
 
 	var wg sync.WaitGroup
 
-	for _, id := range cs {
+	for _, c := range cs {
 		wg.Add(1)
-		go p.containerStopAsync(id, &wg)
+		go p.containerStopAsync(c.Id, &wg)
 	}
 
 	wg.Wait()

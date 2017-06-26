@@ -18,6 +18,8 @@ func TestCacheStoreFetch(t *testing.T) {
 		"foo":  "bar",
 	}
 
+	local.AppCreate("app")
+
 	err = local.CacheStore("app", "test", "data", attrs, types.CacheStoreOptions{})
 	require.NoError(t, err)
 

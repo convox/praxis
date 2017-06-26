@@ -20,7 +20,6 @@
       "Default": ""
     },
     "Password": {
-      "MinLength": "1",
       "NoEcho": true,
       "Type": "String"
     },
@@ -72,7 +71,11 @@
       "Service{{ resource $s.Name }}Certificate": {
         "Type": "AWS::CertificateManager::Certificate",
         "Properties": {
-          "DomainName": "{{ . }}"
+          "DomainName": "{{ . }}",
+          "DomainValidationOptions": [{
+            "DomainName": "{{ . }}",
+            "ValidationDomain": "{{ apex . }}"
+          }]
         }
       },
       "Service{{ resource $s.Name }}Balancer": {
@@ -198,6 +201,7 @@
 {{ end }}
 
 {{ define "services" }}
+  {{ $m := .Manifest }}
   {{ range $s := .Manifest.Services }}
     "Service{{ resource .Name }}": {
       "Type": "AWS::ECS::Service",
@@ -215,6 +219,10 @@
               { "Ref": "Service{{ resource .Name }}TargetGroup" }
             {{ end }}
           } ],
+          "PlacementStrategies": [
+            { "Type": "spread", "Field": "attribute:ecs.availability-zone" },
+            { "Type": "spread", "Field": "instanceId" }
+          ],
           "Role": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:ServiceRole" } },
         {{ end }}
         "TaskDefinition": { "Ref": "Service{{ resource .Name }}Tasks" }
@@ -260,9 +268,10 @@
       {{ end }}
       "Properties": {
         "ContainerDefinitions": [ {
-          {{ if .Command.Production }}
-            "Command": [ "sh", "-c", "{{ .Command.Production }}" ],
+          {{ with .Command }}
+            "Command": [ "sh", "-c", "{{ . }}" ],
           {{ end }}
+          "Cpu": "64",
           "DockerLabels": {
             "convox.app": "{{ $.App.Name }}",
             "convox.rack": { "Ref": "Rack" },
@@ -283,7 +292,7 @@
             {{ range .Resources }}
               { "Name": "{{ upper . }}_URL", "Value": { "Fn::GetAtt": [ "Resource{{resource . }}", "Outputs.Url" ] } },
             {{ end }}
-            {{ range $k, $v := $.Env }}
+            {{ range $k, $v := $m.ServiceEnvironment $s.Name }}
               { "Name": "{{ $k }}", "Value": "{{ safe $v }}" },
             {{ end }}
             { "Ref": "AWS::NoValue" }
@@ -298,7 +307,16 @@
               "awslogs-stream-prefix": "{{ $.App.Name }}"
             }
           },
-          "Memory": "{{ .Scale.Memory }}",
+          "MemoryReservation": "{{ .Scale.Memory }}",
+          "MountPoints": [
+            {{ range $i, $v := .Volumes }}
+              {
+                "ContainerPath": "{{ volumeTo $v }}",
+                "SourceVolume": "volume-{{ $i }}"
+              },
+            {{ end }}
+            { "Ref": "AWS::NoValue" }
+          ],
           {{ with .Port.Port }}
             "PortMappings": [ { "ContainerPort": "{{ . }}", "Protocol": "tcp" } ],
           {{ end }}
@@ -306,7 +324,15 @@
         } ],
         "Family": { "Fn::Sub": "${AWS::StackName}-{{ .Name }}" },
         "TaskRoleArn": { "Ref": "Role" },
-        "Volumes": [ { "Name": "docker", "Host": { "SourcePath": "/var/run/docker.sock" } } ]
+        "Volumes": [
+            {{ range $i, $v := .Volumes }}
+              {
+                "Name": "volume-{{ $i }}",
+                "Host": { "SourcePath": "{{ volumeFrom $v }}" }
+              },
+            {{ end }}
+            { "Ref": "AWS::NoValue" }
+        ]
       }
     },
   {{ end }}

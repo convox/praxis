@@ -43,11 +43,10 @@ type Provider interface {
 	ProcessGet(app, pid string) (*Process, error)
 	ProcessList(app string, opts ProcessListOptions) (Processes, error)
 	ProcessLogs(app, pid string, opts LogsOptions) (io.ReadCloser, error)
+	ProcessProxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error)
 	ProcessRun(app string, opts ProcessRunOptions) (int, error)
 	ProcessStart(app string, opts ProcessRunOptions) (string, error)
 	ProcessStop(app, pid string) error
-
-	Proxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error)
 
 	QueueFetch(app, queue string, opts QueueFetchOptions) (map[string]string, error)
 	QueueStore(app, queue string, attrs map[string]string) error
@@ -62,14 +61,17 @@ type Provider interface {
 	ReleaseLogs(app, id string, opts LogsOptions) (io.ReadCloser, error)
 	ReleasePromote(app, id string) error
 
+	ResourceGet(app, name string) (*Resource, error)
 	ResourceList(app string) (Resources, error)
 
+	ServiceGet(app, name string) (*Service, error)
 	ServiceList(app string) (Services, error)
 
 	SystemGet() (*System, error)
 	SystemInstall(name string, opts SystemInstallOptions) (string, error)
 	SystemLogs(opts LogsOptions) (io.ReadCloser, error)
 	SystemOptions() (map[string]string, error)
+	SystemProxy(host string, port int, in io.Reader) (io.ReadCloser, error)
 	SystemUninstall(name string, opts SystemInstallOptions) error
 	SystemUpdate(opts SystemUpdateOptions) error
 

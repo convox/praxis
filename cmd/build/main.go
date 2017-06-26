@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/convox/praxis/helpers"
@@ -23,14 +22,14 @@ import (
 var (
 	Rack rack.Rack
 
-	flagApp      string
-	flagAuth     string
-	flagId       string
-	flagManifest string
-	flagPrefix   string
-	flagPush     string
-	flagStage    int
-	flagUrl      string
+	flagApp         string
+	flagAuth        string
+	flagDevelopment bool
+	flagId          string
+	flagManifest    string
+	flagPrefix      string
+	flagPush        string
+	flagUrl         string
 
 	output bytes.Buffer
 	w      io.Writer
@@ -50,11 +49,11 @@ func init() {
 func main() {
 	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	fs.StringVar(&flagApp, "app", "", "app name")
+	fs.BoolVar(&flagDevelopment, "development", false, "development build")
 	fs.StringVar(&flagId, "id", "", "build id")
 	fs.StringVar(&flagManifest, "manifest", "convox.yml", "path to manifest")
 	fs.StringVar(&flagPrefix, "prefix", "", "image prefix")
 	fs.StringVar(&flagPush, "push", "", "push after build")
-	fs.IntVar(&flagStage, "stage", 0, "release stage")
 	fs.StringVar(&flagUrl, "url", "", "source url")
 
 	if err := fs.Parse(os.Args[1:]); err != nil {
@@ -63,6 +62,10 @@ func main() {
 
 	if v := os.Getenv("BUILD_APP"); v != "" {
 		flagApp = v
+	}
+
+	if v := os.Getenv("BUILD_DEVELOPMENT"); v != "" {
+		flagDevelopment = (v == "true")
 	}
 
 	if v := os.Getenv("BUILD_ID"); v != "" {
@@ -81,17 +84,12 @@ func main() {
 		flagPush = v
 	}
 
-	if v := os.Getenv("BUILD_STAGE"); v != "" {
-		s, err := strconv.Atoi(v)
-		if err != nil {
-			fail(err)
-		}
-		flagStage = s
-	}
-
 	if v := os.Getenv("BUILD_URL"); v != "" {
 		flagUrl = v
 	}
+
+	// fmt.Printf("os.Environ() = %+v\n", os.Environ())
+	// fmt.Printf("flagDevelopment = %+v\n", flagDevelopment)
 
 	if err := auth(); err != nil {
 		fail(err)
@@ -179,55 +177,57 @@ func build() error {
 		return err
 	}
 
-	cache, err := ioutil.TempDir("", "")
-	if err != nil {
-		return err
-	}
+	// cache, err := ioutil.TempDir("", "")
+	// if err != nil {
+	//   return err
+	// }
 
-	ce, err := Rack.ObjectExists(flagApp, "convox/cache/build.tgz")
-	if err != nil {
-		return err
-	}
+	// ce, err := Rack.ObjectExists(flagApp, "convox/cache/build.tgz")
+	// if err != nil {
+	//   return err
+	// }
 
-	if ce {
-		fmt.Fprintf(w, "restoring cache\n")
+	// if ce {
+	//   fmt.Fprintf(w, "restoring cache\n")
 
-		cr, err := Rack.ObjectFetch(flagApp, "convox/cache/build.tgz")
-		if err != nil {
-			return err
-		}
+	//   cr, err := Rack.ObjectFetch(flagApp, "convox/cache/build.tgz")
+	//   if err != nil {
+	//     return err
+	//   }
 
-		defer cr.Close()
+	//   defer cr.Close()
 
-		if err := helpers.ExtractTarball(cr, cache); err != nil {
-			return err
-		}
-	}
+	//   if err := helpers.ExtractTarball(cr, cache); err != nil {
+	//     return err
+	//   }
+	// }
 
 	opts := manifest.BuildOptions{
-		Cache:  cache,
-		Push:   flagPush,
-		Root:   tmp,
-		Stdout: w,
-		Stderr: w,
+		// Cache:  cache,
+		Development: flagDevelopment,
+		Env:         manifest.Environment(env),
+		Push:        flagPush,
+		Root:        tmp,
+		Stdout:      w,
+		Stderr:      w,
 	}
 
 	if err := m.Build(tmp, flagPrefix, flagId, opts); err != nil {
 		return err
 	}
 
-	fmt.Fprintf(w, "saving cache\n")
+	// fmt.Fprintf(w, "saving cache\n")
 
-	tgz, err := helpers.CreateTarball(cache, helpers.TarballOptions{})
-	if err != nil {
-		return err
-	}
+	// tgz, err := helpers.CreateTarball(cache, helpers.TarballOptions{})
+	// if err != nil {
+	//   return err
+	// }
 
-	defer tgz.Close()
+	// defer tgz.Close()
 
-	if _, err := Rack.ObjectStore(flagApp, "convox/cache/build.tgz", tgz, types.ObjectStoreOptions{}); err != nil {
-		return err
-	}
+	// if _, err := Rack.ObjectStore(flagApp, "convox/cache/build.tgz", tgz, types.ObjectStoreOptions{}); err != nil {
+	//   return err
+	// }
 
 	fmt.Fprintf(w, "storing artifacts\n")
 
@@ -242,11 +242,13 @@ func build() error {
 		return err
 	}
 
+	fmt.Fprintf(w, "build complete\n")
+
 	return nil
 }
 
 func release() error {
-	release, err := Rack.ReleaseCreate(flagApp, types.ReleaseCreateOptions{Build: flagId, Stage: flagStage})
+	release, err := Rack.ReleaseCreate(flagApp, types.ReleaseCreateOptions{Build: flagId})
 	if err != nil {
 		return err
 	}

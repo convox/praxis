@@ -6,36 +6,32 @@ import (
 )
 
 type Service struct {
-	Name string
+	Name string `yaml:"-"`
 
-	Build       ServiceBuild
-	Certificate string
-	Command     ServiceCommand
-	Environment []string
-	Health      ServiceHealth
-	Image       string
-	Port        ServicePort
-	Resources   []string
-	Scale       ServiceScale
-	Volumes     []string
+	Build       ServiceBuild  `yaml:"build,omitempty"`
+	Certificate string        `yaml:"certificate,omitempty"`
+	Command     string        `yaml:"command,omitempty"`
+	Environment []string      `yaml:"environment,omitempty"`
+	Health      ServiceHealth `yaml:"health,omitempty"`
+	Image       string        `yaml:"image,omitempty"`
+	Port        ServicePort   `yaml:"port,omitempty"`
+	Resources   []string      `yaml:"resources,omitempty"`
+	Scale       ServiceScale  `yaml:"scale,omitempty"`
+	Test        string        `yaml:"test,omitempty"`
+	Volumes     []string      `yaml:"volumes,omitempty"`
 }
 
 type Services []Service
 
 type ServiceBuild struct {
-	Args []string
-	Path string
+	Args []string `yaml:"args,omitempty"`
+	Path string   `yaml:"path,omitempty"`
 }
 
 type ServiceCommand struct {
 	Development string
 	Test        string
 	Production  string
-}
-
-type ServiceCount struct {
-	Min int
-	Max int
 }
 
 type ServiceHealth struct {
@@ -50,10 +46,27 @@ type ServicePort struct {
 }
 
 type ServiceScale struct {
-	Count  ServiceCount
+	Count  *ServiceScaleCount
 	Memory int
+}
+
+type ServiceScaleCount struct {
+	Min int
+	Max int
 }
 
 func (s Service) BuildHash() string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(fmt.Sprintf("build[path=%q, args=%v] image=%q", s.Build.Path, s.Build.Args, s.Image))))
+}
+
+func (s Service) GetName() string {
+	return s.Name
+}
+
+func (s *Service) SetDefaults() error {
+	if s.Scale.Count == nil {
+		s.Scale.Count = &ServiceScaleCount{Min: 1, Max: 1}
+	}
+
+	return nil
 }

@@ -19,7 +19,7 @@ func New(endpoint string) (Rack, error) {
 		return nil, err
 	}
 
-	return &Client{Endpoint: u, Version: "dev"}, nil
+	return &Client{Debug: os.Getenv("CONVOX_DEBUG") == "true", Endpoint: u, Version: "dev"}, nil
 }
 
 func NewFromEnv() (Rack, error) {

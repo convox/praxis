@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"os"
-	"strings"
 
 	"github.com/convox/praxis/server"
 )
@@ -17,14 +15,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	go http.ListenAndServe(":3001", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u := r.URL
+	// go http.ListenAndServe(":3001", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	//   u := r.URL
 
-		u.Host = strings.Split(r.Host, ":")[0]
-		u.Scheme = "https"
+	//   u.Host = strings.Split(r.Host, ":")[0]
+	//   u.Scheme = "https"
 
-		http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
-	}))
+	//   http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
+	// }))
 
 	if err := s.Listen("tcp", ":3000"); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)

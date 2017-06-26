@@ -3,27 +3,22 @@ package manifest
 import (
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	yaml "gopkg.in/yaml.v2"
 )
 
-const (
-	StageProduction  = 0
-	StageDevelopment = iota
-	StageTest        = iota
-)
-
 type Manifest struct {
-	Balancers   Balancers
-	Environment Environment
-	Keys        Keys
-	Queues      Queues
-	Resources   Resources
-	Services    Services
-	Tables      Tables
-	Timers      Timers
-	Workflows   Workflows
+	Balancers   Balancers   `yaml:"balancers,omitempty"`
+	Environment Environment `yaml:"environment,omitempty"`
+	Keys        Keys        `yaml:"keys,omitempty"`
+	Queues      Queues      `yaml:"queues,omitempty"`
+	Resources   Resources   `yaml:"resources,omitempty"`
+	Services    Services    `yaml:"services,omitempty"`
+	Tables      Tables      `yaml:"tables,omitempty"`
+	Timers      Timers      `yaml:"timers,omitempty"`
+	Workflows   Workflows   `yaml:"workflows,omitempty"`
 }
 
 func Load(data []byte, env Environment) (*Manifest, error) {
@@ -40,7 +35,11 @@ func Load(data []byte, env Environment) (*Manifest, error) {
 
 	m.Environment = env
 
-	if err := m.applyDefaults(); err != nil {
+	if err := m.ApplyDefaults(); err != nil {
+		return nil, err
+	}
+
+	if err := m.Validate(); err != nil {
 		return nil, err
 	}
 
@@ -65,6 +64,8 @@ func (m *Manifest) ServiceEnvironment(service string) (Environment, error) {
 
 	env := Environment{}
 
+	missing := []string{}
+
 	for _, e := range s.Environment {
 		parts := strings.SplitN(e, "=", 2)
 
@@ -72,7 +73,7 @@ func (m *Manifest) ServiceEnvironment(service string) (Environment, error) {
 		case 1:
 			v, ok := m.Environment[parts[0]]
 			if !ok {
-				return nil, fmt.Errorf("required env: %s", parts[0])
+				missing = append(missing, parts[0])
 			}
 			env[parts[0]] = v
 		case 2:
@@ -87,23 +88,33 @@ func (m *Manifest) ServiceEnvironment(service string) (Environment, error) {
 		}
 	}
 
+	if len(missing) > 0 {
+		sort.Strings(missing)
+
+		return nil, fmt.Errorf("required env: %s\n", strings.Join(missing, ", "))
+	}
+
 	return env, nil
 }
 
 func (m *Manifest) Validate() error {
-	// for _, s := range m.Services {
-	//   if err := s.Validate(m.Environment); err != nil {
-	//     return err
-	//   }
-	// }
+	for _, s := range m.Services {
+		if _, err := m.ServiceEnvironment(s.Name); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
 
-func (m *Manifest) applyDefaults() error {
+func (m *Manifest) ApplyDefaults() error {
 	for i, s := range m.Services {
 		if s.Build.Path == "" && s.Image == "" {
 			m.Services[i].Build.Path = "."
+		}
+
+		if s.Scale.Count == nil {
+			m.Services[i].Scale.Count = &ServiceScaleCount{Min: 1, Max: 1}
 		}
 
 		if s.Health.Path == "" {
@@ -116,10 +127,6 @@ func (m *Manifest) applyDefaults() error {
 
 		if s.Health.Timeout == 0 {
 			m.Services[i].Health.Timeout = m.Services[i].Health.Interval - 1
-		}
-
-		if s.Scale.Count.Min == 0 {
-			m.Services[i].Scale.Count.Min = 1
 		}
 
 		if s.Scale.Memory == 0 {

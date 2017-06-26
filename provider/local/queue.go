@@ -1,62 +1,55 @@
 package local
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/convox/praxis/types"
 )
 
+type queueChannel chan map[string]string
+
+var (
+	queues = map[string]queueChannel{}
+)
+
 func (p *Provider) QueueFetch(app, queue string, opts types.QueueFetchOptions) (map[string]string, error) {
-	tick := time.Tick(200 * time.Millisecond)
+	log := p.logger("QueueFetch").Append("app=%q queue=%q", app, queue)
+
 	timeout := time.After(time.Duration(coalescei(opts.Timeout, 10)) * time.Second)
 
-	for {
-		select {
-		case <-tick:
-			item, err := p.queueFetchItem(app, queue)
-			if err != nil {
-				return nil, err
-			}
-			if item != nil {
-				return item, nil
-			}
-		case <-timeout:
-			return nil, nil
-		}
+	if _, err := p.AppGet(app); err != nil {
+		return nil, log.Error(err)
+	}
+
+	select {
+	case attrs := <-appQueue(app, queue):
+		return attrs, log.Success()
+	case <-timeout:
+		return nil, log.Successf("timeout=true")
 	}
 }
 
 func (p *Provider) QueueStore(app, queue string, attrs map[string]string) error {
-	data, err := json.Marshal(attrs)
-	if err != nil {
-		return err
+	log := p.logger("QueueStore").Append("app=%q queue=%q", app, queue)
+
+	if _, err := p.AppGet(app); err != nil {
+		return log.Error(err)
 	}
 
-	return p.storageLogWrite(fmt.Sprintf("apps/%s/queues/%s", app, queue), data)
+	appQueue(app, queue) <- attrs
+
+	return log.Success()
 }
 
-func (p *Provider) queueFetchItem(app, queue string) (map[string]string, error) {
-	var item map[string]string
+func appQueue(app, queue string) queueChannel {
+	key := fmt.Sprintf("%s-%s", app, queue)
 
-	err := p.storageBucket(fmt.Sprintf("apps/%s/queues/%s", app, queue), func(bucket *bolt.Bucket) error {
-		k, v := bucket.Cursor().First()
-
-		if k == nil {
-			return nil
-		}
-
-		if err := json.Unmarshal(v, &item); err != nil {
-			return err
-		}
-
-		return bucket.Delete(k)
-	})
-	if err != nil {
-		return nil, err
+	if q, ok := queues[key]; ok {
+		return q
 	}
 
-	return item, nil
+	queues[key] = make(queueChannel, 10*1024)
+
+	return queues[key]
 }

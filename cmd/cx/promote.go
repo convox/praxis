@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
@@ -39,13 +40,15 @@ func runPromote(c *cli.Context) error {
 
 	stdcli.Startf("promoting <name>%s</name>", release)
 
+	since := time.Now()
+
 	if err := Rack.ReleasePromote(app, release); err != nil {
 		return err
 	}
 
 	stdcli.OK()
 
-	if err := releaseLogs(app, release, os.Stdout, types.LogsOptions{Follow: true}); err != nil {
+	if err := releaseLogs(app, release, os.Stdout, types.LogsOptions{Follow: true, Since: since}); err != nil {
 		return err
 	}
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"os/user"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/convox/praxis/types"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -19,6 +21,8 @@ var (
 )
 
 func (p *Provider) SystemGet() (*types.System, error) {
+	log := p.logger("SystemGet")
+
 	system := &types.System{
 		Image:   fmt.Sprintf("convox/praxis:%s", p.Version),
 		Name:    p.Name,
@@ -26,7 +30,7 @@ func (p *Provider) SystemGet() (*types.System, error) {
 		Version: p.Version,
 	}
 
-	return system, nil
+	return system, log.Success()
 }
 
 func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (string, error) {
@@ -56,11 +60,13 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 }
 
 func (p *Provider) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
+	log := p.logger("SystemLogs")
+
 	r, w := io.Pipe()
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	args := []string{"logs"}
@@ -81,7 +87,7 @@ func (p *Provider) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
 	cmd.Stderr = w
 
 	if err := cmd.Start(); err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	go func() {
@@ -89,15 +95,30 @@ func (p *Provider) SystemLogs(opts types.LogsOptions) (io.ReadCloser, error) {
 		cmd.Wait()
 	}()
 
-	return r, nil
+	return r, log.Success()
 }
 
 func (p *Provider) SystemOptions() (map[string]string, error) {
+	log := p.logger("SystemOptions")
+
 	options := map[string]string{
 		"streaming": "http2",
 	}
 
-	return options, nil
+	return options, log.Success()
+}
+
+func (p *Provider) SystemProxy(host string, port int, in io.Reader) (io.ReadCloser, error) {
+	log := p.logger("SystemProxy").Append("host=%s port=%d", host, port)
+
+	cn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
+	if err != nil {
+		return nil, errors.WithStack(log.Error(err))
+	}
+
+	go io.Copy(cn, in)
+
+	return cn, log.Success()
 }
 
 func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {
@@ -111,6 +132,8 @@ func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions)
 }
 
 func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
+	log := p.logger("SystemUpdate").Append("version=%q", opts.Version)
+
 	w := opts.Output
 	if w == nil {
 		w = ioutil.Discard
@@ -120,7 +143,11 @@ func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
 		w.Write([]byte("Restarting... OK\n"))
 
 		if err := ioutil.WriteFile("/var/convox/version", []byte(v), 0644); err != nil {
-			return err
+			return errors.WithStack(log.Error(err))
+		}
+
+		if err := exec.Command("docker", "pull", fmt.Sprintf("convox/praxis:%s", v)).Run(); err != nil {
+			return errors.WithStack(log.Error(err))
 		}
 
 		go func() {
@@ -129,7 +156,7 @@ func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
 		}()
 	}
 
-	return nil
+	return log.Success()
 }
 
 func launcherInstall(name string, command string, args ...string) error {

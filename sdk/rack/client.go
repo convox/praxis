@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,11 +15,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/convox/praxis/stdcli"
+
 	"golang.org/x/net/http2"
 	"golang.org/x/net/websocket"
 )
 
 type Client struct {
+	Debug    bool
 	Endpoint *url.URL
 	Key      string
 	Socket   string
@@ -52,7 +56,7 @@ func (o *RequestOptions) Reader() (io.Reader, error) {
 	}
 
 	if o.Body == nil && len(o.Params) == 0 {
-		return nil, nil
+		return bytes.NewReader(nil), nil
 	}
 
 	if o.Body != nil {
@@ -95,7 +99,7 @@ func (c *Client) Stream(path string, opts RequestOptions) (io.ReadCloser, error)
 
 	switch so["streaming"] {
 	case "websocket":
-		u, err := url.Parse(fmt.Sprintf("wss://%s%s?%s", c.Endpoint.Host, path, opts.Querystring()))
+		u, err := url.Parse(fmt.Sprintf("wss://%s%s%s?%s", c.Endpoint.Host, c.Endpoint.Path, path, opts.Querystring()))
 		if err != nil {
 			return nil, err
 		}
@@ -105,8 +109,15 @@ func (c *Client) Stream(path string, opts RequestOptions) (io.ReadCloser, error)
 			return nil, err
 		}
 
+		header := http.Header{}
+		for k, v := range opts.Headers {
+			header.Add(k, v)
+		}
+		creds := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:", c.Endpoint.User.Username())))
+		header.Add("Authorization", fmt.Sprintf("Basic %s", creds))
+
 		config := &websocket.Config{
-			Header:   http.Header{},
+			Header:   header,
 			Location: u,
 			Origin:   u,
 			Version:  websocket.ProtocolVersionHybi13,
@@ -124,7 +135,9 @@ func (c *Client) Stream(path string, opts RequestOptions) (io.ReadCloser, error)
 			return nil, err
 		}
 
-		go io.Copy(ws, r)
+		if r != nil {
+			go io.Copy(ws, r)
+		}
 
 		return ws, nil
 	case "http2":
@@ -303,9 +316,22 @@ func (c *Client) Request(method, path string, opts RequestOptions) (*http.Reques
 }
 
 func (c *Client) handleRequest(req *http.Request) (*http.Response, error) {
+	if c.Debug {
+		stdcli.DefaultWriter.Writef("<debug>%s %s </debug>", req.Method, req.URL)
+	}
+
 	res, err := c.Client().Do(req)
 	if err != nil {
 		return nil, err
+	}
+
+	if c.Debug {
+		switch res.StatusCode / 100 {
+		case 2, 3:
+			stdcli.DefaultWriter.Writef("<good>%d </good>\n", res.StatusCode)
+		default:
+			stdcli.DefaultWriter.Writef("<bad>%d </bad>\n", res.StatusCode)
+		}
 	}
 
 	if err := responseError(res); err != nil {

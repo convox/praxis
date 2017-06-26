@@ -6,11 +6,16 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/convox/praxis/api"
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 	"github.com/pkg/errors"
+)
+
+const (
+	AppCacheDuration = 5 * time.Minute
 )
 
 func (p *Provider) AppCreate(name string) (*types.App, error) {
@@ -62,7 +67,7 @@ func (p *Provider) AppGet(name string) (*types.App, error) {
 
 	var app types.App
 
-	if err := p.storageLoad(fmt.Sprintf("apps/%s/app.json", name), &app); err != nil {
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/app.json", name), &app, AppCacheDuration); err != nil {
 		if strings.HasPrefix(err.Error(), "no such key:") {
 			return nil, log.Error(api.Errorf(404, "no such app: %s", name))
 		} else {

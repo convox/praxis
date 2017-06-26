@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
@@ -31,11 +32,22 @@ func runVersion(c *cli.Context) error {
 }
 
 func latestVersion() (string, error) {
-	res, err := http.Get("https://api.github.com/repos/convox/praxis/releases?per_page=1")
+	req, err := http.NewRequest("GET", "https://releases.convox.com/releases/edge/next", nil)
 	if err != nil {
 		return "", err
 	}
 
+	id, err := cliID()
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("User-Agent", fmt.Sprintf("convox/%s (%s; %s/%s)", Version, id, runtime.GOOS, runtime.GOARCH))
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
 	defer res.Body.Close()
 
 	data, err := ioutil.ReadAll(res.Body)
@@ -43,17 +55,11 @@ func latestVersion() (string, error) {
 		return "", err
 	}
 
-	var releases []struct {
-		Name string
-	}
+	var next string
 
-	if err := json.Unmarshal(data, &releases); err != nil {
+	if err := json.Unmarshal(data, &next); err != nil {
 		return "", err
 	}
 
-	if len(releases) < 1 {
-		return "", fmt.Errorf("no releases")
-	}
-
-	return releases[0].Name, nil
+	return next, nil
 }

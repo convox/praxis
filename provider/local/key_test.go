@@ -10,6 +10,8 @@ func TestEncryptDecrypt(t *testing.T) {
 	local, err := testProvider()
 	assert.NoError(t, err)
 
+	local.AppCreate("foo")
+
 	data := "this is data to be encrypted"
 
 	enc, err := local.KeyEncrypt("foo", "bar", []byte(data))

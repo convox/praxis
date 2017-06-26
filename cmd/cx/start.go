@@ -50,19 +50,24 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	ch := make(chan error)
+	errch := make(chan error)
 
 	data, err := ioutil.ReadFile("convox.yml")
 	if err != nil {
 		return err
 	}
 
-	m, err := manifest.Load(data, manifest.Environment{})
+	env, err := helpers.AppEnvironment(Rack, app)
 	if err != nil {
 		return err
 	}
 
-	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Stage: manifest.StageDevelopment}, m.Writer("build", os.Stdout))
+	m, err := manifest.Load(data, manifest.Environment(env))
+	if err != nil {
+		return err
+	}
+
+	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Development: true}, m.Writer("build", os.Stdout))
 	if err != nil {
 		return err
 	}
@@ -84,6 +89,8 @@ func runStart(c *cli.Context) error {
 	default:
 		return fmt.Errorf("unknown build status: %s", b.Status)
 	}
+
+	m.Writef("convox", "promoting <name>%s</name>\n", b.Release)
 
 	if err := Rack.ReleasePromote(app, b.Release); err != nil {
 		return err
@@ -113,7 +120,7 @@ func runStart(c *cli.Context) error {
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	go handleSignals(sig, ch, m, app)
+	go handleSignals(sig, errch, m, app)
 
 	wd, err := os.Getwd()
 	if err != nil {
@@ -121,7 +128,7 @@ func runStart(c *cli.Context) error {
 	}
 
 	for _, s := range m.Services {
-		go watchChanges(wd, m, app, s.Name, ch)
+		go watchChanges(wd, m, app, s.Name, errch)
 	}
 
 	logs, err = Rack.AppLogs(app, types.LogsOptions{Follow: true, Prefix: true})
@@ -131,15 +138,17 @@ func runStart(c *cli.Context) error {
 
 	ls := bufio.NewScanner(logs)
 
-	for ls.Scan() {
-		match := reAppLog.FindStringSubmatch(ls.Text())
+	go func() {
+		for ls.Scan() {
+			match := reAppLog.FindStringSubmatch(ls.Text())
 
-		if len(match) == 7 {
-			m.Writef(match[4], "%s\n", match[6])
+			if len(match) == 7 {
+				m.Writef(match[4], "%s\n", match[6])
+			}
 		}
-	}
+	}()
 
-	return <-ch
+	return <-errch
 }
 
 func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, app string) {
@@ -176,16 +185,14 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 }
 
 func watchChanges(root string, m *manifest.Manifest, app, service string, ch chan error) {
-	for _, s := range m.Services {
-		bss, err := m.BuildSources(root, s.Name)
-		if err != nil {
-			ch <- err
-			return
-		}
+	bss, err := m.BuildSources(root, service)
+	if err != nil {
+		ch <- err
+		return
+	}
 
-		for _, bs := range bss {
-			go watchPath(root, m, app, s.Name, bs, ch)
-		}
+	for _, bs := range bss {
+		go watchPath(root, m, app, service, bs, ch)
 	}
 }
 
@@ -206,7 +213,19 @@ func watchPath(root string, m *manifest.Manifest, app, service string, bs manife
 		return
 	}
 
-	w.Writef("syncing: %s to %s:%s\n", bs.Local, service, bs.Remote)
+	wd, err := os.Getwd()
+	if err != nil {
+		ch <- err
+		return
+	}
+
+	rel, err := filepath.Rel(wd, bs.Local)
+	if err != nil {
+		ch <- err
+		return
+	}
+
+	m.Writef(service, "syncing: <dir>%s</dir> to <dir>%s</dir>\n", rel, bs.Remote)
 
 	go changes.Watch(abs, cch, changes.WatchOptions{
 		Ignores: ignores,

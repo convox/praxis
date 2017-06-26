@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 	"os"
 
 	"github.com/convox/praxis/api"
@@ -48,14 +49,12 @@ func Routes(server *api.Server) {
 
 	auth.Stream("process.exec", "/apps/{app}/processes/{pid}/exec", controllers.ProcessExec)
 	auth.Stream("process.run", "/apps/{app}/processes/run", controllers.ProcessRun)
-
 	auth.Route("GET", "/apps/{app}/processes/{pid}", controllers.ProcessGet)
 	auth.Route("GET", "/apps/{app}/processes/{pid}/logs", controllers.ProcessLogs)
 	auth.Route("GET", "/apps/{app}/processes", controllers.ProcessList)
+	auth.Stream("process.proxy", "/apps/{app}/processes/{pid}/proxy/{port}", controllers.ProcessProxy)
 	auth.Route("POST", "/apps/{app}/processes", controllers.ProcessStart)
 	auth.Route("DELETE", "/apps/{app}/processes/{pid}", controllers.ProcessStop)
-
-	auth.Route("POST", "/apps/{app}/processes/{process}/proxy/{port}", controllers.Proxy)
 
 	auth.Route("GET", "/apps/{app}/queues/{queue}", controllers.QueueFetch)
 	auth.Route("POST", "/apps/{app}/queues/{queue}", controllers.QueueStore)
@@ -70,14 +69,23 @@ func Routes(server *api.Server) {
 	auth.Route("GET", "/apps/{app}/releases/{id}/logs", controllers.ReleaseLogs)
 	auth.Route("POST", "/apps/{app}/releases/{id}", controllers.ReleasePromote)
 
+	auth.Route("GET", "/apps/{app}/resources/{name}", controllers.ResourceGet)
 	auth.Route("GET", "/apps/{app}/resources", controllers.ResourceList)
 
+	auth.Route("GET", "/apps/{app}/services/{name}", controllers.ServiceGet)
 	auth.Route("GET", "/apps/{app}/services", controllers.ServiceList)
 
 	auth.Route("GET", "/system", controllers.SystemGet)
 	auth.Route("GET", "/system/logs", controllers.SystemLogs)
 	auth.Route("OPTIONS", "/system", controllers.SystemOptions)
+	auth.Stream("system.proxy", "/system/proxy/{host}/{port}", controllers.SystemProxy)
 	auth.Route("POST", "/system", controllers.SystemUpdate)
+
+	// pprof
+	auth.Router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	auth.Router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	auth.Router.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	auth.Router.HandleFunc("/debug/pprof/{topic:.*}", pprof.Index)
 }
 
 func authenticate(password string) api.Middleware {
