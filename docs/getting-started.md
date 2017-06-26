@@ -133,6 +133,8 @@ Open `content/index.md` in the project and add the text "Hello, this is a change
     
     Hello, this is a change!
 
+Then deploy the changes:
+
     $ cx deploy
 
 Reload the site in your browser and verify that the Introduction text has changed.
