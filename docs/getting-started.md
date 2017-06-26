@@ -130,6 +130,8 @@ Open `content/index.md` in the project and add the text "Hello, this is a change
 
     $ cx deploy
 
+Reload the site in your browser and verify that the Introduction text has changed.
+
 ### Run tests
 
 You can test an app using `cx test`. This command will create a temporary application container, deploy the current code to it, and sequentially run the `test:` command specified for each service. If a `test:` command is not specified, no tests will be run. `cx test` will abort and pass through any non-zero exit code returned by a test command.
