@@ -116,6 +116,10 @@ func runBuildsLogs(c *cli.Context) error {
 }
 
 func buildDirectory(app, dir string, opts types.BuildCreateOptions, w io.Writer) (*types.Build, error) {
+	if _, err := Rack.AppGet(app); err != nil {
+		return nil, err
+	}
+
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, err

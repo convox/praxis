@@ -76,8 +76,8 @@ func TestAppGetNonexistant(t *testing.T) {
 	assert.NoError(t, err)
 	defer testProviderCleanup(local)
 
-	_, err = local.AppGet("test")
-	assert.EqualError(t, err, "no such app: test")
+	_, err = local.AppGet("testfoo")
+	assert.EqualError(t, err, "no such app: testfoo")
 }
 
 func TestAppList(t *testing.T) {

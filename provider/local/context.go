@@ -7,7 +7,8 @@ import (
 )
 
 func (p *Provider) WithContext(ctx context.Context) types.Provider {
-	q := p
+	var q Provider
+	q = *p
 	q.ctx = ctx
-	return q
+	return &q
 }

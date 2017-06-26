@@ -8,6 +8,11 @@ import (
 	"time"
 
 	"github.com/convox/praxis/types"
+	"github.com/pkg/errors"
+)
+
+const (
+	ReleaseCacheDuration = 1 * time.Hour
 )
 
 func init() {
@@ -15,9 +20,11 @@ func init() {
 }
 
 func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*types.Release, error) {
+	log := p.logger("ReleaseCreate").Append("app=%q", app)
+
 	r, err := p.releaseFork(app)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	if opts.Build != "" {
@@ -28,44 +35,46 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 		r.Env = opts.Env
 	}
 
-	r.Stage = opts.Stage
-
 	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, r.Id), r); err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
-	return r, nil
+	return r, log.Success()
 }
 
 func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
+	log := p.logger("ReleaseGet").Append("app=%q id=%q", app, id)
+
 	if _, err := p.AppGet(app); err != nil {
-		return nil, err
+		return nil, log.Error(err)
 	}
 
 	var r *types.Release
 
-	if err := p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), &r); err != nil {
-		return nil, err
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), &r, ReleaseCacheDuration); err != nil {
+		return nil, errors.WithStack(log.Error(err))
 	}
 	if r == nil {
-		return nil, fmt.Errorf("could not find release: %s", id)
+		return nil, log.Error(fmt.Errorf("could not find release: %s", id))
 	}
 
 	if r.Env == nil {
 		r.Env = types.Environment{}
 	}
 
-	return r, nil
+	return r, log.Success()
 }
 
 func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
+	log := p.logger("ReleaseList").Append("app=%q", app)
+
 	if _, err := p.AppGet(app); err != nil {
-		return nil, err
+		return nil, log.Error(err)
 	}
 
 	ids, err := p.storageList(fmt.Sprintf("apps/%s/releases", app))
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(log.Error(err))
 	}
 
 	releases := make(types.Releases, len(ids))
@@ -73,7 +82,7 @@ func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types
 	for i, id := range ids {
 		release, err := p.ReleaseGet(app, id)
 		if err != nil {
-			return nil, err
+			return nil, log.Error(err)
 		}
 
 		releases[i] = *release
@@ -87,15 +96,17 @@ func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types
 		releases = releases[0:limit]
 	}
 
-	return releases, nil
+	return releases, log.Success()
 }
 
 func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadCloser, error) {
+	log := p.logger("ReleaseLogs").Append("app=%q id=%q", app, id)
+
 	key := fmt.Sprintf("apps/%s/releases/%s/log", app, id)
 
 	r, err := p.ReleaseGet(app, id)
 	if err != nil {
-		return nil, err
+		return nil, log.Error(err)
 	}
 
 	for {
@@ -105,7 +116,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 
 		r, err = p.ReleaseGet(app, id)
 		if err != nil {
-			return nil, err
+			return nil, log.Error(err)
 		}
 
 		time.Sleep(1 * time.Second)
@@ -116,7 +127,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 	go func() {
 		defer lw.Close()
 
-		var since time.Time
+		since := opts.Since
 
 		for {
 			time.Sleep(200 * time.Millisecond)
@@ -141,44 +152,46 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 		}
 	}()
 
-	return lr, nil
+	return lr, log.Success()
 }
 
-func (p *Provider) ReleasePromote(app, release string) error {
+func (p *Provider) ReleasePromote(app, id string) error {
+	log := p.logger("ReleasePromote").Append("app=%q id=%q", app, id)
+
 	a, err := p.AppGet(app)
 	if err != nil {
-		return err
+		return log.Error(err)
 	}
 
-	r, err := p.ReleaseGet(app, release)
+	r, err := p.ReleaseGet(app, id)
 
 	if r.Build == "" {
-		return fmt.Errorf("no build for release: %s", release)
+		return fmt.Errorf("no build for release: %s", id)
 	}
 
 	r.Status = "running"
 
-	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, release), r); err != nil {
-		return err
+	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), r); err != nil {
+		return errors.WithStack(log.Error(err))
 	}
 
 	a.Release = r.Id
 
 	if err := p.storageStore(fmt.Sprintf("apps/%s/app.json", a.Name), a); err != nil {
-		return err
+		return errors.WithStack(log.Error(err))
 	}
 
 	if err := p.converge(app); err != nil {
-		return err
+		return errors.WithStack(log.Error(err))
 	}
 
 	r.Status = "promoted"
 
-	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, release), r); err != nil {
-		return err
+	if err := p.storageStore(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), r); err != nil {
+		return errors.WithStack(log.Error(err))
 	}
 
-	return nil
+	return log.Success()
 }
 
 func (p *Provider) releaseFork(app string) (*types.Release, error) {

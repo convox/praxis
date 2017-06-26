@@ -7,11 +7,18 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/convox/praxis/types"
 	"github.com/pkg/errors"
 )
+
+const (
+	BuildCacheDuration = 5 * time.Minute
+)
+
+var buildUpdateLock sync.Mutex
 
 func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (*types.Build, error) {
 	log := p.logger("BuildCreate").Append("app=%q url=%q", app, url)
@@ -49,13 +56,18 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		return nil, errors.WithStack(log.Error(err))
 	}
 
+	buildUpdateLock.Lock()
+	defer buildUpdateLock.Unlock()
+
+	fmt.Printf("opts = %+v\n", opts)
+
 	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{
-			"BUILD_APP":    app,
-			"BUILD_AUTH":   base64.StdEncoding.EncodeToString(auth),
-			"BUILD_PREFIX": fmt.Sprintf("%s/%s", p.Name, app),
-			"BUILD_STAGE":  fmt.Sprintf("%d", opts.Stage),
+			"BUILD_APP":         app,
+			"BUILD_AUTH":        base64.StdEncoding.EncodeToString(auth),
+			"BUILD_DEVELOPMENT": fmt.Sprintf("%t", opts.Development),
+			"BUILD_PREFIX":      fmt.Sprintf("%s/%s", p.Name, app),
 		},
 		Name:    fmt.Sprintf("%s-build-%s", app, id),
 		Image:   sys.Image,
@@ -88,7 +100,7 @@ func (p *Provider) BuildGet(app, id string) (*types.Build, error) {
 
 	var b *types.Build
 
-	if err := p.storageLoad(fmt.Sprintf("apps/%s/builds/%s", app, id), &b); err != nil {
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/builds/%s", app, id), &b, BuildCacheDuration); err != nil {
 		if strings.HasPrefix(err.Error(), "no such key:") {
 			return nil, log.Error(fmt.Errorf("no such build: %s", id))
 		} else {
@@ -142,6 +154,9 @@ func (p *Provider) BuildLogs(app, id string) (io.ReadCloser, error) {
 }
 
 func (p *Provider) BuildUpdate(app, id string, opts types.BuildUpdateOptions) (*types.Build, error) {
+	buildUpdateLock.Lock()
+	defer buildUpdateLock.Unlock()
+
 	log := p.logger("BuildUpdate").Append("app=%q id=%q", app, id)
 
 	build, err := p.BuildGet(app, id)

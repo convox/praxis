@@ -1,21 +1,24 @@
 package local
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 func (p *Provider) Workers() {
+	log := p.logger("Workers")
+
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		<-terminate
 		if err := p.shutdown(); err != nil {
-			fmt.Printf("ns=provider.local at=shutdown error=%q\n", err)
+			log.Error(errors.WithStack(err))
 		}
 	}()
 
@@ -24,7 +27,7 @@ func (p *Provider) Workers() {
 			time.Sleep(10 * time.Second)
 
 			if err := p.workerConverge(); err != nil {
-				fmt.Printf("ns=provider.local at=converge error=%q\n", err)
+				log.Error(errors.WithStack(err))
 			}
 		}
 	}()
@@ -38,12 +41,11 @@ func (p *Provider) workerConverge() error {
 
 	for _, a := range apps {
 		if err := p.converge(a.Name); err != nil {
-			fmt.Printf("ns=provider.local at=converge app=%s error=%q\n", a.Name, err)
 			continue
 		}
 	}
 
-	if err := p.convergePrune(); err != nil {
+	if err := p.prune(); err != nil {
 		return err
 	}
 

@@ -43,6 +43,19 @@ func (c *Client) SystemOptions() (options map[string]string, err error) {
 	return
 }
 
+func (c *Client) SystemProxy(host string, port int, in io.Reader) (io.ReadCloser, error) {
+	ro := RequestOptions{
+		Body: in,
+	}
+
+	res, err := c.PostStream(fmt.Sprintf("/system/proxy/%s/%d", host, port), ro)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body, nil
+}
+
 func (c *Client) SystemUninstall(name string, opts types.SystemInstallOptions) error {
 	return fmt.Errorf("unimplemented")
 }

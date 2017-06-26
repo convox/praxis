@@ -4,14 +4,19 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/convox/praxis/types"
+)
+
+const (
+	TableCacheDuration = 5 * time.Minute
 )
 
 func (p *Provider) TableGet(app, table string) (*types.Table, error) {
 	var t *types.Table
 
-	if err := p.storageLoad(fmt.Sprintf("apps/%s/tables/%s/table.json", app, table), &t); err != nil {
+	if err := p.storageLoad(fmt.Sprintf("apps/%s/tables/%s/table.json", app, table), &t, TableCacheDuration); err != nil {
 		if strings.HasPrefix(err.Error(), "no such key:") {
 			return nil, fmt.Errorf("no such table: %s", table)
 		}

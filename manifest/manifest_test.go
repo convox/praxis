@@ -9,32 +9,15 @@ import (
 )
 
 func TestManifestLoad(t *testing.T) {
-	m, err := testdataManifest("full", manifest.Environment{"FOO": "bar"})
+	m, err := testdataManifest("full", manifest.Environment{"FOO": "bar", "SECRET": "shh"})
 	if !assert.NoError(t, err) {
 		return
 	}
 
 	n := &manifest.Manifest{
-		Balancers: manifest.Balancers{
-			manifest.Balancer{
-				Name: "api",
-				Endpoints: manifest.BalancerEndpoints{
-					manifest.BalancerEndpoint{Port: "80", Protocol: "http", Redirect: "https://:443"},
-					manifest.BalancerEndpoint{Port: "443", Protocol: "https", Target: "http://api:3000"},
-				},
-			},
-			manifest.Balancer{
-				Name: "proxy",
-				Endpoints: manifest.BalancerEndpoints{
-					manifest.BalancerEndpoint{Port: "80", Target: "proxy:3001"},
-					manifest.BalancerEndpoint{Port: "443", Target: "proxy:3002"},
-					manifest.BalancerEndpoint{Port: "1080", Target: "proxy:3003"},
-					manifest.BalancerEndpoint{Port: "2133", Target: "proxy:3000"},
-				},
-			},
-		},
 		Environment: manifest.Environment{
-			"FOO": "bar",
+			"FOO":    "bar",
+			"SECRET": "shh",
 		},
 		Keys: manifest.Keys{
 			manifest.Key{
@@ -59,11 +42,7 @@ func TestManifestLoad(t *testing.T) {
 					Path: "api",
 				},
 				Certificate: "foo.example.org",
-				Command: manifest.ServiceCommand{
-					Development: "rerun bar github.com/convox/praxis",
-					Test:        "make  test",
-					Production:  "",
-				},
+				Command:     "",
 				Environment: []string{
 					"DEVELOPMENT=false",
 					"SECRET",
@@ -73,18 +52,17 @@ func TestManifestLoad(t *testing.T) {
 					Interval: 10,
 					Timeout:  9,
 				},
+				Port:      manifest.ServicePort{Port: 1000, Scheme: "http"},
 				Resources: []string{"database"},
 				Scale: manifest.ServiceScale{
-					Count:  manifest.ServiceCount{Min: 3, Max: 10},
+					Count:  &manifest.ServiceScaleCount{Min: 3, Max: 10},
 					Memory: 256,
 				},
+				Test: "make  test",
 			},
 			manifest.Service{
-				Name: "proxy",
-				Command: manifest.ServiceCommand{
-					Development: "bash",
-					Production:  "bash",
-				},
+				Name:    "proxy",
+				Command: "bash",
 				Health: manifest.ServiceHealth{
 					Path:     "/auth",
 					Interval: 5,
@@ -94,9 +72,43 @@ func TestManifestLoad(t *testing.T) {
 				Environment: []string{
 					"SECRET",
 				},
+				Port: manifest.ServicePort{Port: 2000, Scheme: "https"},
 				Scale: manifest.ServiceScale{
-					Count:  manifest.ServiceCount{Min: 1},
+					Count:  &manifest.ServiceScaleCount{Min: 1, Max: 1},
 					Memory: 512,
+				},
+			},
+			manifest.Service{
+				Name: "foo",
+				Build: manifest.ServiceBuild{
+					Path: ".",
+				},
+				Command: "foo",
+				Health: manifest.ServiceHealth{
+					Interval: 5,
+					Path:     "/",
+					Timeout:  3,
+				},
+				Port: manifest.ServicePort{Port: 3000, Scheme: "https"},
+				Scale: manifest.ServiceScale{
+					Count:  &manifest.ServiceScaleCount{Min: 0, Max: 0},
+					Memory: 256,
+				},
+			},
+			manifest.Service{
+				Name: "bar",
+				Build: manifest.ServiceBuild{
+					Path: ".",
+				},
+				Command: "",
+				Health: manifest.ServiceHealth{
+					Interval: 5,
+					Path:     "/",
+					Timeout:  4,
+				},
+				Scale: manifest.ServiceScale{
+					Count:  &manifest.ServiceScaleCount{Min: 1, Max: 1},
+					Memory: 256,
 				},
 			},
 		},

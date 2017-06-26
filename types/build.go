@@ -18,9 +18,9 @@ type Build struct {
 type Builds []Build
 
 type BuildCreateOptions struct {
-	Cache    bool
-	Manifest string
-	Stage    int
+	Development bool
+	Cache       bool
+	Manifest    string
 }
 
 type BuildUpdateOptions struct {

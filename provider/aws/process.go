@@ -172,9 +172,24 @@ func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.Read
 
 	r, w := io.Pipe()
 
-	go p.subscribeLogs(group, stream, opts, w)
+	go p.subscribeLogsCallback(group, stream, opts, w, func() bool {
+		t, err := p.taskForPid(pid)
+		if err != nil {
+			return false
+		}
+
+		if *t.LastStatus == "STOPPED" {
+			return false
+		}
+
+		return true
+	})
 
 	return r, nil
+}
+
+func (p *Provider) ProcessProxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("unimplemented")
 }
 
 func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
@@ -245,7 +260,12 @@ func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (strin
 		return "", err
 	}
 	if len(res.Tasks) != 1 {
-		return "", fmt.Errorf("unable to start process")
+		msg := "unable to start process"
+		if len(res.Failures) > 0 {
+			msg = fmt.Sprintf("%s: %s", msg, *res.Failures[0].Reason)
+		}
+
+		return "", fmt.Errorf(msg)
 	}
 
 	parts := strings.Split(*res.Tasks[0].TaskArn, "/")

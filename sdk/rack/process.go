@@ -55,7 +55,27 @@ func (c *Client) ProcessList(app string, opts types.ProcessListOptions) (ps type
 }
 
 func (c *Client) ProcessLogs(app, pid string, opts types.LogsOptions) (io.ReadCloser, error) {
-	res, err := c.GetStream(fmt.Sprintf("/apps/%s/processes/%s/logs", app, pid), RequestOptions{})
+	ro := RequestOptions{
+		Query: Query{
+			"follow": fmt.Sprintf("%t", opts.Follow),
+			"prefix": fmt.Sprintf("%t", opts.Prefix),
+		},
+	}
+
+	res, err := c.GetStream(fmt.Sprintf("/apps/%s/processes/%s/logs", app, pid), ro)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body, nil
+}
+
+func (c *Client) ProcessProxy(app, pid string, port int, in io.Reader) (io.ReadCloser, error) {
+	ro := RequestOptions{
+		Body: in,
+	}
+
+	res, err := c.PostStream(fmt.Sprintf("/apps/%s/processes/%s/proxy/%d", app, pid, port), ro)
 	if err != nil {
 		return nil, err
 	}

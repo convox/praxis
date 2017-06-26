@@ -18,11 +18,13 @@ import (
 )
 
 type BuildOptions struct {
-	Cache  string
-	Push   string
-	Root   string
-	Stdout io.Writer
-	Stderr io.Writer
+	Cache       string
+	Development bool
+	Env         Environment
+	Push        string
+	Root        string
+	Stdout      io.Writer
+	Stderr      io.Writer
 }
 
 type BuildSource struct {
@@ -224,13 +226,18 @@ func (m *Manifest) BuildSources(root, service string) ([]BuildSource, error) {
 				case "http", "https":
 					// do nothing
 				default:
+					local := parts[1]
 					remote := replaceEnv(parts[2], env)
+
+					if remote == "." || strings.HasSuffix(remote, "/") {
+						remote = filepath.Join(remote, filepath.Base(local))
+					}
 
 					if wd != "" {
 						remote = filepath.Join(wd, remote)
 					}
 
-					bs = append(bs, BuildSource{Local: parts[1], Remote: remote})
+					bs = append(bs, BuildSource{Local: local, Remote: remote})
 				}
 			}
 		case "ENV":
@@ -265,7 +272,47 @@ func (m *Manifest) BuildSources(root, service string) ([]BuildSource, error) {
 		}
 	}
 
-	return bs, nil
+	for i := range bs {
+		abs, err := filepath.Abs(bs[i].Local)
+		if err != nil {
+			return nil, err
+		}
+
+		bs[i].Local = abs
+	}
+
+	bss := []BuildSource{}
+
+	for i := range bs {
+		contained := false
+
+		for j := i + 1; j < len(bs); j++ {
+			if strings.HasPrefix(bs[i].Local, bs[j].Local) {
+				rl, err := filepath.Rel(bs[j].Local, bs[i].Local)
+				if err != nil {
+					return nil, err
+				}
+
+				rr, err := filepath.Rel(bs[j].Remote, bs[i].Remote)
+				if err != nil {
+					return nil, err
+				}
+
+				if rl == rr {
+					contained = true
+					break
+				}
+			}
+		}
+
+		if !contained {
+			bss = append(bss, bs[i])
+		}
+	}
+
+	// return nil, fmt.Errorf("stop")
+
+	return bss, nil
 }
 
 func replaceEnv(s string, env map[string]string) string {
@@ -284,10 +331,6 @@ func build(b ServiceBuild, tag string, opts BuildOptions) error {
 
 	args := []string{"build"}
 
-	// for _, arg := range build.Args {
-	//   fmt.Printf("arg = %+v\n", arg)
-	// }
-
 	args = append(args, "-t", tag)
 
 	path, err := filepath.Abs(filepath.Join(opts.Root, b.Path))
@@ -295,11 +338,69 @@ func build(b ServiceBuild, tag string, opts BuildOptions) error {
 		return err
 	}
 
+	df := filepath.Join(path, "Dockerfile")
+
+	if opts.Development {
+		data, err := ioutil.ReadFile(df)
+		if err != nil {
+			return err
+		}
+
+		dev := bytes.SplitN(data, []byte("## convox:production"), 2)
+
+		if err := ioutil.WriteFile(df, dev[0], 0644); err != nil {
+			return err
+		}
+	}
+
+	ba, err := buildArgs(df, opts)
+	if err != nil {
+		return err
+	}
+
+	args = append(args, ba...)
+
 	args = append(args, path)
 
 	message(opts.Stdout, "building: %s", b.Path)
 
 	return opts.docker(args...)
+}
+
+func buildArgs(dockerfile string, opts BuildOptions) ([]string, error) {
+	fd, err := os.Open(dockerfile)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
+	s := bufio.NewScanner(fd)
+
+	args := []string{}
+
+	for s.Scan() {
+		fields := strings.Fields(strings.TrimSpace(s.Text()))
+
+		if len(fields) < 2 {
+			continue
+		}
+
+		parts := strings.Split(fields[1], "=")
+
+		switch fields[0] {
+		case "FROM":
+			if opts.Development && strings.Contains(strings.ToLower(s.Text()), "as development") {
+				args = append(args, "--target", "development")
+			}
+		case "ARG":
+			k := strings.TrimSpace(parts[0])
+			if v, ok := opts.Env[k]; ok {
+				args = append(args, "--build-args", fmt.Sprintf("%s=%s", k, v))
+			}
+		}
+	}
+
+	return args, nil
 }
 
 func pull(image string, opts BuildOptions) error {

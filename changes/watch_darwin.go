@@ -7,7 +7,7 @@ package changes
 /*
 #cgo LDFLAGS: -framework CoreServices
 #include <CoreServices/CoreServices.h>
-FSEventStreamRef fswatch_create(
+FSEventStreamRef fswatch_new(
 	FSEventStreamContext*,
 	CFMutableArrayRef,
 	FSEventStreamEventId,
@@ -56,7 +56,7 @@ func startScanner(dir string) {
 
 	ctx := C.FSEventStreamContext{info: unsafe.Pointer(C.CString(dir))}
 
-	stream := C.fswatch_create(&ctx, cpaths, now, C.CFTimeInterval(interval/time.Second), cflags)
+	stream := C.fswatch_new(&ctx, cpaths, now, C.CFTimeInterval(interval/time.Second), cflags)
 
 	go func() {
 		C.FSEventStreamScheduleWithRunLoop(stream, C.CFRunLoopGetCurrent(), C.kCFRunLoopCommonModes)
@@ -90,8 +90,8 @@ func waitForNextScan(dir string) {
 	}
 }
 
-//export callback
-func callback(stream C.FSEventStreamRef, info unsafe.Pointer, count C.size_t, paths **C.char, flags *C.FSEventStreamEventFlags, ids *C.FSEventStreamEventId) {
+//export cb
+func cb(stream C.FSEventStreamRef, info unsafe.Pointer, count C.size_t, paths **C.char, flags *C.FSEventStreamEventFlags, ids *C.FSEventStreamEventId) {
 	dir := C.GoString((*C.char)(info))
 
 	lock.Lock()

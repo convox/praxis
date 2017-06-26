@@ -20,6 +20,11 @@ First, install the `cx` command line client.
     $ curl https://s3.amazonaws.com/praxis-releases/cli/linux/cx -o /usr/local/bin/cx
     $ chmod +x /usr/local/bin/cx
 
+Confirm that cx is correctly installed:
+
+    $ which cx
+    /usr/local/bin/cx
+
 ### Install the development platform
 
 Your applications will run on a private platform called a *Rack*. While your production Rack will likely run on a cloud infrastructure provider like AWS, you can also install a Rack on your development computer. This makes it easy to achieve dev/prod parity.
@@ -50,18 +55,23 @@ The first thing to take note of in the project is the `convox.yml` file. This is
 ```yaml
 services:
   web:
-    command:
-      test: make test
-    port: 1313
+    certificate: ${HOST}
+    port: http:1313
+    scale: 2
+    test: make test
 ```
 
-The `convox.yml` for this site is pretty simple. It defines a single service called "web".
+The `convox.yml` for this site is pretty straightfoward. It defines a single service called `web`.
 
-Containers for the web service will listen on port 1313 for requests.
+Nested under `web` is a `certificte` config. An SSL certificate will be automatically configured for the domain specified by the app's `HOST` environment variable. `HOST` is automatically set and can be overridden for a custom domain.
 
-By default, the project will be built from a `Dockerfile` in the same directory.
+The `port` configuration means containers for the web service will listen on port 1313 for http requests.
 
-Commands for different environments can be defined. Here we define a a custom test command.
+Two copies of the container will be run, according to the `scale` setting.
+
+The app's default test command is `make test` as configured by `test`. This will be used later in the guide.
+
+The `convox.yml` you cloned also has a `workflows` section. You can ignore that for the purposes of this guide.
 
 ### Deploy the app
 
@@ -122,6 +132,12 @@ Open `content/index.md` in the project and add the text "Hello, this is a change
     # Introduction
     
     Hello, this is a change!
+
+Then deploy the changes:
+
+    $ cx deploy
+
+Reload the site in your browser and verify that the Introduction text has changed.
 
 ### Run tests
 

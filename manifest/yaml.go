@@ -10,6 +10,18 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+type DefaultsSetter interface {
+	SetDefaults() error
+}
+
+type NameGetter interface {
+	GetName() string
+}
+
+type NameSetter interface {
+	SetName(name string) error
+}
+
 func (v Balancers) MarshalYAML() (interface{}, error) {
 	return nil, fmt.Errorf("unimplemented")
 }
@@ -100,7 +112,7 @@ func (v *Queue) SetName(name string) error {
 }
 
 func (v Resources) MarshalYAML() (interface{}, error) {
-	return nil, fmt.Errorf("unimplemented")
+	return marshalMapSlice(v)
 }
 
 func (v *Resources) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -113,7 +125,7 @@ func (v *Resource) SetName(name string) error {
 }
 
 func (v Services) MarshalYAML() (interface{}, error) {
-	return nil, fmt.Errorf("unimplemented")
+	return marshalMapSlice(v)
 }
 
 func (v *Services) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -178,7 +190,130 @@ func (v *ServiceCommand) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
-func (v *ServiceCount) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (v *ServiceHealth) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var w interface{}
+
+	if err := unmarshal(&w); err != nil {
+		return err
+	}
+
+	switch t := w.(type) {
+	case map[interface{}]interface{}:
+		if w, ok := t["path"].(string); ok {
+			v.Path = w
+		}
+		if w, ok := t["interval"].(int); ok {
+			v.Interval = w
+		}
+		if w, ok := t["timeout"].(int); ok {
+			v.Timeout = w
+		}
+	case string:
+		v.Path = t
+	default:
+		return fmt.Errorf("unknown type for service health: %T", t)
+	}
+
+	return nil
+}
+
+func (v *ServicePort) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var w interface{}
+
+	if err := unmarshal(&w); err != nil {
+		return err
+	}
+
+	switch t := w.(type) {
+	case map[interface{}]interface{}:
+		if port := t["port"]; port != nil {
+			switch port.(type) {
+			case int:
+				v.Port = port.(int)
+			case string:
+				ports, err := strconv.Atoi(port.(string))
+				if err != nil {
+					return err
+				}
+				v.Port = ports
+			default:
+				return fmt.Errorf("invalid port: %v", w)
+			}
+		}
+		if scheme := t["scheme"]; (scheme == nil) || (scheme.(string) == "") {
+			v.Scheme = "http"
+		} else {
+			v.Scheme = scheme.(string)
+		}
+	case string:
+		parts := strings.Split(t, ":")
+
+		switch len(parts) {
+		case 1:
+			p, err := strconv.Atoi(parts[0])
+			if err != nil {
+				return err
+			}
+
+			v.Scheme = "http"
+			v.Port = p
+		case 2:
+			p, err := strconv.Atoi(parts[1])
+			if err != nil {
+				return err
+			}
+
+			v.Scheme = parts[0]
+			v.Port = p
+		default:
+			return fmt.Errorf("invalid port: %s", t)
+		}
+	case int:
+		v.Scheme = "http"
+		v.Port = t
+	default:
+		return fmt.Errorf("invalid port: %s", t)
+	}
+
+	return nil
+}
+
+func (v *ServiceScale) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var w interface{}
+
+	if err := unmarshal(&w); err != nil {
+		return err
+	}
+
+	switch t := w.(type) {
+	case int:
+		v.Count = &ServiceScaleCount{Min: t, Max: t}
+	case string:
+		var c ServiceScaleCount
+		if err := remarshal(w, &c); err != nil {
+			return err
+		}
+		v.Count = &c
+	case map[interface{}]interface{}:
+		if w, ok := t["count"].(interface{}); ok {
+			var c ServiceScaleCount
+			if err := remarshal(w, &c); err != nil {
+				return err
+			}
+			v.Count = &c
+		}
+		if w, ok := t["memory"].(int); ok {
+			v.Memory = w
+		}
+	default:
+		fmt.Printf("w = %+v\n", w)
+		return fmt.Errorf("unknown type for service scale: %T", t)
+	}
+
+	return nil
+}
+
+func (v *ServiceScaleCount) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var w interface{}
 
 	if err := unmarshal(&w); err != nil {
@@ -220,68 +355,37 @@ func (v *ServiceCount) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		default:
 			return fmt.Errorf("invalid scale: %v", w)
 		}
+	case map[interface{}]interface{}:
+		if min := t["min"]; min != nil {
+			switch min.(type) {
+			case int:
+				v.Min = min.(int)
+			case string:
+				mins, err := strconv.Atoi(min.(string))
+				if err != nil {
+					return err
+				}
+				v.Min = mins
+			default:
+				return fmt.Errorf("invalid scale: %v", w)
+			}
+		}
+		if max := t["max"]; max != nil {
+			switch max.(type) {
+			case int:
+				v.Max = max.(int)
+			case string:
+				maxs, err := strconv.Atoi(max.(string))
+				if err != nil {
+					return err
+				}
+				v.Max = maxs
+			default:
+				return fmt.Errorf("invalid scale: %v", w)
+			}
+		}
 	default:
 		return fmt.Errorf("invalid scale: %v", w)
-	}
-
-	return nil
-}
-
-func (v *ServiceHealth) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var w interface{}
-
-	if err := unmarshal(&w); err != nil {
-		return err
-	}
-
-	switch t := w.(type) {
-	case map[interface{}]interface{}:
-		if w, ok := t["path"].(string); ok {
-			v.Path = w
-		}
-		if w, ok := t["interval"].(int); ok {
-			v.Interval = w
-		}
-		if w, ok := t["timeout"].(int); ok {
-			v.Timeout = w
-		}
-	case string:
-		v.Path = t
-	default:
-		return fmt.Errorf("unknown type for service health: %T", t)
-	}
-
-	return nil
-}
-
-func (v *ServicePort) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var s string
-
-	if err := unmarshal(&s); err != nil {
-		return err
-	}
-
-	parts := strings.Split(s, ":")
-
-	switch len(parts) {
-	case 1:
-		p, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return err
-		}
-
-		v.Scheme = "http"
-		v.Port = p
-	case 2:
-		p, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return err
-		}
-
-		v.Scheme = parts[0]
-		v.Port = p
-	default:
-		return fmt.Errorf("invalid port: %s", s)
 	}
 
 	return nil
@@ -301,16 +405,11 @@ func (v *Table) SetName(name string) error {
 }
 
 func (v Timers) MarshalYAML() (interface{}, error) {
-	return nil, fmt.Errorf("unimplemented")
+	return marshalMapSlice(v)
 }
 
 func (v *Timers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return unmarshalMapSlice(unmarshal, v)
-}
-
-func (v *Timer) SetName(name string) error {
-	v.Name = name
-	return nil
 }
 
 func (v Workflows) MarshalYAML() (interface{}, error) {
@@ -378,10 +477,6 @@ func (v *Workflows) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-type NameSetter interface {
-	SetName(name string) error
-}
-
 func remarshal(in, out interface{}) error {
 	data, err := yaml.Marshal(in)
 	if err != nil {
@@ -389,6 +484,29 @@ func remarshal(in, out interface{}) error {
 	}
 
 	return yaml.Unmarshal(data, out)
+}
+
+func marshalMapSlice(in interface{}) (interface{}, error) {
+	ms := yaml.MapSlice{}
+
+	iv := reflect.ValueOf(in)
+
+	if iv.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("not a slice")
+	}
+
+	for i := 0; i < iv.Len(); i++ {
+		ii := iv.Index(i).Interface()
+
+		if iing, ok := ii.(NameGetter); ok {
+			ms = append(ms, yaml.MapItem{
+				Key:   iing.GetName(),
+				Value: ii,
+			})
+		}
+	}
+
+	return ms, nil
 }
 
 func unmarshalMapSlice(unmarshal func(interface{}) error, v interface{}) error {
@@ -406,6 +524,12 @@ func unmarshalMapSlice(unmarshal func(interface{}) error, v interface{}) error {
 
 		if err := remarshal(msi.Value, item); err != nil {
 			return err
+		}
+
+		if ds, ok := item.(DefaultsSetter); ok {
+			if err := ds.SetDefaults(); err != nil {
+				return err
+			}
 		}
 
 		if ns, ok := item.(NameSetter); ok {

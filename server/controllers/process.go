@@ -28,9 +28,7 @@ func ProcessExec(rw io.ReadWriteCloser, c *api.Context) error {
 		Output: rw,
 	}
 
-	if c.Header("Input") == "true" {
-		opts.Input = rw
-	}
+	opts.Input = ioutil.NopCloser(rw)
 
 	if height != "" {
 		h, err := strconv.Atoi(height)
@@ -125,6 +123,30 @@ func ProcessLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	return nil
 }
 
+func ProcessProxy(rw io.ReadWriteCloser, c *api.Context) error {
+	app := c.Var("app")
+	pid := c.Var("pid")
+	port := c.Var("port")
+
+	pi, err := strconv.Atoi(port)
+	if err != nil {
+		return err
+	}
+
+	p, err := Provider.ProcessProxy(app, pid, pi, rw)
+	if err != nil {
+		return err
+	}
+
+	defer p.Close()
+
+	if err := helpers.Stream(rw, p); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 	defer rw.Close()
 
@@ -194,9 +216,7 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 		Output:      rw,
 	}
 
-	if c.Header("Input") == "true" {
-		opts.Input = ioutil.NopCloser(rw)
-	}
+	opts.Input = ioutil.NopCloser(rw)
 
 	if height != "" {
 		h, err := strconv.Atoi(height)

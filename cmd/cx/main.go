@@ -5,14 +5,16 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
+	"github.com/convox/praxis/types"
 	homedir "github.com/mitchellh/go-homedir"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -37,16 +39,29 @@ func init() {
 
 	Rack = r
 
+	stdcli.DefaultWriter.Tags["bad"] = stdcli.RenderAttributes(160)
+	stdcli.DefaultWriter.Tags["debug"] = stdcli.RenderAttributes(208)
 	stdcli.DefaultWriter.Tags["dir"] = stdcli.RenderAttributes(246)
 	stdcli.DefaultWriter.Tags["env"] = stdcli.RenderAttributes(95)
+	stdcli.DefaultWriter.Tags["good"] = stdcli.RenderAttributes(46)
 	stdcli.DefaultWriter.Tags["id"] = stdcli.RenderAttributes(246)
 	stdcli.DefaultWriter.Tags["log"] = stdcli.RenderAttributes(45)
 	stdcli.DefaultWriter.Tags["name"] = stdcli.RenderAttributes(246)
+	stdcli.DefaultWriter.Tags["service"] = stdcli.RenderAttributes(33)
 	stdcli.DefaultWriter.Tags["url"] = stdcli.RenderAttributes(246)
 	stdcli.DefaultWriter.Tags["version"] = stdcli.RenderAttributes(246)
+
+	cliID()
 }
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	app := stdcli.New()
 
 	app.Name = "cx"
@@ -59,14 +74,20 @@ func main() {
 
 	ch := make(chan error)
 
-	if Version != "dev" {
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+
+	if Version != "dev" && u.Uid != "0" {
 		go autoUpdate(ch)
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		return err
 	}
+
+	return nil
 }
 
 func appName(c *cli.Context, dir string) (string, error) {
@@ -87,32 +108,23 @@ func appName(c *cli.Context, dir string) (string, error) {
 }
 
 func autoUpdate(ch chan error) {
-	var updated time.Time
-
 	home, err := homedir.Dir()
 	if err != nil {
 		ch <- err
 		return
 	}
 
-	setting := filepath.Join(home, ".convox", "updated")
+	lock := filepath.Join(home, ".convox", "autoupdate")
 
-	if data, err := ioutil.ReadFile(setting); err == nil {
-		up, err := time.Parse(helpers.SortableTime, string(data))
-		if err != nil {
-			ch <- err
+	if stat, err := os.Stat(lock); err == nil {
+		if stat.ModTime().After(time.Now().Add(-1 * time.Hour)) {
+			ch <- nil
 			return
 		}
-		updated = up
 	}
 
-	if updated.After(time.Now().UTC().Add(-1 * time.Hour)) {
-		ch <- nil
-		return
-	}
-
-	os.MkdirAll(filepath.Dir(setting), 0755)
-	ioutil.WriteFile(setting, []byte(time.Now().UTC().Format(helpers.SortableTime)), 0644)
+	os.MkdirAll(filepath.Dir(lock), 0755)
+	ioutil.WriteFile(lock, []byte{}, 0644)
 
 	ex, err := os.Executable()
 	if err != nil {
@@ -129,6 +141,37 @@ func autoUpdate(ch chan error) {
 	exec.Command(ex, "update", v).Start()
 
 	ch <- nil
+}
+
+func cliID() (string, error) {
+	fn, err := homedir.Expand("~/.convox/id")
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := os.Stat(fn); os.IsNotExist(err) {
+		id, err := types.Key(32)
+		if err != nil {
+			return "", err
+		}
+
+		if err := os.MkdirAll(filepath.Dir(fn), 0755); err != nil {
+			return "", err
+		}
+
+		if err := ioutil.WriteFile(fn, []byte(id), 0644); err != nil {
+			return "", err
+		}
+
+		return id, nil
+	}
+
+	data, err := ioutil.ReadFile(fn)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(data)), nil
 }
 
 func errorExit(fn cli.ActionFunc, code int) cli.ActionFunc {

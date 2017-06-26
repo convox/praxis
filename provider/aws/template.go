@@ -6,11 +6,23 @@ import (
 	"fmt"
 	"hash/crc32"
 	"html/template"
+	"net"
+	"path"
 	"strings"
 )
 
 func formationHelpers() template.FuncMap {
 	return template.FuncMap{
+		"apex": func(domain string) string {
+			parts := strings.Split(domain, ".")
+			for i := 0; i < len(parts)-1; i++ {
+				d := strings.Join(parts[i:], ".")
+				if mx, err := net.LookupMX(d); err == nil && len(mx) > 0 {
+					return d
+				}
+			}
+			return domain
+		},
 		"lower": func(s string) string {
 			return strings.ToLower(s)
 		},
@@ -25,6 +37,26 @@ func formationHelpers() template.FuncMap {
 		},
 		"upper": func(s string) string {
 			return strings.ToUpper(s)
+		},
+		"volumeFrom": func(s string) string {
+			parts := strings.SplitN(s, ":", 2)
+			switch len(parts) {
+			case 1:
+				return path.Join("/volumes", s)
+			case 2:
+				return parts[0]
+			}
+			return fmt.Sprintf("invalid volume %q", s)
+		},
+		"volumeTo": func(s string) string {
+			parts := strings.SplitN(s, ":", 2)
+			switch len(parts) {
+			case 1:
+				return s
+			case 2:
+				return parts[1]
+			}
+			return fmt.Sprintf("invalid volume %q", s)
 		},
 	}
 }
