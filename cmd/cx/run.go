@@ -17,6 +17,10 @@ func init() {
 		Action:      runRun,
 		Flags: []cli.Flag{
 			appFlag,
+			cli.StringFlag{
+				Name:  "release, r",
+				Usage: "release id. If not specified, use current release.",
+			},
 		},
 	})
 }
@@ -43,6 +47,7 @@ func runRun(c *cli.Context) error {
 		Service: service,
 		Input:   os.Stdin,
 		Output:  os.Stdout,
+		Release: c.String("release"),
 	}
 
 	state, err := terminalRaw(os.Stdin)
