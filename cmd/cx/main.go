@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -150,59 +151,66 @@ func autoUpdate(ch chan error) {
 	ch <- nil
 }
 
+var errMissingProxyEndpoint = errors.New("Rack endpoint was not found, try cx login")
+
 // beforeCmd is a hook that is called before any commands run
 func beforeCmd(c *cli.Context) error {
+	var perr error
+	var endpoint *url.URL
+
+	local, err := url.Parse("https://localhost:5443")
+	if err != nil {
+		perr = err
+		return nil
+	}
+
+	// defer func used to exit if error as cli package display error twice along with app usage in a confusing manner
+	// so we display error once and exit
+	defer func() {
+		if perr != nil {
+			fmt.Fprint(os.Stderr, stdcli.Error(perr))
+			os.Exit(1)
+		}
+	}()
+
 	if os.Getenv("RACK_URL") == "" {
-		endpoint, err := consoleProxy()
+		proxy, err := consoleProxy()
 		if err != nil {
+			perr = err
 			return err
 		}
 
-		if endpoint == "" {
-			endpoint = "https://localhost:5443"
-		} else {
-			var rack string
-
-			if c.GlobalString("rack") != "" {
-				rack = c.GlobalString("rack")
-			}
-
-			if c.String("rack") != "" {
-				rack = c.String("rack")
-			}
-
-			if rack == "" {
-				rack, err = shellRack()
-				if err != nil {
-					return err
-				}
-
-				if rack == "" {
-					return fmt.Errorf("No rack specified, try cx switch")
-				}
-			}
-
-			fmt.Printf("rack = %+v\n", rack)
-
-			u, err := url.Parse(endpoint)
+		if proxy != nil {
+			rack, err := currentRack(c)
 			if err != nil {
-				return err
+				perr = err
+				return nil
 			}
 
-			u.Path = fmt.Sprintf("/racks/%s", rack)
-			endpoint = u.String()
+			if rack != "" {
+				proxy.Path = fmt.Sprintf("racks/%s", rack)
+				endpoint = proxy
+			} else {
+				fmt.Println("No Rack selected, try cx racks. Using local rack")
+				endpoint = local
+			}
+
+		} else {
+			endpoint = local
 		}
 
-		os.Setenv("RACK_URL", endpoint)
+		os.Setenv("RACK_URL", endpoint.String())
 		fmt.Printf("RACK_URL = %+v\n", os.Getenv("RACK_URL"))
 	}
 
 	r, err := rack.NewFromEnv()
 	if err != nil {
-		return err
+		perr = err
+		return nil
 	}
 
 	Rack = r
+
 	return nil
 }
 
@@ -255,32 +263,50 @@ func consoleHost() (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
-func consoleProxy() (string, error) {
+func consoleProxy() (*url.URL, error) {
 	fn, err := homedir.Expand("~/.convox/console/proxy")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	_, err = os.Stat(fn)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil
+			return nil, nil
 		}
-		return "", err
+		return nil, err
 	}
 
 	data, err := ioutil.ReadFile(fn)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return strings.TrimSpace(string(data)), nil
+	u, err := url.Parse(strings.TrimSpace(string(data)))
+	if err != nil {
+		return nil, err
+	}
+
+	u.Scheme = "https"
+	return u, nil
+}
+
+func currentRack(c *cli.Context) (string, error) {
+	if c.GlobalString("rack") != "" {
+		return c.GlobalString("rack"), nil
+	}
+
+	if c.String("rack") != "" {
+		return c.String("rack"), nil
+	}
+
+	return shellRack()
 }
 
 func shellRack() (string, error) {
 	shpid := os.Getppid()
 
-	fn, err := homedir.Expand(fmt.Sprintf("~/.convox/shell/%s/rack", shpid))
+	fn, err := homedir.Expand(fmt.Sprintf("~/.convox/shell/%d/rack", shpid))
 	if err != nil {
 		return "", err
 	}
@@ -342,7 +368,7 @@ func setConsoleProxy(proxy string) error {
 func setShellRack(rack string) error {
 	shpid := os.Getppid()
 
-	fn, err := homedir.Expand(fmt.Sprintf("~/.convox/shell/%s/rack", shpid))
+	fn, err := homedir.Expand(fmt.Sprintf("~/.convox/shell/%d/rack", shpid))
 	if err != nil {
 		return err
 	}

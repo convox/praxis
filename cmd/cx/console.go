@@ -40,6 +40,8 @@ type Login struct {
 func runLogin(c *cli.Context) error {
 	var host string
 
+	// TODO: Use proxy to login instead of the webui?
+
 	if len(c.Args()) < 1 {
 		var err error
 		host, err = consoleHost()
@@ -129,22 +131,7 @@ func runLogin(c *cli.Context) error {
 }
 
 func runRacks(c *cli.Context) error {
-	proxy, err := consoleProxy()
-	if err != nil {
-		return stdcli.Error(err)
-	}
-
-	if proxy == "" {
-		return stdcli.Errorf("Console host not found, try cx login")
-	}
-
-	endpoint, err := url.Parse(proxy)
-	if err != nil {
-		return stdcli.Error(err)
-	}
-
-	racks := []string{}
-	err = consoleClient(endpoint).Get("/racks", rack.RequestOptions{}, &racks)
+	racks, err := ConsoleProxy().Racks()
 	if err != nil {
 		return stdcli.Error(err)
 	}
@@ -157,9 +144,33 @@ func runRacks(c *cli.Context) error {
 
 	t.Print()
 
+	fmt.Println()
+	fmt.Println("Use cx switch to change rack")
 	return nil
 }
 
-func consoleClient(u *url.URL) *rack.Client {
-	return &rack.Client{Debug: os.Getenv("CONVOX_DEBUG") == "true", Endpoint: u, Version: "dev"}
+type ProxyClient struct {
+	c *rack.Client
+}
+
+func ConsoleProxy() *ProxyClient {
+	proxy, err := consoleProxy()
+	if err != nil {
+		fmt.Fprint(os.Stderr, stdcli.Error(err))
+		os.Exit(1)
+	}
+
+	if proxy == nil {
+		fmt.Fprint(os.Stderr, stdcli.Error(errMissingProxyEndpoint))
+		os.Exit(1)
+	}
+
+	return &ProxyClient{
+		c: &rack.Client{Debug: os.Getenv("CONVOX_DEBUG") == "true", Endpoint: proxy, Version: "dev"},
+	}
+}
+
+func (p *ProxyClient) Racks() (racks []string, err error) {
+	err = p.c.Get("/racks", rack.RequestOptions{}, &racks)
+	return
 }
