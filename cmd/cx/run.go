@@ -10,18 +10,18 @@ import (
 )
 
 func init() {
+	flags := []cli.Flag{
+		cli.StringFlag{
+			Name:  "release, r",
+			Usage: "release id. If not specified, use current release.",
+		},
+	}
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "run",
 		Description: "run a new process",
 		Usage:       "<service> [command]",
 		Action:      runRun,
-		Flags: []cli.Flag{
-			appFlag,
-			cli.StringFlag{
-				Name:  "release, r",
-				Usage: "release id. If not specified, use current release.",
-			},
-		},
+		Flags:       append(flags, globalFlags...),
 	})
 }
 
