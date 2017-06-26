@@ -20,6 +20,11 @@ First, install the `cx` command line client.
     $ curl https://s3.amazonaws.com/praxis-releases/cli/linux/cx -o /usr/local/bin/cx
     $ chmod +x /usr/local/bin/cx
 
+Confirm that cx is correctly installed:
+
+    $ which cx
+    /usr/local/bin/cx
+
 ### Install the development platform
 
 Your applications will run on a private platform called a *Rack*. While your production Rack will likely run on a cloud infrastructure provider like AWS, you can also install a Rack on your development computer. This makes it easy to achieve dev/prod parity.
