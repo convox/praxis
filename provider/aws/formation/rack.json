@@ -191,7 +191,7 @@
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "Properties" : {
         "Cooldown": "180",
-        "DesiredCapacity": "2",
+        "DesiredCapacity": { "Ref": "InstanceCountMin" },
         "HealthCheckType": "EC2",
         "HealthCheckGracePeriod": "120",
         "LaunchConfigurationName" : { "Ref": "InstancesConfig" },
