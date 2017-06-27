@@ -187,12 +187,15 @@ func beforeCmd(c *cli.Context) error {
 				return nil
 			}
 
-			if rack != "" {
+			switch rack {
+			case "":
+				fmt.Println("No Rack selected, try cx racks. Using local rack")
+				fallthrough
+			case "local":
+				endpoint = local
+			default:
 				proxy.Path = fmt.Sprintf("racks/%s", rack)
 				endpoint = proxy
-			} else {
-				fmt.Println("No Rack selected, try cx racks. Using local rack")
-				endpoint = local
 			}
 
 		} else {
@@ -200,7 +203,6 @@ func beforeCmd(c *cli.Context) error {
 		}
 
 		os.Setenv("RACK_URL", endpoint.String())
-		fmt.Printf("RACK_URL = %+v\n", os.Getenv("RACK_URL"))
 	}
 
 	r, err := rack.NewFromEnv()

@@ -136,6 +136,8 @@ func runRacks(c *cli.Context) error {
 		return stdcli.Error(err)
 	}
 
+	racks = append(racks, "local")
+
 	t := stdcli.NewTable("RACKS")
 
 	for _, r := range racks {

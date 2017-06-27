@@ -21,6 +21,10 @@ func runSwitch(c *cli.Context) error {
 
 	sr := c.Args()[0]
 
+	if sr == "local" {
+		return setShellRack("local")
+	}
+
 	racks, err := ConsoleProxy().Racks()
 	if err != nil {
 		return stdcli.Error(err)
