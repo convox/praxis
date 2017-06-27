@@ -2,7 +2,11 @@ package local
 
 import (
 	"fmt"
+	"io"
+	"net"
+	"os/exec"
 	"sort"
+	"strings"
 
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
@@ -50,4 +54,39 @@ func (p *Provider) ResourceList(app string) (types.Resources, error) {
 	sort.Slice(rs, func(i, j int) bool { return rs[i].Name < rs[j].Name })
 
 	return rs, log.Success()
+}
+
+func (p *Provider) ResourceProxy(app, resource string, in io.Reader) (io.ReadCloser, error) {
+	_, err := p.AppGet(app)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := p.ResourceGet(app, resource)
+	if err != nil {
+		return nil, err
+	}
+
+	port, err := resourcePort(r.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	name := fmt.Sprintf("%s.%s.resource.%s", p.Name, app, resource)
+
+	data, err := exec.Command("docker", "inspect", name, "--format", "{{.NetworkSettings.IPAddress}}").CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	ip := strings.TrimSpace(string(data))
+
+	cn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
+	if err != nil {
+		return nil, err
+	}
+
+	go io.Copy(cn, in)
+
+	return cn, nil
 }

@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"io"
 	"sort"
 
 	"github.com/convox/praxis/helpers"
@@ -44,6 +45,10 @@ func (p *Provider) ResourceList(app string) (types.Resources, error) {
 	sort.Slice(rs, func(i, j int) bool { return rs[i].Name < rs[j].Name })
 
 	return rs, nil
+}
+
+func (p *Provider) ResourceProxy(app, resource string, in io.Reader) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("unimplemented")
 }
 
 func (p *Provider) resourceFromManifest(app string, r manifest.Resource) (*types.Resource, error) {

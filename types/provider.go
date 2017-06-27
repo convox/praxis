@@ -63,6 +63,7 @@ type Provider interface {
 
 	ResourceGet(app, name string) (*Resource, error)
 	ResourceList(app string) (Resources, error)
+	ResourceProxy(app, resource string, in io.Reader) (io.ReadCloser, error)
 
 	ServiceGet(app, name string) (*Service, error)
 	ServiceList(app string) (Services, error)
@@ -71,7 +72,7 @@ type Provider interface {
 	SystemInstall(name string, opts SystemInstallOptions) (string, error)
 	SystemLogs(opts LogsOptions) (io.ReadCloser, error)
 	SystemOptions() (map[string]string, error)
-	SystemProxy(host string, port int, in io.Reader) (io.ReadCloser, error)
+	// SystemProxy(host string, port int, in io.Reader) (io.ReadCloser, error)
 	SystemUninstall(name string, opts SystemInstallOptions) error
 	SystemUpdate(opts SystemUpdateOptions) error
 

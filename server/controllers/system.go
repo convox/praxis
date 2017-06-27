@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -59,28 +58,28 @@ func SystemOptions(w http.ResponseWriter, r *http.Request, c *api.Context) error
 	return c.RenderJSON(options)
 }
 
-func SystemProxy(rw io.ReadWriteCloser, c *api.Context) error {
-	host := c.Var("host")
-	port := c.Var("port")
+// func SystemProxy(rw io.ReadWriteCloser, c *api.Context) error {
+//   host := c.Var("host")
+//   port := c.Var("port")
 
-	pi, err := strconv.Atoi(port)
-	if err != nil {
-		return err
-	}
+//   pi, err := strconv.Atoi(port)
+//   if err != nil {
+//     return err
+//   }
 
-	p, err := Provider.SystemProxy(host, pi, rw)
-	if err != nil {
-		return err
-	}
+//   p, err := Provider.SystemProxy(host, pi, rw)
+//   if err != nil {
+//     return err
+//   }
 
-	defer p.Close()
+//   defer p.Close()
 
-	if _, err := io.Copy(rw, p); err != nil {
-		return err
-	}
+//   if _, err := io.Copy(rw, p); err != nil {
+//     return err
+//   }
 
-	return nil
-}
+//   return nil
+// }
 
 func SystemUpdate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	password := c.Form("password")

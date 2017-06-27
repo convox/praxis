@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -29,23 +30,36 @@ func init() {
 }
 
 type Provider struct {
-	Frontend string
-	Name     string
-	Root     string
-	Test     bool
-	Version  string
+	Name    string
+	Root    string
+	Router  string
+	Test    bool
+	Version string
 
 	ctx context.Context
 	db  *bolt.DB
+	dns string
 }
 
 func FromEnv() (*Provider, error) {
 	p := &Provider{
-		Name:     coalesce(os.Getenv("NAME"), "convox"),
-		Frontend: coalesce(os.Getenv("PROVIDER_FRONTEND"), "10.42.84.0"),
-		Root:     coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
-		Version:  "latest",
+		Name:    coalesce(os.Getenv("NAME"), "convox"),
+		Root:    coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
+		Version: "latest",
 	}
+
+	p.Router = fmt.Sprintf("router.%s", p.Name)
+
+	h, err := net.LookupHost(p.Router)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(h) < 1 {
+		return nil, fmt.Errorf("could not resolve router: %s", p.Router)
+	}
+
+	p.dns = h[0]
 
 	if v := os.Getenv("VERSION"); v != "" {
 		p.Version = v
@@ -141,8 +155,8 @@ func (p *Provider) createRootBucket(name string) (*bolt.Bucket, error) {
 	return bucket, err
 }
 
-func (p *Provider) checkFrontend() error {
-	if p.Frontend == "none" {
+func (p *Provider) checkRouter() error {
+	if p.Router == "none" {
 		return nil
 	}
 
@@ -150,8 +164,13 @@ func (p *Provider) checkFrontend() error {
 
 	c.Timeout = 2 * time.Second
 
-	if _, err := c.Get(fmt.Sprintf("http://%s:9477/endpoints", p.Frontend)); err != nil {
-		return fmt.Errorf("unable to register with frontend")
+	// TODO: remove
+	dt := http.DefaultTransport.(*http.Transport)
+	dt.TLSClientConfig.InsecureSkipVerify = true
+	c.Transport = dt
+
+	if _, err := c.Get(fmt.Sprintf("https://%s/endpoints", p.Router)); err != nil {
+		return fmt.Errorf("unable to register with router")
 	}
 
 	return nil

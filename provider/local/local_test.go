@@ -14,9 +14,9 @@ func testProvider() (*local.Provider, error) {
 	}
 
 	p := &local.Provider{
-		Frontend: "none",
-		Root:     tmp,
-		Test:     true,
+		Root:   tmp,
+		Router: "none",
+		Test:   true,
 	}
 
 	if err := p.Init(); err != nil {
