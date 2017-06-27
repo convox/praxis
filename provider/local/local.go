@@ -37,17 +37,15 @@ type Provider struct {
 
 	ctx context.Context
 	db  *bolt.DB
-	dns string
 }
 
 func FromEnv() (*Provider, error) {
 	p := &Provider{
 		Name:    coalesce(os.Getenv("NAME"), "convox"),
 		Root:    coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
+		Router:  coalesce(os.Getenv("PROVIDER_ROUTER"), "10.42.0.0"),
 		Version: "latest",
 	}
-
-	p.Router = fmt.Sprintf("router.%s", p.Name)
 
 	if v := os.Getenv("VERSION"); v != "" {
 		p.Version = v

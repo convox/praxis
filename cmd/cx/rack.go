@@ -73,7 +73,7 @@ func init() {
 					cli.StringFlag{
 						Name:  "router",
 						Usage: "local router",
-						Value: "router.convox",
+						Value: "10.42.0.0",
 					},
 				},
 			},

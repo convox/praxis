@@ -354,16 +354,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 	}
 
 	if p.Router != "" {
-		h, err := net.LookupHost(p.Router)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-
-		if len(h) < 1 {
-			return nil, fmt.Errorf("no records found: %s", p.Router)
-		}
-
-		args = append(args, "--dns", h[0])
+		args = append(args, "--dns", p.Router)
 	}
 
 	for k, v := range opts.Environment {
