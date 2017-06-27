@@ -144,6 +144,8 @@ func resourcePort(kind string) (int, error) {
 		return 3306, nil
 	case "postgres":
 		return 5432, nil
+	case "rabbitmq":
+		return 5672, nil
 	case "redis":
 		return 6379, nil
 	}
@@ -157,10 +159,11 @@ func resourceURL(app, kind, name string) (string, error) {
 		return fmt.Sprintf("mysql://mysql:password@%s.resource.%s.convox:3306/app", name, app), nil
 	case "postgres":
 		return fmt.Sprintf("postgres://postgres:password@%s.resource.%s.convox:5432/app?sslmode=disable", name, app), nil
+	case "rabbitmq":
+		return fmt.Sprintf("amqp://guest:guest@%s.resource.%s.convox:5672", name, app), nil
 	case "redis":
 		return fmt.Sprintf("redis://%s.resource.%s.convox:6379/0", name, app), nil
 	}
-
 	return "", fmt.Errorf("unknown resource type: %s", kind)
 }
 
@@ -170,6 +173,8 @@ func resourceVolumes(app, kind, name string) ([]string, error) {
 		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/var/lib/mysql", app, name)}, nil
 	case "postgres":
 		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/var/lib/postgresql/data", app, name)}, nil
+	case "rabbitmq":
+		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/var/lib/rabbitmq/data", app, name)}, nil
 	case "redis":
 		return []string{}, nil
 	}
