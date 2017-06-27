@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -123,10 +124,12 @@ func handleTarget(protocol, target string) error {
 
 	defer ln.Close()
 
+	isHTTP := false
 	switch protocol {
 	case "https", "tls":
-		cert, err := generateSelfSignedCertificate("convox.local")
+		isHTTP = true
 
+		cert, err := generateSelfSignedCertificate("convox.local")
 		if err != nil {
 			return err
 		}
@@ -148,6 +151,14 @@ func handleTarget(protocol, target string) error {
 		}
 
 		go func() {
+			if isHTTP {
+				cn, err = addHeaders(cn, port)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "header err: %+v\n", err)
+					return
+				}
+			}
+
 			if err := handleConnection(cn, app, u.Scheme, u.Hostname(), port); err != nil {
 				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 			}
@@ -198,15 +209,13 @@ func handleConnection(cn net.Conn, app string, scheme, host string, port int) er
 
 	out, err := Rack.ProcessProxy(app, ps[0].Id, port, cn)
 	if err != nil {
-		fmt.Printf("proxy err: %s\n", err)
-		return err
+		return fmt.Errorf("proxy err: %s", err)
 	}
 
 	defer out.Close()
 
 	if err := helpers.Stream(cn, out); err != nil {
-		fmt.Printf("stream err: %s\n", err)
-		return err
+		return fmt.Errorf("stream err: %s", err)
 	}
 
 	return nil
@@ -267,4 +276,26 @@ func copyWait(w io.WriteCloser, r io.Reader, wg *sync.WaitGroup) {
 	defer w.Close()
 
 	io.Copy(w, r)
+}
+
+func addHeaders(conn net.Conn, port int) (net.Conn, error) {
+	out, in := net.Pipe()
+
+	req, err := http.ReadRequest(bufio.NewReader(conn))
+	if err != nil {
+		return nil, fmt.Errorf("read request %s", err)
+	}
+
+	req.Header.Add("X-Forwarded-For", conn.LocalAddr().String())
+	req.Header.Add("X-Forwarded-Port", strconv.Itoa(port))
+	req.Header.Add("X-Forwarded-Proto", "https")
+
+	go func() {
+		if err := req.WriteProxy(in); err != nil {
+			fmt.Printf("write proxy err = %+v\n", err)
+		}
+	}()
+
+	go stream(conn, in)
+	return out, nil
 }
