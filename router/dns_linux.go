@@ -11,7 +11,7 @@ func (d *DNS) setupResolver(domain string) error {
 		return err
 	}
 
-	data = []byte(fmt.Sprintf("server=/%s/%s\n", domain, d.Host))
+	data = []byte(fmt.Sprintf("server=/%s/%s\n", domain, d.router.ip))
 
 	if err := writeFile(fmt.Sprintf("/etc/NetworkManager/dnsmasq.d/%s", domain), data); err != nil {
 		return err
