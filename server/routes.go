@@ -69,16 +69,17 @@ func Routes(server *api.Server) {
 	auth.Route("GET", "/apps/{app}/releases/{id}/logs", controllers.ReleaseLogs)
 	auth.Route("POST", "/apps/{app}/releases/{id}", controllers.ReleasePromote)
 
+	auth.Stream("resource.proxy", "/apps/{app}/resources/{name}/proxy", controllers.ResourceProxy)
 	auth.Route("GET", "/apps/{app}/resources/{name}", controllers.ResourceGet)
 	auth.Route("GET", "/apps/{app}/resources", controllers.ResourceList)
 
 	auth.Route("GET", "/apps/{app}/services/{name}", controllers.ServiceGet)
 	auth.Route("GET", "/apps/{app}/services", controllers.ServiceList)
 
+	// auth.Stream("system.proxy", "/system/proxy/{host}/{port}", controllers.SystemProxy)
 	auth.Route("GET", "/system", controllers.SystemGet)
 	auth.Route("GET", "/system/logs", controllers.SystemLogs)
 	auth.Route("OPTIONS", "/system", controllers.SystemOptions)
-	auth.Stream("system.proxy", "/system/proxy/{host}/{port}", controllers.SystemProxy)
 	auth.Route("POST", "/system", controllers.SystemUpdate)
 
 	// pprof

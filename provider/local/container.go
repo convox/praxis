@@ -2,14 +2,13 @@ package local
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -23,7 +22,7 @@ type container struct {
 	Id       string
 	Memory   int
 	Name     string
-	Port     containerPort
+	Targets  []containerTarget
 	Volumes  []string
 }
 
@@ -32,66 +31,57 @@ type containerPort struct {
 	Host      int
 }
 
-// func (p *Provider) containerConverge(c container, app, release string) (string, error) {
-//   args := []string{}
-
-//   for k, v := range c.Labels {
-//     args = append(args, "--filter", fmt.Sprintf("label=%s=%s", k, v))
-//   }
-
-//   ids, err := containerList(args...)
-//   if err != nil {
-//     return "", errors.WithStack(err)
-//   }
-
-//   id := ""
-
-//   switch len(ids) {
-//   case 0:
-//     p.storageLogWrite(fmt.Sprintf("apps/%s/releases/%s/log", app, release), []byte(fmt.Sprintf("starting: %s\n", c.Name)))
-
-//     i, err := p.containerStart(c, app, release)
-//     if err != nil {
-//       return "", errors.WithStack(err)
-//     }
-
-//     id = i
-//   case 1:
-//     id = ids[0]
-//   default:
-//     return "", fmt.Errorf("matched more than one container")
-//   }
-
-//   return id, nil
-// }
+type containerTarget struct {
+	Port   int
+	Scheme string
+	Target string
+}
 
 func (p *Provider) containerRegister(c container) error {
-	if p.Frontend == "none" || c.Hostname == "" || c.Port.Container == 0 || c.Port.Host == 0 {
+	if p.Router == "none" || c.Hostname == "" || len(c.Targets) == 0 {
 		return nil
 	}
 
-	bind, err := containerBinding(c.Id, fmt.Sprintf("%d/tcp", c.Port.Container))
+	// TODO: remove
+	dt := http.DefaultTransport.(*http.Transport)
+	dt.TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
+	hc := http.Client{Transport: dt}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/endpoints/%s", p.Router, c.Hostname), nil)
 	if err != nil {
 		return err
 	}
 
-	uv := url.Values{}
-	uv.Add("port", strconv.Itoa(c.Port.Host))
-	uv.Add("target", fmt.Sprintf("localhost:%s", bind))
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:9477/endpoints/%s", p.Frontend, c.Hostname), bytes.NewReader([]byte(uv.Encode())))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	res, err := http.DefaultClient.Do(req)
+	res, err := hc.Do(req)
 	if err != nil {
 		return err
 	}
 
 	defer res.Body.Close()
+
+	for _, t := range c.Targets {
+		uv := url.Values{}
+
+		uv.Add("scheme", t.Scheme)
+		uv.Add("target", t.Target)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/endpoints/%s/proxies/%d", p.Router, c.Hostname, t.Port), bytes.NewReader([]byte(uv.Encode())))
+		if err != nil {
+			return err
+		}
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		res, err := hc.Do(req)
+		if err != nil {
+			return err
+		}
+
+		defer res.Body.Close()
+	}
 
 	return nil
 }
@@ -115,10 +105,6 @@ func (p *Provider) containerStart(c container, app, release string) (string, err
 
 	if m := c.Memory; m > 0 {
 		args = append(args, "--memory-reservation", fmt.Sprintf("%dm", m))
-	}
-
-	if p := c.Port.Container; p != 0 {
-		args = append(args, "-p", fmt.Sprintf("%d:%d", rand.Intn(40000)+20000, p))
 	}
 
 	for _, v := range c.Volumes {
@@ -262,35 +248,6 @@ func containerList(args ...string) ([]container, error) {
 			Id:     c.Id,
 			Labels: c.Config.Labels,
 			Name:   c.Name[1:],
-			Port: containerPort{
-				Container: 0,
-				Host:      0,
-			},
-		}
-
-		if len(c.HostConfig.PortBindings) == 1 {
-			for k, v := range c.HostConfig.PortBindings {
-				if len(v) != 1 {
-					continue
-				}
-
-				cps := strings.Split(k, "/")[0]
-
-				cpi, err := strconv.Atoi(cps)
-				if err != nil {
-					return nil, err
-				}
-
-				hpi, err := strconv.Atoi(v[0].HostPort)
-				if err != nil {
-					return nil, err
-				}
-
-				cc.Port = containerPort{
-					Container: cpi,
-					Host:      hpi,
-				}
-			}
 		}
 
 		cs = append(cs, cc)

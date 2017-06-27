@@ -46,7 +46,7 @@ stats:
 	cloc . --exclude-dir=vendor
 
 test: check
-	env FRONTEND=none govendor test +local
+	env govendor test +local
 
 vendor:
 	go get -u github.com/kardianos/govendor

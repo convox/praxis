@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os/exec"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -28,12 +27,14 @@ func (p *Provider) converge(app string) error {
 
 	desired := []container{}
 
-	c, err := p.balancerContainers(m.Balancers, app, r.Id)
-	if err != nil {
-		return errors.WithStack(log.Error(err))
-	}
+	var c []container
 
-	desired = append(desired, c...)
+	// c, err = p.balancerContainers(m.Balancers, app, r.Id)
+	// if err != nil {
+	//   return errors.WithStack(log.Error(err))
+	// }
+
+	// desired = append(desired, c...)
 
 	c, err = p.resourceContainers(m.Resources, app, r.Id)
 	if err != nil {
@@ -176,52 +177,52 @@ func resourceVolumes(app, kind, name string) ([]string, error) {
 	return []string{}, fmt.Errorf("unknown resource type: %s", kind)
 }
 
-func (p *Provider) balancerContainers(balancers manifest.Balancers, app, release string) ([]container, error) {
-	cs := []container{}
+// func (p *Provider) balancerContainers(balancers manifest.Balancers, app, release string) ([]container, error) {
+//   cs := []container{}
 
-	sys, err := p.SystemGet()
-	if err != nil {
-		return nil, err
-	}
+//   sys, err := p.SystemGet()
+//   if err != nil {
+//     return nil, err
+//   }
 
-	for _, b := range balancers {
-		for _, e := range b.Endpoints {
-			command := []string{}
+//   for _, b := range balancers {
+//     for _, e := range b.Endpoints {
+//       command := []string{}
 
-			switch {
-			case e.Redirect != "":
-				command = []string{"balancer", e.Protocol, "redirect", e.Redirect}
-			case e.Target != "":
-				command = []string{"balancer", e.Protocol, "target", e.Target}
-			default:
-				return nil, fmt.Errorf("invalid balancer endpoint: %s:%s", b.Name, e.Port)
-			}
+//       switch {
+//       case e.Redirect != "":
+//         command = []string{"balancer", e.Protocol, "redirect", e.Redirect}
+//       case e.Target != "":
+//         command = []string{"balancer", e.Protocol, "target", e.Target}
+//       default:
+//         return nil, fmt.Errorf("invalid balancer endpoint: %s:%s", b.Name, e.Port)
+//       }
 
-			cs = append(cs, container{
-				Name:     fmt.Sprintf("%s.%s.balancer.%s", p.Name, app, b.Name),
-				Hostname: fmt.Sprintf("%s.balancer.%s.%s", b.Name, app, p.Name),
-				Port: containerPort{
-					Host:      443,
-					Container: 3000,
-				},
-				Memory:  64,
-				Image:   sys.Image,
-				Command: command,
-				Labels: map[string]string{
-					"convox.rack":    p.Name,
-					"convox.version": p.Version,
-					"convox.app":     app,
-					"convox.release": release,
-					"convox.type":    "balancer",
-					"convox.name":    b.Name,
-					"convox.port":    e.Port,
-				},
-			})
-		}
-	}
+//       cs = append(cs, container{
+//         Name:     fmt.Sprintf("%s.%s.balancer.%s", p.Name, app, b.Name),
+//         Hostname: fmt.Sprintf("%s.balancer.%s.%s", b.Name, app, p.Name),
+//         Port: containerPort{
+//           Host:      443,
+//           Container: 3000,
+//         },
+//         Memory:  64,
+//         Image:   sys.Image,
+//         Command: command,
+//         Labels: map[string]string{
+//           "convox.rack":    p.Name,
+//           "convox.version": p.Version,
+//           "convox.app":     app,
+//           "convox.release": release,
+//           "convox.type":    "balancer",
+//           "convox.name":    b.Name,
+//           "convox.port":    e.Port,
+//         },
+//       })
+//     }
+//   }
 
-	return cs, nil
-}
+//   return cs, nil
+// }
 
 func (p *Provider) resourceContainers(resources manifest.Resources, app, release string) ([]container, error) {
 	cs := []container{}
@@ -240,9 +241,8 @@ func (p *Provider) resourceContainers(resources manifest.Resources, app, release
 		cs = append(cs, container{
 			Name:     fmt.Sprintf("%s.%s.resource.%s", p.Name, app, r.Name),
 			Hostname: fmt.Sprintf("%s.resource.%s.%s", r.Name, app, p.Name),
-			Port: containerPort{
-				Host:      rp,
-				Container: rp,
+			Targets: []containerTarget{
+				containerTarget{Scheme: "tcp", Port: rp, Target: fmt.Sprintf("tcp://rack/%s/resource/%s:%d", app, r.Name, rp)},
 			},
 			Image:   fmt.Sprintf("convox/%s", r.Type),
 			Volumes: vs,
@@ -264,40 +264,12 @@ func (p *Provider) resourceContainers(resources manifest.Resources, app, release
 func (p *Provider) serviceContainers(services manifest.Services, app, release string) ([]container, error) {
 	cs := []container{}
 
-	sys, err := p.SystemGet()
-	if err != nil {
-		return nil, err
-	}
-
 	m, r, err := helpers.ReleaseManifest(p, app, release)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, s := range services {
-		if s.Port.Port > 0 {
-			cs = append(cs, container{
-				Name:     fmt.Sprintf("%s.%s.endpoint.%s", p.Name, app, s.Name),
-				Hostname: fmt.Sprintf("%s.%s.%s", s.Name, app, p.Name),
-				Port: containerPort{
-					Host:      443,
-					Container: 3000,
-				},
-				Memory:  64,
-				Image:   sys.Image,
-				Command: []string{"balancer", "https", "target", fmt.Sprintf("%s://%s:%d", s.Port.Scheme, s.Name, s.Port.Port)},
-				Labels: map[string]string{
-					"convox.rack":    p.Name,
-					"convox.version": p.Version,
-					"convox.app":     app,
-					"convox.release": release,
-					"convox.type":    "endpoint",
-					"convox.name":    s.Name,
-					"convox.port":    strconv.Itoa(s.Port.Port),
-				},
-			})
-		}
-
 		cmd := []string{}
 
 		if c := strings.TrimSpace(s.Command); c != "" {
@@ -330,8 +302,15 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 			}
 		}
 
+		st := fmt.Sprintf("%s://rack/%s/service/%s:%d", s.Port.Scheme, app, s.Name, s.Port.Port)
+
 		for i := 1; i <= s.Scale.Count.Min; i++ {
 			cs = append(cs, container{
+				Hostname: fmt.Sprintf("%s.%s.%s", s.Name, app, p.Name),
+				Targets: []containerTarget{
+					containerTarget{Scheme: "http", Port: 80, Target: st},
+					containerTarget{Scheme: "https", Port: 443, Target: st},
+				},
 				Name:    fmt.Sprintf("%s.%s.service.%s.%d", p.Name, app, s.Name, i),
 				Image:   fmt.Sprintf("%s/%s/%s:%s", p.Name, app, s.Name, r.Build),
 				Command: cmd,

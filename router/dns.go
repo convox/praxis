@@ -1,34 +1,38 @@
-package frontend
+package router
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/miekg/dns"
 )
 
 type DNS struct {
-	Host string
-
-	frontend *Frontend
-	mux      *dns.ServeMux
-	server   *dns.Server
+	mux    *dns.ServeMux
+	router *Router
+	server *dns.Server
 }
 
-func NewDNS(host string, frontend *Frontend) *DNS {
+func (r *Router) NewDNS() (*DNS, error) {
 	mux := dns.NewServeMux()
 
-	mux.HandleFunc(".", resolvePassthrough)
-
-	return &DNS{
-		Host:     host,
-		frontend: frontend,
-		mux:      mux,
+	d := &DNS{
+		mux:    mux,
+		router: r,
 		server: &dns.Server{
-			Addr:    fmt.Sprintf("%s:53", host),
+			Addr:    fmt.Sprintf("%s:53", r.ip),
 			Handler: mux,
 			Net:     "udp",
 		},
 	}
+
+	mux.HandleFunc(".", resolvePassthrough)
+
+	if err := d.registerDomain(r.Domain); err != nil {
+		return nil, err
+	}
+
+	return d, nil
 }
 
 func (d *DNS) Serve() error {
@@ -46,8 +50,6 @@ func (d *DNS) registerDomain(domain string) error {
 }
 
 func (d *DNS) resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
-	log := Log.At("resolve.convox").Start()
-
 	m := &dns.Msg{}
 	m.SetReply(r)
 	m.Compress = false
@@ -59,15 +61,12 @@ func (d *DNS) resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
 		for _, q := range m.Question {
 			switch q.Qtype {
 			case dns.TypeA:
-				log = log.Append("name=%s", q.Name)
-				if ip, ok := d.frontend.hosts[q.Name]; ok {
-					if rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip)); err == nil {
+				if ep, ok := d.router.endpoints[strings.TrimSuffix(q.Name, ".")]; ok {
+					if rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ep.IP)); err == nil {
 						rr.Header().Ttl = 5
 						m.Answer = append(m.Answer, rr)
-						log.Successf("ip=%s", ip)
+						fmt.Printf("ns=convox.router at=resolve type=rack host=%q ip=%q\n", q.Name, ep.IP)
 					}
-				} else {
-					log.Logf("error=%q", "unknown host")
 				}
 			}
 		}
@@ -77,8 +76,6 @@ func (d *DNS) resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func resolvePassthrough(w dns.ResponseWriter, r *dns.Msg) {
-	log := Log.At("resolve.passthrough").Start()
-
 	c := dns.Client{Net: "tcp"}
 
 	rs, _, err := c.Exchange(r, "8.8.8.8:53")
@@ -86,13 +83,12 @@ func resolvePassthrough(w dns.ResponseWriter, r *dns.Msg) {
 		m := &dns.Msg{}
 		m.SetRcode(r, dns.RcodeServerFailure)
 		w.WriteMsg(m)
-		log.Error(err)
 		return
 	}
 
 	w.WriteMsg(rs)
 
 	for _, q := range r.Question {
-		log.Successf("name=%q", q.Name)
+		fmt.Printf("ns=convox.router at=resolve type=forward host=%q\n", q.Name)
 	}
 }

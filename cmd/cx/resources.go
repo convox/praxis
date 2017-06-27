@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"strconv"
 
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/stdcli"
@@ -77,12 +76,12 @@ func runResourcesProxy(c *cli.Context) error {
 		return err
 	}
 
+	stdcli.OK()
+
 	u, err := url.Parse(r.Endpoint)
 	if err != nil {
 		return err
 	}
-
-	stdcli.OK()
 
 	local := u.Port()
 
@@ -114,19 +113,14 @@ func runResourcesProxy(c *cli.Context) error {
 
 		stdcli.Startf("connection from <url>%s</url>", cn.RemoteAddr())
 
-		go handleProxyConnection(cn, u)
+		go handleProxyConnection(cn, app, r.Name)
 	}
 }
 
-func handleProxyConnection(cn net.Conn, target *url.URL) error {
+func handleProxyConnection(cn net.Conn, app, resource string) error {
 	defer cn.Close()
 
-	pi, err := strconv.Atoi(target.Port())
-	if err != nil {
-		return err
-	}
-
-	r, err := Rack.SystemProxy(target.Hostname(), pi, cn)
+	r, err := Rack.ResourceProxy(app, resource, cn)
 	if err != nil {
 		return err
 	}

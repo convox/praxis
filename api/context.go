@@ -61,7 +61,7 @@ func (c *Context) Query(name string) string {
 }
 
 func (c *Context) RenderJSON(v interface{}) error {
-	data, err := json.Marshal(v)
+	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return err
 	}

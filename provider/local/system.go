@@ -48,7 +48,7 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 		return "", fmt.Errorf("must be root to install a local rack")
 	}
 
-	if err := launcherInstall("convox.frontend", cx, "rack", "frontend"); err != nil {
+	if err := launcherInstall("convox.router", cx, "rack", "router"); err != nil {
 		return "", err
 	}
 
@@ -124,9 +124,11 @@ func (p *Provider) SystemProxy(host string, port int, in io.Reader) (io.ReadClos
 func (p *Provider) SystemUninstall(name string, opts types.SystemInstallOptions) error {
 	launcherRemove("convox.frontend")
 	launcherRemove("convox.rack")
+	launcherRemove("convox.router")
 
 	exec.Command("launchctl", "remove", "convox.frontend").Run()
 	exec.Command("launchctl", "remove", "convox.rack").Run()
+	exec.Command("launchctl", "remove", "convox.router").Run()
 
 	return nil
 }

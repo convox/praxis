@@ -9,12 +9,10 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"os/user"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/convox/praxis/frontend"
 	"github.com/convox/praxis/provider"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
@@ -27,23 +25,6 @@ func init() {
 		Description: "show system information",
 		Action:      runRack,
 		Subcommands: cli.Commands{
-			cli.Command{
-				Name:        "frontend",
-				Description: "start a local rack frontend",
-				Action:      runRackFrontend,
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "interface, i",
-						Usage: "interface name",
-						Value: "vlan1",
-					},
-					cli.StringFlag{
-						Name:  "subnet, s",
-						Usage: "subnet",
-						Value: "10.42.84",
-					},
-				},
-			},
 			cli.Command{
 				Name:        "install",
 				Description: "install a rack",
@@ -90,9 +71,9 @@ func init() {
 				Action:      runRackStart,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "frontend",
-						Usage: "frontend host",
-						Value: "10.42.84.0",
+						Name:  "router",
+						Usage: "local router",
+						Value: "router.convox",
 					},
 				},
 			},
@@ -132,23 +113,6 @@ func runRack(c *cli.Context) error {
 	info.Add("Version", rack.Version)
 
 	info.Print()
-
-	return nil
-}
-
-func runRackFrontend(c *cli.Context) error {
-	u, err := user.Current()
-	if err != nil {
-		return err
-	}
-
-	if u.Uid != "0" {
-		return fmt.Errorf("must run as root")
-	}
-
-	if err := frontend.New(c.String("interface"), c.String("subnet")).Serve(); err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -257,7 +221,7 @@ func runRackStart(c *cli.Context) error {
 		return stdcli.Usage(c)
 	}
 
-	cmd, err := rackCommand(version, c.String("frontend"))
+	cmd, err := rackCommand(version, c.String("router"))
 	if err != nil {
 		return err
 	}
@@ -330,7 +294,7 @@ func runRackUpdate(c *cli.Context) error {
 	return nil
 }
 
-func rackCommand(version string, frontend string) (*exec.Cmd, error) {
+func rackCommand(version string, router string) (*exec.Cmd, error) {
 	name := "convox"
 
 	config := "/var/convox"
@@ -346,7 +310,7 @@ func rackCommand(version string, frontend string) (*exec.Cmd, error) {
 	args = append(args, "-m", "256m")
 	args = append(args, "-i", fmt.Sprintf("--name=%s", name))
 	args = append(args, "-e", "PROVIDER=local")
-	args = append(args, "-e", fmt.Sprintf("PROVIDER_FRONTEND=%s", frontend))
+	args = append(args, "-e", fmt.Sprintf("PROVIDER_ROUTER=%s", router))
 	args = append(args, "-e", fmt.Sprintf("VERSION=%s", version))
 	args = append(args, "-p", "5443:3000")
 	args = append(args, "-v", fmt.Sprintf("%s:/var/convox", config))

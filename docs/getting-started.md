@@ -34,8 +34,8 @@ To install a local Rack you'll first need to install Docker. The free Docker Com
 Once you have Docker up and running you can use `cx` to install a local Rack:
 
     $ sudo cx rack install local
-    installing: /Library/LaunchDaemons/convox.frontend.plist
     installing: /Library/LaunchDaemons/convox.rack.plist
+    installing: /Library/LaunchDaemons/convox.router.plist
 
 This will install a Rack onto your local machine.
 
