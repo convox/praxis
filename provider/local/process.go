@@ -353,8 +353,17 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		image = fmt.Sprintf("%s/%s/%s:%s", p.Name, app, opts.Service, release.Build)
 	}
 
-	if p.dns != "" {
-		args = append(args, "--dns", p.dns)
+	if p.Router != "" {
+		h, err := net.LookupHost(p.Router)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+
+		if len(h) < 1 {
+			return nil, fmt.Errorf("no records found: %s", p.Router)
+		}
+
+		args = append(args, "--dns", h[0])
 	}
 
 	for k, v := range opts.Environment {

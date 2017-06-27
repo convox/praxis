@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -49,17 +48,6 @@ func FromEnv() (*Provider, error) {
 	}
 
 	p.Router = fmt.Sprintf("router.%s", p.Name)
-
-	h, err := net.LookupHost(p.Router)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(h) < 1 {
-		return nil, fmt.Errorf("could not resolve router: %s", p.Router)
-	}
-
-	p.dns = h[0]
 
 	if v := os.Getenv("VERSION"); v != "" {
 		p.Version = v

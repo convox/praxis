@@ -48,7 +48,7 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 		return "", fmt.Errorf("must be root to install a local rack")
 	}
 
-	if err := launcherInstall("convox.router", cx, "rack", "router"); err != nil {
+	if err := launcherInstall("convox.router", cx, "router"); err != nil {
 		return "", err
 	}
 
