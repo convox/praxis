@@ -149,7 +149,7 @@ func proxyRackTCP(cn net.Conn, target *url.URL) error {
 	parts := strings.Split(target.Path, "/")
 
 	if len(parts) < 4 {
-		return fmt.Errorf("invalid rack endpoint: %s\n", target)
+		return fmt.Errorf("invalid rack endpoint: %s", target)
 	}
 
 	app := parts[1]
