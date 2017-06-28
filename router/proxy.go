@@ -246,6 +246,8 @@ func proxyRackHTTP(listen, target *url.URL) http.HandlerFunc {
 		}
 		defer res.Body.Close()
 
+		w.WriteHeader(res.StatusCode)
+
 		for k, vs := range res.Header {
 			for _, v := range vs {
 				w.Header().Add(k, v)
