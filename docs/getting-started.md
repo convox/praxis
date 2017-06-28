@@ -241,7 +241,7 @@ The release will now show as promoted.
     $ cx releases
     ID          BUILD       STATUS    CREATED
     RTKJFWMKYG  BHRATEYFZS  promoted  11 minutes ago
-    RYCQLGAAAV  BJKETOESCA  promoted  27 minutes ag
+    RYCQLGAAAV  BJKETOESCA  promoted  27 minutes ago
 
 Refresh your browser to see your change in action!
 
