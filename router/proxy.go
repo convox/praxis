@@ -246,13 +246,13 @@ func proxyRackHTTP(listen, target *url.URL) http.HandlerFunc {
 		}
 		defer res.Body.Close()
 
-		w.WriteHeader(res.StatusCode)
-
 		for k, vs := range res.Header {
 			for _, v := range vs {
 				w.Header().Add(k, v)
 			}
 		}
+
+		w.WriteHeader(res.StatusCode)
 
 		if _, err := io.Copy(w, res.Body); err != nil {
 			http.Error(w, err.Error(), 500)
