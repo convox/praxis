@@ -851,6 +851,29 @@ func (_m *Provider) ResourceList(app string) (types.Resources, error) {
 	return r0, r1
 }
 
+// ResourceProxy provides a mock function with given fields: app, resource, in
+func (_m *Provider) ResourceProxy(app string, resource string, in io.Reader) (io.ReadCloser, error) {
+	ret := _m.Called(app, resource, in)
+
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(string, string, io.Reader) io.ReadCloser); ok {
+		r0 = rf(app, resource, in)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadCloser)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, io.Reader) error); ok {
+		r1 = rf(app, resource, in)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ServiceGet provides a mock function with given fields: app, name
 func (_m *Provider) ServiceGet(app string, name string) (*types.Service, error) {
 	ret := _m.Called(app, name)
@@ -980,29 +1003,6 @@ func (_m *Provider) SystemOptions() (map[string]string, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func() error); ok {
 		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// SystemProxy provides a mock function with given fields: host, port, in
-func (_m *Provider) SystemProxy(host string, port int, in io.Reader) (io.ReadCloser, error) {
-	ret := _m.Called(host, port, in)
-
-	var r0 io.ReadCloser
-	if rf, ok := ret.Get(0).(func(string, int, io.Reader) io.ReadCloser); ok {
-		r0 = rf(host, port, in)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(io.ReadCloser)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, int, io.Reader) error); ok {
-		r1 = rf(host, port, in)
 	} else {
 		r1 = ret.Error(1)
 	}

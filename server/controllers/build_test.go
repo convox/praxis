@@ -35,7 +35,7 @@ func TestBuildCreate(t *testing.T) {
 
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Equal(t,
-		`{"id":"BTEST","app":"app","manifest":"","process":"","release":"","status":"created","created":"0001-01-01T00:00:00Z","started":"0001-01-01T00:00:00Z","ended":"0001-01-01T00:00:00Z"}`,
+		"{\n  \"id\": \"BTEST\",\n  \"app\": \"app\",\n  \"manifest\": \"\",\n  \"process\": \"\",\n  \"release\": \"\",\n  \"status\": \"created\",\n  \"created\": \"0001-01-01T00:00:00Z\",\n  \"started\": \"0001-01-01T00:00:00Z\",\n  \"ended\": \"0001-01-01T00:00:00Z\"\n}",
 		string(data),
 	)
 }
@@ -67,7 +67,7 @@ func TestBuildGet(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, 200, res.StatusCode)
 		assert.Equal(t,
-			`{"id":"BTEST","app":"app","manifest":"","process":"","release":"","status":"created","created":"0001-01-01T00:00:00Z","started":"0001-01-01T00:00:00Z","ended":"0001-01-01T00:00:00Z"}`,
+			"{\n  \"id\": \"BTEST\",\n  \"app\": \"app\",\n  \"manifest\": \"\",\n  \"process\": \"\",\n  \"release\": \"\",\n  \"status\": \"created\",\n  \"created\": \"0001-01-01T00:00:00Z\",\n  \"started\": \"0001-01-01T00:00:00Z\",\n  \"ended\": \"0001-01-01T00:00:00Z\"\n}",
 			string(data),
 		)
 	}
@@ -112,7 +112,7 @@ func TestBuildUpdate(t *testing.T) {
 
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Equal(t,
-		`{"id":"BTEST","app":"app","manifest":"","process":"","release":"RTEST","status":"pending","created":"0001-01-01T00:00:00Z","started":"0001-01-01T00:00:00Z","ended":"0001-01-01T00:00:00Z"}`,
+		"{\n  \"id\": \"BTEST\",\n  \"app\": \"app\",\n  \"manifest\": \"\",\n  \"process\": \"\",\n  \"release\": \"RTEST\",\n  \"status\": \"pending\",\n  \"created\": \"0001-01-01T00:00:00Z\",\n  \"started\": \"0001-01-01T00:00:00Z\",\n  \"ended\": \"0001-01-01T00:00:00Z\"\n}",
 		string(data),
 	)
 }

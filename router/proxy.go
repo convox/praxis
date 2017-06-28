@@ -115,13 +115,8 @@ func proxyTCP(listener net.Listener, target *url.URL) error {
 			return err
 		}
 
-		go func() {
-			err := proxyRackTCP(cn, target)
-			fmt.Printf("err = %+v\n", err)
-		}()
+		go proxyRackTCP(cn, target)
 	}
-
-	return nil
 }
 
 func proxyTCPConnection(cn net.Conn, target *url.URL) error {
