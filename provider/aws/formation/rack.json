@@ -186,9 +186,9 @@
             "if [[ \"$LIFECYCLE_HOOK\" != \"None\" ]]; then\n",
             "/usr/bin/aws autoscaling complete-lifecycle-action --region ", { "Ref": "AWS::Region" }, " --instance-id $INSTANCE_ID --lifecycle-hook-name $LIFECYCLE_HOOK --auto-scaling-group-name $ASG_NAME --lifecycle-action-result CONTINUE\n",
             "fi\n",
-            "/opt/aws/bin/cfn-signal --stack ", { "Ref": "AWS::StackName" }, " --region ", { "Ref": "AWS::Region" }, " --resource Instances\n",
             "docker pull convox/golang\n",
-            "docker pull convox/rails\n"
+            "docker pull convox/rails\n",
+            "/opt/aws/bin/cfn-signal --stack ", { "Ref": "AWS::StackName" }, " --region ", { "Ref": "AWS::Region" }, " --resource Instances\n"
           ] ] }
         }
       }
@@ -532,6 +532,7 @@
         "DeploymentConfiguration": { "MinimumHealthyPercent": "50", "MaximumPercent": "200" },
         "DesiredCount": "2",
         "LoadBalancers": [ { "ContainerName": "rack", "ContainerPort": "3000", "TargetGroupArn": { "Ref": "BalancerTargetGroup" } } ],
+        "PlacementConstraints" : [{"Type": "distinctInstance"}],
         "PlacementStrategies": [
           { "Type": "spread", "Field": "attribute:ecs.availability-zone" },
           { "Type": "spread", "Field": "instanceId" }
