@@ -83,7 +83,7 @@ func resourceService(service mv1.Service) bool {
 		"convox/mysql",
 		"convox/postgres",
 		"convox/redis",
-		"convox/rabbitmq"
+		"convox/rabbitmq",
 	}
 
 	for _, image := range resourceImages {
