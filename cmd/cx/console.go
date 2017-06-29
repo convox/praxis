@@ -33,23 +33,24 @@ func init() {
 }
 
 type Login struct {
-	Error string
-	Proxy string
+	ApiKey string `json:"api_key"`
+	Error  string `json:"error"`
+	Host   string `json:"host"`
 }
 
 func runLogin(c *cli.Context) error {
-	var host string
+	var console string
 
 	// TODO: Use proxy to login instead of the webui?
 
 	if len(c.Args()) < 1 {
 		var err error
-		host, err = consoleHost()
+		console, err = consoleHost()
 		if err != nil {
 			return stdcli.Error(err)
 		}
 	} else {
-		host = c.Args()[0]
+		console = c.Args()[0]
 	}
 
 	fmt.Printf("Email: ")
@@ -73,7 +74,7 @@ func runLogin(c *cli.Context) error {
 	}
 
 	fmt.Println()
-	stdcli.Startf("Authenticating with <name>%s</name>", host)
+	stdcli.Startf("Authenticating with <name>%s</name>", console)
 
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -85,8 +86,8 @@ func runLogin(c *cli.Context) error {
 	}
 
 	u := &url.URL{
-		Host:   host,
-		Path:   "/cli/login",
+		Host:   console,
+		Path:   "/auth/api_key",
 		Scheme: "https",
 	}
 
@@ -118,11 +119,19 @@ func runLogin(c *cli.Context) error {
 		return stdcli.Errorf(p.Error)
 	}
 
-	if err := setConsoleHost(host); err != nil {
+	if err := setConsoleHost(console); err != nil {
 		return stdcli.Error(err)
 	}
 
-	if err := setConsoleProxy(p.Proxy); err != nil {
+	u, err = url.Parse(p.Host)
+	if err != nil {
+		return stdcli.Error(err)
+	}
+
+	u.Scheme = "https"
+	u.User = url.UserPassword(p.ApiKey, "")
+
+	if err := setConsoleProxy(u.String()); err != nil {
 		return stdcli.Error(err)
 	}
 
