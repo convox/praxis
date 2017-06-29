@@ -71,7 +71,12 @@ func (p *Proxy) Serve() error {
 
 	switch p.Listen.Scheme {
 	case "http", "https":
-		if err := http.Serve(ln, proxyHTTP(p.Listen, p.Target)); err != nil {
+		h, err := p.proxyHTTP(p.Listen, p.Target)
+		if err != nil {
+			return err
+		}
+
+		if err := http.Serve(ln, h); err != nil {
 			return err
 		}
 	case "tcp":
@@ -85,27 +90,28 @@ func (p *Proxy) Serve() error {
 	return nil
 }
 
-func proxyHTTP(listen, target *url.URL) http.Handler {
+func (p *Proxy) proxyHTTP(listen, target *url.URL) (http.Handler, error) {
 	if target.Hostname() == "rack" {
-		return http.HandlerFunc(proxyRackHTTP(listen, target))
+		h, err := p.proxyRackHTTP()
+		if err != nil {
+			return nil, err
+		}
+
+		return h, nil
 	}
 
-	proxy := httputil.NewSingleHostReverseProxy(target)
+	px := httputil.NewSingleHostReverseProxy(target)
 
-	tr := logTransport{
-		Transport: http.DefaultTransport.(*http.Transport),
-		listener:  listen,
-	}
+	dt := http.DefaultTransport.(*http.Transport)
 
-	// tr.DialContext = proxyDialer(target)
-
-	tr.TLSClientConfig = &tls.Config{
+	// TODO: remove
+	dt.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: true,
 	}
 
-	proxy.Transport = tr
+	px.Transport = logTransport{RoundTripper: dt}
 
-	return proxy
+	return px, nil
 }
 
 func proxyTCP(listener net.Listener, target *url.URL) error {
@@ -182,83 +188,43 @@ func proxyRackTCP(cn net.Conn, target *url.URL) error {
 	return nil
 }
 
-func proxyRackHTTP(listen, target *url.URL) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		parts := strings.Split(target.Path, "/")
+func (p *Proxy) proxyRackHTTP() (http.Handler, error) {
+	parts := strings.Split(p.Target.Path, "/")
 
-		if len(parts) < 4 {
-			http.Error(w, "invalid rack endpoint", 500)
-			return
-		}
-
-		app := parts[1]
-		kind := parts[2]
-		sp := strings.Split(parts[3], ":")
-
-		if len(sp) < 2 {
-			http.Error(w, fmt.Sprintf("invalid %s endpoint: %s", kind, parts[2]), 500)
-			return
-		}
-
-		service := sp[0]
-
-		p, err := strconv.Atoi(sp[1])
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
-
-		port := p
-
-		c := &http.Client{}
-
-		switch kind {
-		case "service":
-			fmt.Printf("ns=convox.router at=proxy type=http listen=%q target=rack app=%q service=%q port=%d path=%q\n", listen, app, service, port, r.URL.Path)
-			c.Transport = serviceTransport(app, service, port)
-		default:
-			http.Error(w, fmt.Sprintf("unknown proxy type: %s", kind), 500)
-			return
-		}
-
-		rurl := fmt.Sprintf("%s://%s%s", target.Scheme, r.Host, r.URL.Path)
-
-		creq, err := http.NewRequest(r.Method, rurl, r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
-
-		for h, vs := range r.Header {
-			for _, v := range vs {
-				creq.Header.Add(h, v)
-			}
-		}
-
-		creq.Header.Add("X-Forwarded-For", r.RemoteAddr)
-		creq.Header.Add("X-Forwarded-Port", listen.Port())
-		creq.Header.Add("X-Forwarded-Proto", listen.Scheme)
-
-		res, err := c.Do(creq)
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
-		defer res.Body.Close()
-
-		for k, vs := range res.Header {
-			for _, v := range vs {
-				w.Header().Add(k, v)
-			}
-		}
-
-		w.WriteHeader(res.StatusCode)
-
-		if _, err := io.Copy(w, res.Body); err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
+	if len(parts) < 4 {
+		return nil, fmt.Errorf("invalid rack endpoint")
 	}
+
+	app := parts[1]
+	kind := parts[2]
+	sp := strings.Split(parts[3], ":")
+
+	if len(sp) < 2 {
+		return nil, fmt.Errorf("invalid %s endpoint: %s", kind, parts[2])
+	}
+
+	service := sp[0]
+
+	pi, err := strconv.Atoi(sp[1])
+	if err != nil {
+		return nil, err
+	}
+
+	px := &httputil.ReverseProxy{Director: p.rackDirector}
+
+	switch kind {
+	case "service":
+		px.Transport = logTransport{RoundTripper: serviceTransport(app, service, pi)}
+	default:
+		return nil, fmt.Errorf("unknown proxy type: %s", kind)
+	}
+
+	return px, nil
+}
+
+func (p *Proxy) rackDirector(r *http.Request) {
+	r.URL.Host = p.endpoint.Host
+	r.URL.Scheme = p.Target.Scheme
 }
 
 func serviceTransport(app, service string, port int) http.RoundTripper {
