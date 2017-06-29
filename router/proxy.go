@@ -104,7 +104,6 @@ func (p *Proxy) proxyHTTP(listen, target *url.URL) (http.Handler, error) {
 
 	dt := http.DefaultTransport.(*http.Transport)
 
-	// TODO: remove
 	dt.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: true,
 	}
