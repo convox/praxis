@@ -6,7 +6,7 @@ This guide will walk you through installing the Praxis CLI and setting up a Dock
 
 The [getting-started-aws.md](Getting Started for Production Deploys) will walk you through creating a Convox account and setting up a an AWS-based production environment for an app.
 
-Together you'll see how Praxis offers an app workflow -- build, config, diff, test and promote -- that works exactly the same in development and production. The result is a simple, fast and portable development, test and deploy workflow.
+Together you'll see how Praxis offers an app workflow -- build, config, diff, test and promote -- that works exactly the same in development and production. The result is a simple, fast and portable dev, test and deploy workflow.
 
 ## Setting up your development environment
 
@@ -49,9 +49,11 @@ This also starts the Praxis Router on your computer, which manages load balancin
 
 In the "Add Certificates" dialog, select the "System" keychain, and click "Add". Then in the "Keychain Access" app, search for "convox" and double click on "ca.convox". In the root certificate dialog, change "When using this certificate:" to "Always Trust" and close the dialog.
 
+## Developing your first app
+
 ### Clone the example app
 
-We'll use the Praxis documentation site to demonstrate deployment. It's a Go app using the Hugo project for static websites.
+We'll use the Praxis documentation site to demonstrate development. It's a Go app using the Hugo project for static websites.
 
 Clone the app and enter its directory:
 
