@@ -224,6 +224,10 @@ func (p *Proxy) proxyRackHTTP() (http.Handler, error) {
 func (p *Proxy) rackDirector(r *http.Request) {
 	r.URL.Host = p.endpoint.Host
 	r.URL.Scheme = p.Target.Scheme
+
+	r.Header.Add("X-Forwarded-For", r.RemoteAddr)
+	r.Header.Add("X-Forwarded-Port", p.Listen.Port())
+	r.Header.Add("X-Forwarded-Proto", p.Listen.Scheme)
 }
 
 func serviceTransport(app, service string, port int) http.RoundTripper {
