@@ -252,17 +252,23 @@ func serviceTransport(app, service string, port int) http.RoundTripper {
 
 		a, b := net.Pipe()
 
-		go func() {
-			pr, err := r.ProcessProxy(app, ps.Id, port, a)
-			if err != nil {
-				return
-			}
-
-			io.Copy(a, pr)
-		}()
+		go serviceProxy(r, app, ps.Id, port, a)
 
 		return b, nil
 	}
 
 	return tr
+}
+
+func serviceProxy(rk rack.Rack, app, pid string, port int, rw io.ReadWriter) error {
+	pr, err := rk.ProcessProxy(app, pid, port, rw)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(rw, pr); err != nil {
+		return err
+	}
+
+	return nil
 }
