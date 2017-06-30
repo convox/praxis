@@ -34,15 +34,13 @@ If you want them to help manage integrations, create Racks, and invite other tea
 
 ### Setting up your AWS integration
 
-Next, visit the [integrations page](https://ui.convox.com/integrations). Here you will see how Convox is the hub that connects your organization to other service providers like AWS for infrastructure and GitHub for source control.
+Next, visit the [integrations page](https://ui.convox.com/integrations). This is the hub that connects your organization to other service providers like AWS for infrastructure and GitHub for source control.
 
 Click the [Enable AWS](https://ui.convox.com/integrations/aws/new) button.
 
 We'll name the AWS integration "production" because it will connect to our primary AWS account and eventualy host our production Rack and apps.
 
-Next, supply administrator access keys. Convox will use these keys once to set up the integration, then discard them. We recommend that you create a new "IAM user with programmatic access" to generate new keys.
-
-Follow the [Creating an IAM Users](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html#id_users_create_console) guide to generate these.
+Next, supply administrator access keys. Convox will use these keys once to set up the integration, then discard them. We recommend that you create a new "IAM user with programmatic access" to generate new keys. Follow the [Creating an IAM Users](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html#id_users_create_console) guide to generate these.
 
 1. Sign into the [AWS IAM console](https://console.aws.amazon.com/iam/home#/users)
 2. In the "User name" field enter "convox-integration-setup"
@@ -52,7 +50,7 @@ Follow the [Creating an IAM Users](http://docs.aws.amazon.com/IAM/latest/UserGui
 6. Click "Next: Review" then "Create User"
 7. Click "Download .csv"
 
-Now you can drag the "credentials.csv" file onto the [New AWS Integration](https://ui.convox.com/integrations/aws/new)
+Now you can drag the "credentials.csv" file onto the [New AWS Integration](https://ui.convox.com/integrations/aws/new) form.
 
 Then click "Enable". You'll see a confirmation message like "AWS integration enabled for account 922560784203". Convox is now integrated with your AWS account and can set up Racks.
 
@@ -84,14 +82,16 @@ Now connect the `cx` command to your Convox account.
     $ cx login
     Email: john@ingen.com
     Password: *****
-    OK
+    Authenticating with ui.convox.com: OK
 
 If you signed up with GitHub or Google, visit the [edit user](https://ui.convox.com/user/edit) page to set your account password first.
 
 Then you can list your Racks and switch to your production Rack:
 
     $ cx racks
+    RACKS
     ingen/production
+    local
 
     $ cx switch ingen/production
     OK
@@ -115,45 +115,71 @@ Now deploy:
     $ cx deploy
     building: /Users/matthew/code/convox/praxis-site
     uploading: OK
-    starting build: eed730a1180227074e774357acf8201cd39fe8f7478c367374ced3ded78cb92e
+    starting build: bc5f7812-d4a1-4107-8d7f-1390e8b9b196
     preparing source
-    restoring cache
     building: .
-    running: docker build -t 9836064b94124bad54f83c70026dd85fcb8b5a13 /tmp/503720936
-    Sending build context to Docker daemon  19.56MB
+    running: docker build -t 9836064b94124bad54f83c70026dd85fcb8b5a13 /tmp/288499397
+    Sending build context to Docker daemon  11.23MB
     Step 1/2 : FROM convox/hugo:0.0.1
-     ---> 95f8d1e0347e
+    ---> 95f8d1e0347e
     Step 2/2 : COPY . /app
-     ---> 1ae0dab8258d
-    Removing intermediate container 256b517ec707
-    Successfully built 1ae0dab8258d
-    running: docker tag 9836064b94124bad54f83c70026dd85fcb8b5a13 convox/praxis-site/web:BLFMGFUNTS
-    saving cache
-    storing artifacts
-    ...
-    starting: convox.praxis-site.service.web.1
-    starting: convox.praxis-site.service.web.2
+    ---> 5ed5990dcd19
+    Removing intermediate container b949cac258ce
+    Successfully built 5ed5990dcd19
+    running: docker tag 9836064b94124bad54f83c70026dd85fcb8b5a13 production-praxis-site/web:BWWPTMIDWL
+    running: docker tag production-praxis-site/web:BWWPTMIDWL 665986001363.dkr.ecr.us-east-1.amazonaws.com/produ-repos-2axsg073lrv8:web.BWWPTMIDWL
+    pushing: 665986001363.dkr.ecr.us-east-1.amazonaws.com/produ-repos-2axsg073lrv8:web.BWWPTMIDWL
+    UPDATE_IN_PROGRESS    production-praxis-site        AWS::CloudFormation::Stack
+    CREATE_COMPLETE       ServiceWebTargetGroup         AWS::ElasticLoadBalancingV2::TargetGroup
+    CREATE_COMPLETE       ServiceWebListenerRule        AWS::ElasticLoadBalancingV2::ListenerRule
+    CREATE_COMPLETE       ServiceWebTasks               AWS::ECS::TaskDefinition
+    CREATE_COMPLETE       ServiceWeb                    AWS::ECS::Service
+    UPDATE_COMPLETE       production-praxis-site        AWS::CloudFormation::Stack
+    release promoted: RNPMYNUTQO
 
-The application is now deployed to your local Rack. You can find its endpoints with the CLI:
+The application is now deployed to the production Rack. You can find its endpoints with the CLI:
 
     $ cx services
     NAME  ENDPOINT
-    web   https://praxis-site-web.prod-balan-yqveh744gpex-2137821817.us-east-1.rack.convox.io/
+    web   https://praxis-site-web.produ-balan-yqveh744gpex-2137821817.us-east-1.rack.convox.io/
 
 You can visit the service endpoint to view it.
 
-With a Convox Organization, an AWS integration and a production Rack we have an app running with:
+With a Convox Organization, an AWS integration, the `convox.yml` file and a `cx deploy` command, we have:
 
-* A static hostname
+* A production-ready private cloud
+* A static, online hostname
 * Trusted SSL
 * Load balancing to two containers
 
 ### Update the hostname and certificate
 
-We can use `cx` to manage the app config.
+Now you can use the `cx` tool to manage the app config. For example, you can update the service hostname:
 
     $ cx env set HOST=praxis-site.ingen.com
-    OK
+    updating environment: OK
     $ cx promote
-    ...
+    promoting RAHDPGMMUR: OK
+    UPDATE_IN_PROGRESS    production-praxis-site        AWS::CloudFormation::Stack
+    CREATE_COMPLETE       ServiceWebBalancerTargetGroup  AWS::ElasticLoadBalancingV2::TargetGroup
+    CREATE_COMPLETE       ServiceWebBalancerSecurity    AWS::EC2::SecurityGroup
+    CREATE_COMPLETE       ServiceWebCertificate         AWS::CertificateManager::Certificate
+    CREATE_COMPLETE       ServiceWebBalancer            AWS::ElasticLoadBalancingV2::LoadBalancer
+    CREATE_COMPLETE       ServiceWebBalancerListener80  AWS::ElasticLoadBalancingV2::Listener
+    release promoted: RZMNJRSLSD
 
+Now visit the service endpoint. A certificate is configured for `praxis-site.ingen.com` hostname. All that remains is adding a DNS CNAME for `praxis-site.ingen.com` to the service endpoint.
+
+On the AWS Rack, certs are handled by the AWS Certificate Manager (ACM) service. Refer to the [ACM User Guide](http://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html) if your domain is not yet set up with ACM.
+
+## Going to automation
+
+Now that you have a production Rack and app online, the Praxis CLI, API and SDK can be used for all your team's deployment workflows.
+
+Becaus Praxis offers dev/prod parity, you can run tests in your AWS account with:
+
+    $ cx test
+
+This isn't as fast as running tests in a Local Rack, but it offers a shared test environment for your organization.
+
+Congratulations! You've just set up a powerful development workflow and tested and deployed your application to robust cloud infrastructure!
