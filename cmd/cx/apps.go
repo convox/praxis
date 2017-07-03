@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -42,7 +43,7 @@ func init() {
 }
 
 func runApps(c *cli.Context) error {
-	apps, err := Rack.AppList()
+	apps, err := Rack(c).AppList()
 	if err != nil {
 		return stdcli.Error(err)
 	}
@@ -70,11 +71,11 @@ func runAppsCreate(c *cli.Context) error {
 
 	stdcli.Startf("creating <name>%s</name>", name)
 
-	if _, err = Rack.AppCreate(name); err != nil {
+	if _, err = Rack(c).AppCreate(name); err != nil {
 		return stdcli.Error(err)
 	}
 
-	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(name, "creating")); err != nil {
+	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(Rack(c), name, "creating")); err != nil {
 		return err
 	}
 
@@ -92,7 +93,7 @@ func runAppsDelete(c *cli.Context) error {
 
 	stdcli.Startf("deleting <name>%s</name>", name)
 
-	if err := Rack.AppDelete(name); err != nil {
+	if err := Rack(c).AppDelete(name); err != nil {
 		return stdcli.Error(err)
 	}
 
@@ -111,7 +112,7 @@ func runAppsInfo(c *cli.Context) error {
 		app = c.Args()[0]
 	}
 
-	a, err := Rack.AppGet(app)
+	a, err := Rack(c).AppGet(app)
 	if err != nil {
 		return stdcli.Error(err)
 	}
@@ -127,9 +128,9 @@ func runAppsInfo(c *cli.Context) error {
 	return nil
 }
 
-func notAppStatus(app, status string) func() (bool, error) {
+func notAppStatus(r rack.Rack, app, status string) func() (bool, error) {
 	return func() (bool, error) {
-		app, err := Rack.AppGet(app)
+		app, err := r.AppGet(app)
 		if err != nil {
 			return true, err
 		}

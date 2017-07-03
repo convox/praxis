@@ -39,7 +39,7 @@ func runExec(c *cli.Context) error {
 	}
 	defer terminalRestore(os.Stdin, state)
 
-	code, err := Rack.ProcessExec(app, pid, command, types.ProcessExecOptions{
+	code, err := Rack(c).ProcessExec(app, pid, command, types.ProcessExecOptions{
 		Input:  os.Stdin,
 		Output: os.Stdout,
 	})

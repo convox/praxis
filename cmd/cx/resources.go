@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/convox/praxis/helpers"
+	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -42,7 +43,7 @@ func runResources(c *cli.Context) error {
 		return err
 	}
 
-	rs, err := Rack.ResourceList(app)
+	rs, err := Rack(c).ResourceList(app)
 	if err != nil {
 		return err
 	}
@@ -72,7 +73,7 @@ func runResourcesProxy(c *cli.Context) error {
 
 	stdcli.Startf("starting proxy to <name>%s</name>", name)
 
-	r, err := Rack.ResourceGet(app, name)
+	r, err := Rack(c).ResourceGet(app, name)
 	if err != nil {
 		return err
 	}
@@ -114,19 +115,19 @@ func runResourcesProxy(c *cli.Context) error {
 
 		stdcli.Startf("connection from <url>%s</url>", cn.RemoteAddr())
 
-		go handleProxyConnection(cn, app, r.Name)
+		go handleProxyConnection(Rack(c), cn, app, r.Name)
 	}
 }
 
-func handleProxyConnection(cn net.Conn, app, resource string) error {
+func handleProxyConnection(r rack.Rack, cn net.Conn, app, resource string) error {
 	defer cn.Close()
 
-	r, err := Rack.ResourceProxy(app, resource, cn)
+	rc, err := r.ResourceProxy(app, resource, cn)
 	if err != nil {
 		return err
 	}
 
 	stdcli.OK()
 
-	return helpers.Stream(cn, r)
+	return helpers.Stream(cn, rc)
 }

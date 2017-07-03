@@ -54,7 +54,7 @@ func runLogs(c *cli.Context) error {
 		Since:  time.Now().Add(-1 * since),
 	}
 
-	logs, err := Rack.AppLogs(app, opts)
+	logs, err := Rack(c).AppLogs(app, opts)
 	if err != nil {
 		return err
 	}

@@ -105,7 +105,7 @@ func init() {
 }
 
 func runRack(c *cli.Context) error {
-	rack, err := Rack.SystemGet()
+	rack, err := Rack(c).SystemGet()
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func runRackLogs(c *cli.Context) error {
 		Since:  time.Now().Add(-1 * since),
 	}
 
-	logs, err := Rack.SystemLogs(opts)
+	logs, err := Rack(c).SystemLogs(opts)
 	if err != nil {
 		return err
 	}
@@ -277,7 +277,7 @@ func runRackUpdate(c *cli.Context) error {
 		version = c.Args()[0]
 	}
 
-	s, err := Rack.SystemGet()
+	s, err := Rack(c).SystemGet()
 	if err != nil {
 		return err
 	}
@@ -289,7 +289,7 @@ func runRackUpdate(c *cli.Context) error {
 
 	stdcli.Startf("updating <name>%s</name> to <version>%s</version>", s.Name, opts.Version)
 
-	if err := Rack.SystemUpdate(opts); err != nil {
+	if err := Rack(c).SystemUpdate(opts); err != nil {
 		return stdcli.Error(err)
 	}
 

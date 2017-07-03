@@ -57,7 +57,7 @@ func runRun(c *cli.Context) error {
 	}
 	defer terminalRestore(os.Stdin, state)
 
-	code, err := Rack.ProcessRun(app, opts)
+	code, err := Rack(c).ProcessRun(app, opts)
 	if err != nil {
 		return stdcli.Error(err)
 	}

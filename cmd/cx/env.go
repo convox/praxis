@@ -42,7 +42,7 @@ func runEnv(c *cli.Context) error {
 		return err
 	}
 
-	rs, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	rs, err := Rack(c).ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func runEnvSet(c *cli.Context) error {
 
 	cenv := types.Environment{}
 
-	rs, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	rs, err := Rack(c).ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func runEnvSet(c *cli.Context) error {
 
 	stdcli.Startf("updating environment")
 
-	_, err = Rack.ReleaseCreate(app, types.ReleaseCreateOptions{Env: cenv})
+	_, err = Rack(c).ReleaseCreate(app, types.ReleaseCreateOptions{Env: cenv})
 	if err != nil {
 		return stdcli.Error(err)
 	}
@@ -125,7 +125,7 @@ func runEnvUnset(c *cli.Context) error {
 
 	cenv := types.Environment{}
 
-	rs, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	rs, err := Rack(c).ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func runEnvUnset(c *cli.Context) error {
 
 	stdcli.Startf("updating environment")
 
-	_, err = Rack.ReleaseCreate(app, types.ReleaseCreateOptions{Env: cenv})
+	_, err = Rack(c).ReleaseCreate(app, types.ReleaseCreateOptions{Env: cenv})
 	if err != nil {
 		return stdcli.Error(err)
 	}
