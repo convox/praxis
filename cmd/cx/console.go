@@ -155,8 +155,6 @@ func runRacks(c *cli.Context) error {
 
 	t.Print()
 
-	fmt.Println()
-	fmt.Println("Use cx switch to change rack")
 	return nil
 }
 
