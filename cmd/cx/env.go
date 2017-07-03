@@ -15,7 +15,6 @@ func init() {
 		Name:        "env",
 		Description: "display current env",
 		Action:      runEnv,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 		Subcommands: []cli.Command{
 			cli.Command{

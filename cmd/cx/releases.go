@@ -30,7 +30,6 @@ func init() {
 		Name:        "releases",
 		Description: "list releases",
 		Action:      runReleases,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 		Subcommands: []cli.Command{
 			cli.Command{

@@ -16,7 +16,6 @@ func init() {
 		Name:        "version",
 		Description: "display cli version",
 		Action:      runVersion,
-		Before:      beforeCmd,
 	})
 }
 

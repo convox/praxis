@@ -152,9 +152,6 @@ func autoUpdate(ch chan error) {
 
 var errMissingProxyEndpoint = errors.New("Rack endpoint was not found, try cx login")
 
-// beforeCmd is a hook that is called before any commands run
-func beforeCmd(c *cli.Context) error { return nil }
-
 func Rack(c *cli.Context) rack.Rack {
 	var endpoint *url.URL
 

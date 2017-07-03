@@ -15,7 +15,6 @@ func init() {
 		Name:        "promote",
 		Description: "promote a release",
 		Action:      runPromote,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 	})
 }

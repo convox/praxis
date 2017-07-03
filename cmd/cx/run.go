@@ -21,7 +21,6 @@ func init() {
 		Description: "run a new process",
 		Usage:       "<service> [command]",
 		Action:      runRun,
-		Before:      beforeCmd,
 		Flags:       append(flags, globalFlags...),
 	})
 }

@@ -24,7 +24,6 @@ func init() {
 		Name:        "rack",
 		Description: "show system information",
 		Action:      runRack,
-		Before:      beforeCmd,
 		Subcommands: cli.Commands{
 			cli.Command{
 				Name:        "install",
@@ -48,7 +47,6 @@ func init() {
 				Name:        "logs",
 				Description: "show rack logs",
 				Action:      runRackLogs,
-				Before:      beforeCmd,
 				Flags: []cli.Flag{
 					rackFlag,
 					cli.StringFlag{
@@ -97,7 +95,6 @@ func init() {
 				Description: "update the rack",
 				Usage:       "[version]",
 				Action:      runRackUpdate,
-				Before:      beforeCmd,
 				Flags:       []cli.Flag{rackFlag},
 			},
 		},

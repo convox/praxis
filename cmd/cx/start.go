@@ -35,7 +35,6 @@ func init() {
 		Name:        "start",
 		Description: "start the app in development mode",
 		Action:      runStart,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 	})
 }
