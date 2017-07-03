@@ -31,7 +31,6 @@ func init() {
 		Name:        "logs",
 		Description: "show app logs",
 		Action:      runLogs,
-		Before:      beforeCmd,
 		Flags:       append(flags, globalFlags...),
 	})
 }

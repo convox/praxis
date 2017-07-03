@@ -13,7 +13,6 @@ func init() {
 		Name:        "apps",
 		Description: "list applications",
 		Action:      runApps,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 		Subcommands: cli.Commands{
 			cli.Command{

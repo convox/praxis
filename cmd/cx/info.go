@@ -10,7 +10,6 @@ func init() {
 		Name:        "info",
 		Description: "get application info",
 		Action:      runAppsInfo,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 	})
 }

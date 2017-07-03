@@ -20,14 +20,12 @@ func init() {
 		Name:        "build",
 		Description: "build an application",
 		Action:      runBuild,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 	})
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "builds",
 		Description: "list builds",
 		Action:      runBuilds,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 		Subcommands: []cli.Command{
 			cli.Command{

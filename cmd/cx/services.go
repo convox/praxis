@@ -12,7 +12,6 @@ func init() {
 		Name:        "services",
 		Description: "list services",
 		Action:      runServices,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 		Subcommands: cli.Commands{
 			cli.Command{

@@ -10,7 +10,6 @@ func init() {
 		Name:        "registries",
 		Description: "list registries",
 		Action:      runRegistries,
-		Before:      beforeCmd,
 		Subcommands: []cli.Command{
 			cli.Command{
 				Name:        "add",

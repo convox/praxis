@@ -18,7 +18,6 @@ func init() {
 		Name:        "test",
 		Description: "run tests",
 		Action:      errorExit(runTest, 1),
-		Before:      beforeCmd,
 	})
 }
 

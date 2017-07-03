@@ -12,7 +12,6 @@ func init() {
 		Name:        "ps",
 		Description: "list processes",
 		Action:      runPs,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 		Subcommands: cli.Commands{
 			cli.Command{

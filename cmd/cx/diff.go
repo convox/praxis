@@ -21,7 +21,6 @@ func init() {
 		Name:        "diff",
 		Description: "show changes to be promoted",
 		Action:      runDiff,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 	})
 }

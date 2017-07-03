@@ -23,7 +23,6 @@ func init() {
 		Name:        "resources",
 		Description: "list resources",
 		Action:      runResources,
-		Before:      beforeCmd,
 		Flags:       globalFlags,
 		Subcommands: cli.Commands{
 			cli.Command{
