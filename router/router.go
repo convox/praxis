@@ -112,6 +112,10 @@ func (r *Router) createEndpoint(host string) (*Endpoint, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
+	if ep, ok := r.endpoints[host]; ok {
+		return &ep, nil
+	}
+
 	ip, err := r.nextIP()
 	if err != nil {
 		return nil, err
@@ -160,8 +164,8 @@ func (r *Router) createProxy(host, listen, target string) (*Proxy, error) {
 		return nil, err
 	}
 
-	if _, ok := r.endpoints[host].Proxies[pi]; ok {
-		return nil, fmt.Errorf("proxy already exists: %s", listen)
+	if p, ok := r.endpoints[host].Proxies[pi]; ok {
+		return &p, nil
 	}
 
 	p, err := ep.NewProxy(host, ul, ut)

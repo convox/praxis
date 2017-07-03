@@ -34,6 +34,17 @@ func (e *Endpoint) NewProxy(host string, listen, target *url.URL) (*Proxy, error
 		endpoint: e,
 	}
 
+	pi, err := strconv.Atoi(listen.Port())
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := e.Proxies[pi]; ok {
+		return nil, fmt.Errorf("proxy already exists for port: %d", pi)
+	}
+
+	e.Proxies[pi] = *p
+
 	return p, nil
 }
 
