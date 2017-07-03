@@ -125,9 +125,6 @@ func (r *Router) createEndpoint(host string) (*Endpoint, error) {
 		return nil, err
 	}
 
-	// go r.proxy(host, fmt.Sprintf("http://%s:80", ip), target)
-	// go r.proxy(host, fmt.Sprintf("https://%s:443", ip), target)
-
 	e := Endpoint{
 		Host:    host,
 		IP:      ip,

@@ -142,8 +142,6 @@ func proxyTCPConnection(cn net.Conn, target *url.URL) error {
 
 	defer cn.Close()
 
-	fmt.Printf("target = %+v\n", target)
-
 	oc, err := net.Dial("tcp", target.Host)
 	if err != nil {
 		return err
