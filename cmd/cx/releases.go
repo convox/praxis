@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/convox/praxis/helpers"
+	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
 	cli "gopkg.in/urfave/cli.v1"
@@ -56,7 +57,7 @@ func runReleases(c *cli.Context) error {
 		return err
 	}
 
-	releases, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 10})
+	releases, err := Rack(c).ReleaseList(app, types.ReleaseListOptions{Count: 10})
 	if err != nil {
 		return err
 	}
@@ -84,7 +85,7 @@ func runReleasesInfo(c *cli.Context) error {
 		return err
 	}
 
-	r, err := Rack.ReleaseGet(app, id)
+	r, err := Rack(c).ReleaseGet(app, id)
 	if err != nil {
 		return err
 	}
@@ -106,7 +107,7 @@ func runReleasesLogs(c *cli.Context) error {
 		return err
 	}
 
-	r, err := Rack.ReleaseGet(app, id)
+	r, err := Rack(c).ReleaseGet(app, id)
 	if err != nil {
 		return err
 	}
@@ -119,20 +120,20 @@ func runReleasesLogs(c *cli.Context) error {
 
 	fmt.Printf("opts = %+v\n", opts)
 
-	if err := releaseLogs(app, id, os.Stdout, opts); err != nil {
+	if err := releaseLogs(Rack(c), app, id, os.Stdout, opts); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func notReleaseStatus(app, id, status string) func() (bool, error) {
+func notReleaseStatus(r rack.Rack, app, id, status string) func() (bool, error) {
 	return func() (bool, error) {
-		r, err := Rack.ReleaseGet(app, id)
+		rs, err := r.ReleaseGet(app, id)
 		if err != nil {
 			return true, err
 		}
-		if r.Status != status {
+		if rs.Status != status {
 			return true, nil
 		}
 
@@ -147,15 +148,15 @@ func (p *progress) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
-func releaseLogs(app string, id string, w io.Writer, opts types.LogsOptions) error {
-	if err := tickWithTimeout(2*time.Second, 5*time.Minute, notReleaseStatus(app, id, "created")); err != nil {
+func releaseLogs(r rack.Rack, app string, id string, w io.Writer, opts types.LogsOptions) error {
+	if err := tickWithTimeout(2*time.Second, 5*time.Minute, notReleaseStatus(r, app, id, "created")); err != nil {
 		return err
 	}
 
 	var p progress
 
 	for {
-		logs, err := Rack.ReleaseLogs(app, id, opts)
+		logs, err := r.ReleaseLogs(app, id, opts)
 		if err != nil {
 			return err
 		}
@@ -168,7 +169,7 @@ func releaseLogs(app string, id string, w io.Writer, opts types.LogsOptions) err
 			return err
 		}
 
-		r, err := Rack.ReleaseGet(app, id)
+		r, err := r.ReleaseGet(app, id)
 		if err != nil {
 			return err
 		}

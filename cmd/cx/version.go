@@ -21,7 +21,7 @@ func init() {
 }
 
 func runVersion(c *cli.Context) error {
-	rack, err := Rack.SystemGet()
+	rack, err := Rack(c).SystemGet()
 	if err != nil {
 		return err
 	}

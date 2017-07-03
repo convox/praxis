@@ -25,20 +25,20 @@ func runDeploy(c *cli.Context) error {
 		return err
 	}
 
-	build, err := buildDirectory(app, ".", types.BuildCreateOptions{}, os.Stdout)
+	build, err := buildDirectory(Rack(c), app, ".", types.BuildCreateOptions{}, os.Stdout)
 	if err != nil {
 		return err
 	}
 
-	if err := Rack.ReleasePromote(app, build.Release); err != nil {
+	if err := Rack(c).ReleasePromote(app, build.Release); err != nil {
 		return err
 	}
 
-	if err := releaseLogs(app, build.Release, os.Stdout, types.LogsOptions{Follow: true}); err != nil {
+	if err := releaseLogs(Rack(c), app, build.Release, os.Stdout, types.LogsOptions{Follow: true}); err != nil {
 		return err
 	}
 
-	r, err := Rack.ReleaseGet(app, build.Release)
+	r, err := Rack(c).ReleaseGet(app, build.Release)
 	if err != nil {
 		return err
 	}

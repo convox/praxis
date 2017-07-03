@@ -22,7 +22,6 @@ import (
 )
 
 var (
-	Rack    rack.Rack
 	Version = "dev"
 )
 
@@ -154,37 +153,33 @@ func autoUpdate(ch chan error) {
 var errMissingProxyEndpoint = errors.New("Rack endpoint was not found, try cx login")
 
 // beforeCmd is a hook that is called before any commands run
-func beforeCmd(c *cli.Context) error {
-	var perr error
+func beforeCmd(c *cli.Context) error { return nil }
+
+func Rack(c *cli.Context) rack.Rack {
 	var endpoint *url.URL
+
+	exit := func(err error) {
+		if err != nil {
+			fmt.Fprint(os.Stderr, stdcli.Error(err))
+			os.Exit(1)
+		}
+	}
 
 	local, err := url.Parse("https://localhost:5443")
 	if err != nil {
-		perr = err
-		return nil
+		exit(err)
 	}
-
-	// defer func used to exit if error as cli package display error twice along with app usage in a confusing manner
-	// so we display error once and exit
-	defer func() {
-		if perr != nil {
-			fmt.Fprint(os.Stderr, stdcli.Error(perr))
-			os.Exit(1)
-		}
-	}()
 
 	if os.Getenv("RACK_URL") == "" {
 		proxy, err := consoleProxy()
 		if err != nil {
-			perr = err
-			return err
+			exit(err)
 		}
 
 		if proxy != nil {
 			rack, err := currentRack(c)
 			if err != nil {
-				perr = err
-				return nil
+				exit(err)
 			}
 
 			switch rack {
@@ -207,13 +202,10 @@ func beforeCmd(c *cli.Context) error {
 
 	r, err := rack.NewFromEnv()
 	if err != nil {
-		perr = err
-		return nil
+		exit(err)
 	}
 
-	Rack = r
-
-	return nil
+	return r
 }
 
 func cliID() (string, error) {
