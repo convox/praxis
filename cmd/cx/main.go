@@ -315,8 +315,9 @@ func shellRack() (string, error) {
 
 	_, err = os.Stat(fn)
 	if err != nil {
+		// no shell config implies "local" rack
 		if os.IsNotExist(err) {
-			return "", nil
+			return "local", nil
 		}
 		return "", err
 	}
