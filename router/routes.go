@@ -37,9 +37,10 @@ func (rt *Router) ProxyCreate(w http.ResponseWriter, r *http.Request, c *api.Con
 		return fmt.Errorf("no such endpoint: %s", host)
 	}
 
-	if _, err := rt.createProxy(host, fmt.Sprintf("%s://%s:%s", scheme, ep.IP, port), target); err != nil {
+	p, err := rt.createProxy(host, fmt.Sprintf("%s://%s:%s", scheme, ep.IP, port), target)
+	if err != nil {
 		return err
 	}
 
-	return nil
+	return c.RenderJSON(p)
 }
