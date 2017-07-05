@@ -201,7 +201,10 @@ func runRackLogs(c *cli.Context) error {
 }
 
 func runRackStart(c *cli.Context) error {
-	version := "latest"
+	version, err := latestVersion()
+	if err != nil {
+		return err
+	}
 
 	vf := "/Users/Shared/convox/version"
 
