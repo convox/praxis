@@ -4,7 +4,7 @@ Convox Praxis is a universal infrastructure framework. When you develop and depl
 
 This guide will walk you through installing the Praxis CLI and setting up a Docker-based development environment for an app.
 
-The [getting-started-aws.md](Getting Started for Production Deploys) will walk you through creating a Convox account and setting up a an AWS-based production environment for an app.
+The [Getting Started for Production Deploys](getting-started-aws.md) will walk you through creating a Convox account and setting up a an AWS-based production environment for an app.
 
 Together you'll see how Praxis offers an app workflow -- build, config, diff, test and promote -- that works exactly the same in development and production. The result is a simple, fast and portable dev, test and deploy workflow.
 
@@ -321,4 +321,4 @@ After a few minutes of setup, you can use the same exact CLI workflow to deploy 
 
 However, the Convox Graphical User Interface (GUI) makes it even easier manage your production Racks and Apps and share them with your development team.
 
-Check out the [getting-started-aws.md](Getting Started for Production) guide to walk through creating a Convox account and setting up a an AWS-based production environment for an app.
+Check out the [Getting Started for Production Deploys](getting-started-aws.md) guide to walk through creating a Convox account and setting up a an AWS-based production environment for an app.
