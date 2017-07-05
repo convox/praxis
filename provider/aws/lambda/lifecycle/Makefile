@@ -12,8 +12,10 @@ main: *.go
 	GOOS=linux GOARCH=amd64 go build -o main
 
 release: lambda.zip
-	aws s3 cp lambda.zip s3://praxis-releases/release/$(VERSION)/lambda/lifecycle.zip --acl public-read
-	aws s3 cp lambda.zip s3://praxis-releases/release/latest/lambda/lifecycle.zip --acl public-read
+	for region in $(shell cat ../../../../REGIONS); do \
+		aws s3 cp lambda.zip s3://praxis-releases-$$region/release/$(VERSION)/lambda/lifecycle.zip --acl public-read --region $$region; \
+		aws s3 cp lambda.zip s3://praxis-releases-$$region/release/latest/lambda/lifecycle.zip --acl public-read --region $$region; \
+	done
 
 test:
 	bin/test $(RACK) $(INSTANCE)
