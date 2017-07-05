@@ -71,7 +71,7 @@ func runTest(c *cli.Context) error {
 
 	stdcli.OK()
 
-	if err := m.Validate(); err != nil {
+	if err := m.ValidateEnv(); err != nil {
 		return err
 	}
 
