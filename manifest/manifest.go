@@ -39,7 +39,7 @@ func Load(data []byte, env Environment) (*Manifest, error) {
 		return nil, err
 	}
 
-	if err := m.Validate(); err != nil {
+	if err := m.ValidateEnv(); err != nil {
 		return nil, err
 	}
 
@@ -97,12 +97,23 @@ func (m *Manifest) ServiceEnvironment(service string) (Environment, error) {
 	return env, nil
 }
 
-func (m *Manifest) Validate() error {
+// ValidateEnv returns an error if required env vars for a service are not available
+// It also filters m.Environment to the union of all service env vars defined in the manifest
+func (m *Manifest) ValidateEnv() error {
+	whitelist := map[string]string{}
+
 	for _, s := range m.Services {
-		if _, err := m.ServiceEnvironment(s.Name); err != nil {
+		env, err := m.ServiceEnvironment(s.Name)
+		if err != nil {
 			return err
 		}
+
+		for k, v := range env {
+			whitelist[k] = v
+		}
 	}
+
+	m.Environment = whitelist
 
 	return nil
 }
