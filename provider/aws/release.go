@@ -165,10 +165,6 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 		return err
 	}
 
-	fmt.Printf("string(data) = %+v\n", string(data))
-
-	// return nil, fmt.Errorf("stop")
-
 	domain, err := p.rackOutput("Domain")
 	if err != nil {
 		return err
