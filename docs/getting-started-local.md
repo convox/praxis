@@ -68,7 +68,7 @@ The first thing to take note of in the project is the `convox.yml` file. This is
 services:
   web:
     certificate: ${HOST}
-    port: http:1313
+    port: 1313
     scale: 2
     test: make test
 ```
