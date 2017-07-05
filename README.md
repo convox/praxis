@@ -4,7 +4,11 @@ A framework for modern application infrastructure.
 
 ## QUICKSTART
 
-[Getting Started with Convox Praxis](https://github.com/convox/praxis/blob/master/docs/getting-started.md)
+####Getting Started with Convox Praxis
+
+[Locally](https://github.com/convox/praxis/blob/master/docs/getting-started-local.md)
+
+[On AWS](https://github.com/convox/praxis/blob/master/docs/getting-started-aws.md)
 
 ## ABOUT
 
