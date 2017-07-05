@@ -2,7 +2,7 @@
 
 Convox Praxis is a universal infrastructure framework. When you develop and deploy applications using the Praxis CLI, API and SDK you completely abstract away concerns about where your application is running. In minutes you can set up a system that has perfect development / production parity and deploy your app to the cloud.
 
-The [getting-started-local.md](Getting Started for Local Development) guide walked you through installing the Praxis CLI and setting up a Docker-based development environment for an app.
+The [Getting Started for Local Development](getting-started-local.md) guide walked you through installing the Praxis CLI and setting up a Docker-based development environment for an app.
 
 This guide will walk you through creating a Convox account and setting up an AWS-based production environment for an app.
 
