@@ -78,11 +78,8 @@ func (p *Provider) Init() error {
 
 	p.db = db
 
-	if _, err := p.createRootBucket("rack"); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = p.createRootBucket("rack")
+	return err
 }
 
 func (p *Provider) logger(at string) *logger.Logger {
