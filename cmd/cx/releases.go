@@ -51,12 +51,17 @@ func init() {
 }
 
 func runReleases(c *cli.Context) error {
-	app, err := appName(c, ".")
+	an, err := appName(c, ".")
 	if err != nil {
 		return err
 	}
 
-	releases, err := Rack(c).ReleaseList(app, types.ReleaseListOptions{Count: 10})
+	app, err := Rack(c).AppGet(an)
+	if err != nil {
+		return err
+	}
+
+	releases, err := Rack(c).ReleaseList(app.Name, types.ReleaseListOptions{Count: 10})
 	if err != nil {
 		return err
 	}
@@ -64,6 +69,9 @@ func runReleases(c *cli.Context) error {
 	t := stdcli.NewTable("ID", "BUILD", "STATUS", "CREATED")
 
 	for _, r := range releases {
+		if app.Release == r.Id {
+			r.Status = "active"
+		}
 		t.AddRow(r.Id, r.Build, r.Status, helpers.HumanizeTime(r.Created))
 	}
 
@@ -79,17 +87,33 @@ func runReleasesInfo(c *cli.Context) error {
 
 	id := c.Args()[0]
 
-	app, err := appName(c, ".")
+	an, err := appName(c, ".")
 	if err != nil {
 		return err
 	}
 
-	r, err := Rack(c).ReleaseGet(app, id)
+	app, err := Rack(c).AppGet(an)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("r = %+v\n", r)
+	r, err := Rack(c).ReleaseGet(app.Name, id)
+	if err != nil {
+		return err
+	}
+
+	if app.Release == r.Id {
+		r.Status = "active"
+	}
+
+	info := stdcli.NewInfo()
+
+	info.Add("Id", r.Id)
+	info.Add("App", r.App)
+	info.Add("Status", r.Status)
+	info.Add("Build", r.Build)
+
+	info.Print()
 
 	return nil
 }
