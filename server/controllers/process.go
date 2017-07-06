@@ -165,7 +165,7 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 
 	ev, err := url.ParseQuery(c.Header("Environment"))
 	if err != nil {
-		return helpers.CodeError(rw, -1, err)
+		return helpers.CodeError(rw, 255, err)
 	}
 
 	for k := range ev {
@@ -176,18 +176,18 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 
 	pv, err := url.ParseQuery(c.Header("Ports"))
 	if err != nil {
-		return helpers.CodeError(rw, -1, err)
+		return helpers.CodeError(rw, 255, err)
 	}
 
 	for k := range pv {
 		ki, err := strconv.Atoi(k)
 		if err != nil {
-			return helpers.CodeError(rw, -1, err)
+			return helpers.CodeError(rw, 255, err)
 		}
 
 		vi, err := strconv.Atoi(pv.Get(k))
 		if err != nil {
-			return helpers.CodeError(rw, -1, err)
+			return helpers.CodeError(rw, 255, err)
 		}
 
 		ports[ki] = vi
@@ -197,7 +197,7 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 
 	vv, err := url.ParseQuery(c.Header("Volumes"))
 	if err != nil {
-		return helpers.CodeError(rw, -1, err)
+		return helpers.CodeError(rw, 255, err)
 	}
 
 	for k := range vv {
@@ -221,7 +221,7 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 	if height != "" {
 		h, err := strconv.Atoi(height)
 		if err != nil {
-			return helpers.CodeError(rw, -1, err)
+			return helpers.CodeError(rw, 255, err)
 		}
 
 		opts.Height = h
@@ -230,7 +230,7 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 	if width != "" {
 		w, err := strconv.Atoi(width)
 		if err != nil {
-			return helpers.CodeError(rw, -1, err)
+			return helpers.CodeError(rw, 255, err)
 		}
 
 		opts.Width = w
@@ -243,11 +243,11 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 	if opts.Release == "" {
 		a, err := Provider.AppGet(app)
 		if err != nil {
-			return helpers.CodeError(rw, -1, err)
+			return helpers.CodeError(rw, 255, err)
 		}
 
 		if a.Release == "" {
-			return helpers.CodeError(rw, -1, fmt.Errorf("no releases for app: %s", app))
+			return helpers.CodeError(rw, 255, fmt.Errorf("no releases for app: %s", app))
 		}
 
 		opts.Release = a.Release
