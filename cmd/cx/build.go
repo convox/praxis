@@ -46,11 +46,7 @@ func runBuild(c *cli.Context) error {
 	}
 
 	_, err = buildDirectory(Rack(c), app, ".", types.BuildCreateOptions{}, os.Stdout)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func runBuilds(c *cli.Context) error {
