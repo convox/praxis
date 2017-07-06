@@ -17,7 +17,7 @@ func init() {
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "test",
 		Description: "run tests",
-		Action:      errorExit(runTest, 1),
+		Action:      errorExit(runTest, sysExitCode),
 	})
 }
 
