@@ -49,9 +49,6 @@ func ResourceProxy(rw io.ReadWriteCloser, c *api.Context) error {
 
 	defer p.Close()
 
-	if _, err := io.Copy(rw, p); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = io.Copy(rw, p)
+	return err
 }

@@ -140,11 +140,8 @@ func ProcessProxy(rw io.ReadWriteCloser, c *api.Context) error {
 
 	defer p.Close()
 
-	if err := helpers.Stream(rw, p); err != nil {
-		return err
-	}
-
-	return nil
+	err = helpers.Stream(rw, p)
+	return err
 }
 
 func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
@@ -357,9 +354,6 @@ func ProcessStop(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	app := c.Var("app")
 	pid := c.Var("pid")
 
-	if err := Provider.ProcessStop(app, pid); err != nil {
-		return err
-	}
-
-	return nil
+	err := Provider.ProcessStop(app, pid)
+	return err
 }
