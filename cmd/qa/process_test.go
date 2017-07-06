@@ -34,7 +34,7 @@ func TestProcessRun(t *testing.T) {
 		Output:  logs,
 		Service: "web",
 	})
-	assert.EqualError(t, err, "[no releases for app: valid]")
+	assert.EqualError(t, err, "[no release for app: valid]")
 	assert.Equal(t, 255, code)
 
 	bs, err := ioutil.ReadAll(logs)
@@ -56,7 +56,7 @@ func TestProcessRun(t *testing.T) {
 		Output:  logs,
 		Service: "web",
 	})
-	assert.EqualError(t, err, "[no releases for app: valid]")
+	assert.EqualError(t, err, "[no release for app: valid]")
 	// assert.EqualError(t, err, "[no builds for app: valid]") // FIXME
 	assert.Equal(t, 255, code)
 
@@ -83,10 +83,8 @@ func TestProcessRun(t *testing.T) {
 		Output:  logs,
 		Service: "thunk",
 	})
-	assert.NoError(t, err)
-	// assert.EqualError(t, err, "Service is not valid") // FIXME
-	assert.Equal(t, 125, code)
-	// assert.Equal(t, 255, code) // FIXME
+	assert.EqualError(t, err, "[no such service: thunk]")
+	assert.Equal(t, 255, code)
 
 	logs = bytes.NewBuffer([]byte{})
 	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
