@@ -85,6 +85,10 @@ func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, erro
 		return 255, errors.New("Output is required")
 	}
 
+	if opts.Image == "" && opts.Service == "" {
+		return 255, errors.New("Image or service is required")
+	}
+
 	ev := url.Values{}
 
 	for k, v := range opts.Environment {
