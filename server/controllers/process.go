@@ -247,10 +247,22 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 		}
 
 		if a.Release == "" {
-			return helpers.CodeError(rw, 255, fmt.Errorf("no releases for app: %s", app))
+			return helpers.CodeError(rw, 255, fmt.Errorf("no release for app: %s", app))
 		}
 
 		opts.Release = a.Release
+	}
+
+	if opts.Service != "" {
+		m, _, err := helpers.AppManifest(Provider, app)
+		if err != nil {
+			return helpers.CodeError(rw, 255, err)
+		}
+
+		_, err = m.Service(opts.Service)
+		if err != nil {
+			return helpers.CodeError(rw, 255, err)
+		}
 	}
 
 	c.Logf("at=params release=%q service=%q height=%d width=%d", opts.Release, opts.Service, opts.Height, opts.Width)
