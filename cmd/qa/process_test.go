@@ -26,12 +26,12 @@ func TestProcessRun(t *testing.T) {
 	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
 		Output: logs,
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, 0, code)
+	assert.EqualError(t, err, "[no releases for app: valid]")
+	assert.Equal(t, 255, code)
 
 	bytes, err := ioutil.ReadAll(logs)
 	assert.NoError(t, err)
 	out := string(bytes)
 
-	assert.Equal(t, "26bda8cd-ad49-4e4b-8bb3-2f19e197b3bd[-1][no releases for app: valid]", out)
+	assert.Equal(t, "", out)
 }
