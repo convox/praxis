@@ -260,11 +260,7 @@ func runRackUninstall(c *cli.Context) error {
 		Color:  true,
 		Output: os.Stdout,
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func runRackUpdate(c *cli.Context) error {

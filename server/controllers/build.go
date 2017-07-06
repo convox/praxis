@@ -77,11 +77,8 @@ func BuildLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	w.WriteHeader(200)
 
-	if err := helpers.Stream(w, logs); err != nil {
-		return err
-	}
-
-	return nil
+	err = helpers.Stream(w, logs)
+	return err
 }
 
 func BuildUpdate(w http.ResponseWriter, r *http.Request, c *api.Context) error {

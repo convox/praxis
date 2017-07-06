@@ -42,11 +42,8 @@ func SystemLogs(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 
 	w.WriteHeader(200)
 
-	if err := helpers.Stream(w, logs); err != nil {
-		return err
-	}
-
-	return nil
+	err = helpers.Stream(w, logs)
+	return err
 }
 
 func SystemOptions(w http.ResponseWriter, r *http.Request, c *api.Context) error {

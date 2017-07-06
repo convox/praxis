@@ -62,11 +62,7 @@ func (p *Provider) RegistryRemove(hostname string) error {
 		DomainName: aws.String(domain),
 		ItemName:   aws.String(hostname),
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func registryFromAttributes(hostname string, attrs []*simpledb.Attribute) (*types.Registry, error) {

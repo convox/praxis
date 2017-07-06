@@ -119,11 +119,8 @@ func runReleasesLogs(c *cli.Context) error {
 
 	fmt.Printf("opts = %+v\n", opts)
 
-	if err := releaseLogs(Rack(c), app, id, os.Stdout, opts); err != nil {
-		return err
-	}
-
-	return nil
+	err = releaseLogs(Rack(c), app, id, os.Stdout, opts)
+	return err
 }
 
 func notReleaseStatus(r rack.Rack, app, id, status string) func() (bool, error) {

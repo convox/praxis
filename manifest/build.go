@@ -406,11 +406,8 @@ func buildArgs(dockerfile string, opts BuildOptions) ([]string, error) {
 func pull(image string, opts BuildOptions) error {
 	message(opts.Stdout, "pulling: %s", image)
 
-	if err := opts.docker("pull", image); err != nil {
-		return err
-	}
-
-	return nil
+	err := opts.docker("pull", image)
+	return err
 }
 
 func (o BuildOptions) docker(args ...string) error {

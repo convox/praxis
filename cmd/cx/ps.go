@@ -59,9 +59,6 @@ func runPsStop(c *cli.Context) error {
 
 	pid := c.Args()[0]
 
-	if err := Rack(c).ProcessStop(app, pid); err != nil {
-		return err
-	}
-
-	return nil
+	err = Rack(c).ProcessStop(app, pid)
+	return err
 }

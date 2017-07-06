@@ -59,9 +59,5 @@ func (p *Provider) QueueStore(app, queue string, attrs map[string]string) error 
 		QueueUrl:    aws.String(q),
 		MessageBody: aws.String(string(data)),
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
