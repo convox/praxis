@@ -189,11 +189,8 @@ func proxyRackTCP(cn net.Conn, target *url.URL) error {
 		return fmt.Errorf("unknown proxy type: %s", kind)
 	}
 
-	if _, err := io.Copy(cn, pr); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = io.Copy(cn, pr)
+	return err
 }
 
 func (p *Proxy) proxyRackHTTP() (http.Handler, error) {

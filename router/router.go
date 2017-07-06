@@ -101,11 +101,8 @@ func (r *Router) Serve() error {
 
 	a.Route("POST", "/endpoints/{host}/proxies/{port}", r.ProxyCreate)
 
-	if err := a.Listen("h2", fmt.Sprintf("%s:443", r.ip)); err != nil {
-		return err
-	}
-
-	return nil
+	err = a.Listen("h2", fmt.Sprintf("%s:443", r.ip))
+	return err
 }
 
 func (r *Router) createEndpoint(host string) (*Endpoint, error) {

@@ -42,11 +42,8 @@ func (d *DNS) Serve() error {
 func (d *DNS) registerDomain(domain string) error {
 	d.mux.HandleFunc(fmt.Sprintf("%s.", domain), d.resolveConvox)
 
-	if err := d.setupResolver(domain); err != nil {
-		return err
-	}
-
-	return nil
+	err := d.setupResolver(domain)
+	return err
 }
 
 func (d *DNS) resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
