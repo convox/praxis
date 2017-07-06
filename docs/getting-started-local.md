@@ -75,7 +75,7 @@ services:
 
 The `convox.yml` for this site is pretty straightfoward. It defines a single service called `web`.
 
-Nested under `web` is a `certificte` config. An SSL certificate will be automatically configured for the domain specified by the app's `HOST` environment variable. `HOST` is automatically set and can be overridden for a custom domain.
+Nested under `web` is a `certificate` config. An SSL certificate will be automatically configured for the domain specified by the app's `HOST` environment variable. `HOST` is automatically set and can be overridden for a custom domain.
 
 The `port` configuration means containers for the web service will listen on port 1313 for http requests.
 
