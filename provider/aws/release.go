@@ -234,11 +234,7 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 		StackName:          aws.String(stack),
 		TemplateBody:       aws.String(string(data)),
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (p *Provider) releaseFromAttributes(id string, attrs []*simpledb.Attribute) (*types.Release, error) {

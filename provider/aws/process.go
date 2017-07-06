@@ -285,11 +285,7 @@ func (p *Provider) ProcessStop(app, pid string) error {
 		Reason:  aws.String("ProcessStop"),
 		Task:    aws.String(pid),
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (p *Provider) processFromTask(app string, t *ecs.Task) (*types.Process, error) {

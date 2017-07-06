@@ -170,11 +170,7 @@ func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
 		StackName:    aws.String(p.Name),
 		TemplateURL:  aws.String(string(template)),
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (p *Provider) cloudformationProgress(name string, opts types.SystemInstallOptions) error {

@@ -328,11 +328,7 @@ func (p *Provider) deleteBucket(bucket string) error {
 	_, err = p.S3().DeleteBucket(&s3.DeleteBucketInput{
 		Bucket: aws.String(bucket),
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (p *Provider) describeStack(name string) (*cloudformation.Stack, error) {
