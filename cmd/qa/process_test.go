@@ -18,13 +18,12 @@ func TestProcessRun(t *testing.T) {
 	defer Rack.AppDelete(app.Name)
 	assert.NoError(t, err)
 
-	// FIXME
-	assert.Panics(t, func() {
-		_, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{})
-	})
+	code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{})
+	assert.EqualError(t, err, "Output is required")
+	assert.Equal(t, 255, code)
 
 	logs := bytes.NewBuffer([]byte{})
-	code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
 		Output: logs,
 	})
 	assert.NoError(t, err)
