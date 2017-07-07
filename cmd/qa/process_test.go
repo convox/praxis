@@ -284,6 +284,10 @@ func appDelete(r rack.Rack, name string) error {
 		return err
 	}
 
+	if err := tickWithTimeout(2*time.Second, 2*time.Minute, notAppStatus(r, name, "running")); err != nil {
+		return err
+	}
+
 	if err := tickWithTimeout(2*time.Second, 2*time.Minute, notAppStatus(r, name, "deleting")); err != nil {
 		return err
 	}
