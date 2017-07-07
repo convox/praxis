@@ -247,14 +247,14 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 		}
 
 		if a.Release == "" {
-			return helpers.CodeError(rw, 255, fmt.Errorf("no release for app: %s", app))
+			return helpers.CodeError(rw, 255, fmt.Errorf("no release promoted for app: %s", app))
 		}
 
 		opts.Release = a.Release
 	}
 
 	if opts.Service != "" {
-		m, _, err := helpers.AppManifest(Provider, app)
+		m, _, err := helpers.ReleaseManifest(Provider, app, opts.Release)
 		if err != nil {
 			return helpers.CodeError(rw, 255, err)
 		}
@@ -351,7 +351,7 @@ func ProcessStart(w http.ResponseWriter, r *http.Request, c *api.Context) error 
 		}
 
 		if a.Release == "" {
-			return fmt.Errorf("no releases for app: %s", app)
+			return fmt.Errorf("no release promoted for app: %s", app)
 		}
 
 		opts.Release = a.Release
