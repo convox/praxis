@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/convox/praxis/helpers"
-	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
 	"github.com/kr/pty"
 	"github.com/pkg/errors"
@@ -275,46 +274,18 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		args = append(args, "-t")
 	}
 
+	a, err := p.AppGet(app)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
 	// if no release specified, use current release
 	if opts.Release == "" {
-		a, err := p.AppGet(app)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-
 		opts.Release = a.Release
 	}
 
-	// get release and manifest for initial environment and volumes
-	var m *manifest.Manifest
-	var release *types.Release
-	var service *manifest.Service
-	var err error
-
-	if opts.Release != "" {
-		m, release, err = helpers.ReleaseManifest(p, app, opts.Release)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-
-		// if service is not defined in manifest, i.e. "build", carry on
-		service, err = m.Service(opts.Service)
-		if err != nil && !strings.Contains(err.Error(), "no such service") {
-			return nil, errors.WithStack(err)
-		}
-	}
-
-	if service != nil {
-		// manifest environment
-		env, err := m.ServiceEnvironment(service.Name)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-
-		for k, v := range env {
-			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
-		}
-
+	// use last promoted release (if there was one) for initial resource and app environment
+	if a.Release != "" {
 		// resource environment
 		rs, err := p.ResourceList(app)
 		if err != nil {
@@ -328,7 +299,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		}
 
 		// app environment
-		menv, err := helpers.AppEnvironment(p, app)
+		menv, err := helpers.AppEnvironment(p, a.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -336,21 +307,39 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		for k, v := range menv {
 			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 		}
+	}
 
-		// volumes
-		s, err := m.Service(service.Name)
+	// if release and service specified, set proper image
+	// and get manifest env vars and volumes
+	if opts.Release != "" {
+		m, release, err := helpers.ReleaseManifest(p, app, opts.Release)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
 
-		for _, v := range s.Volumes {
-			args = append(args, "-v", v)
-		}
-	}
+		if opts.Service != "" {
+			opts.Image = fmt.Sprintf("%s/%s/%s:%s", p.Name, app, opts.Service, release.Build)
 
-	image := opts.Image
-	if image == "" {
-		image = fmt.Sprintf("%s/%s/%s:%s", p.Name, app, opts.Service, release.Build)
+			// manifest environment
+			env, err := m.ServiceEnvironment(opts.Service)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+
+			for k, v := range env {
+				args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
+			}
+
+			// volumes
+			s, err := m.Service(opts.Service)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+
+			for _, v := range s.Volumes {
+				args = append(args, "-v", v)
+			}
+		}
 	}
 
 	// FIXME try letting docker daemon pass through dns
@@ -400,7 +389,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		args = append(args, "-v", fmt.Sprintf("%s:%s", from, to))
 	}
 
-	args = append(args, image)
+	args = append(args, opts.Image)
 
 	if opts.Command != "" {
 		args = append(args, "sh", "-c", opts.Command)
