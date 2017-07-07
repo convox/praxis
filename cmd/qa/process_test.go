@@ -275,7 +275,7 @@ func appCreate(r rack.Rack, name string) (*types.App, error) {
 		return nil, err
 	}
 
-	return a, nil
+	return r.AppGet(name)
 }
 
 func appDelete(r rack.Rack, name string) error {
@@ -297,7 +297,7 @@ func notAppStatus(r rack.Rack, app, status string) func() (bool, error) {
 		if err != nil {
 			return true, err
 		}
-		fmt.Printf("APP %q %q\n", app.Name, app.Status)
+
 		if app.Status != status {
 			return true, nil
 		}
