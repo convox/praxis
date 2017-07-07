@@ -151,7 +151,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 				continue
 			}
 
-			if r.Status == "promoted" || r.Status == "failed" {
+			if r.Status == "promoted" || r.Status == "failed" || r.Status == "active" {
 				break
 			}
 		}

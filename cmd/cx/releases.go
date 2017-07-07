@@ -181,7 +181,7 @@ func releaseLogs(r rack.Rack, app string, id string, w io.Writer, opts types.Log
 		}
 
 		switch r.Status {
-		case "promoted", "failed":
+		case "promoted", "active", "failed":
 			return nil
 		}
 

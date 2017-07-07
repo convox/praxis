@@ -55,7 +55,9 @@ func runPromote(c *cli.Context) error {
 		return err
 	}
 
-	if r.Status != "promoted" {
+	switch r.Status {
+	case "promoted", "active":
+	default:
 		return fmt.Errorf("promote failed")
 	}
 
