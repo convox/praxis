@@ -76,11 +76,11 @@ func TestBuildCreateOptions(t *testing.T) {
 	logs, err := Rack.BuildLogs(app.Name, b.Id)
 	assert.NoError(t, err)
 
-	bytes, err := ioutil.ReadAll(logs)
+	bs, err := ioutil.ReadAll(logs)
 	assert.NoError(t, err)
-	out := string(bytes)
+	out := string(bs)
 
-	assert.Contains(t, out, "pulling: httpd")
+	assert.Contains(t, out, "Step 1/2 : FROM httpd")
 	// assert.Contains(t, out, "missing.yml: no such file or directory") // FIXME
 
 	b, err = Rack.BuildCreate(app.Name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{
@@ -91,12 +91,12 @@ func TestBuildCreateOptions(t *testing.T) {
 	logs, err = Rack.BuildLogs(app.Name, b.Id)
 	assert.NoError(t, err)
 
-	bytes, err = ioutil.ReadAll(logs)
+	bs, err = ioutil.ReadAll(logs)
 	assert.NoError(t, err)
-	out = string(bytes)
+	out = string(bs)
 
-	assert.Contains(t, out, "Status: Image is up to date for httpd:latest")
-	// assert.Contains(t, out, "Status: Downloaded newer image for httpd:latest") // FIXME
+	assert.Contains(t, out, "Using cache")
+	// assert.NotContains(t, out, "Using cache") // FIXME
 }
 
 func TestBuildGetLogs(t *testing.T) {
@@ -114,18 +114,6 @@ func TestBuildGetLogs(t *testing.T) {
 	b, err := Rack.BuildCreate(app.Name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{})
 	assert.NoError(t, err)
 
-	// FIXME: not guaranteed to be running
-	build, err := Rack.BuildGet(app.Name, b.Id)
-	assert.Equal(t, b.Id, build.Id)
-	assert.Equal(t, b.App, build.App)
-	assert.Equal(t, b.Manifest, build.Manifest)
-	assert.Regexp(t, b.Process, build.Process)
-	assert.Equal(t, b.Release, build.Release)
-	assert.Equal(t, "running", build.Status)
-	assert.Equal(t, b.Created, build.Created)
-	assert.WithinDuration(t, time.Now(), build.Started, 2*time.Minute)
-	assert.Equal(t, time.Time{}, build.Ended)
-
 	logs, err := Rack.BuildLogs(app.Name, b.Id)
 	assert.NoError(t, err)
 
@@ -135,16 +123,17 @@ func TestBuildGetLogs(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Contains(t, out, "preparing source")
-	assert.Contains(t, out, "pulling: httpd")
-	assert.Contains(t, out, "running: docker pull httpd")
-	assert.Contains(t, out, fmt.Sprintf("running: docker tag httpd convox/valid/web:%s", b.Id))
+	assert.Contains(t, out, "building: .")
+	assert.Contains(t, out, "Step 1/2 : FROM httpd")
+	assert.Contains(t, out, "running: docker tag")
+	assert.Contains(t, out, fmt.Sprintf("convox/valid/web:%s", b.Id))
 	assert.Contains(t, out, "storing artifacts")
 	assert.Contains(t, out, "build complete")
 
-	build, err = Rack.BuildGet(app.Name, b.Id)
+	build, err := Rack.BuildGet(app.Name, b.Id)
 	assert.Equal(t, b.Id, build.Id)
 	assert.Equal(t, b.App, build.App)
-	assert.Equal(t, "services:\n  web:\n    image: httpd\n    port: 80", build.Manifest)
+	assert.Equal(t, "services:\n  web:\n    build: .\n    environment:\n      - FOO=\n    port: 80", build.Manifest)
 	assert.Regexp(t, b.Process, build.Process)
 	assert.Regexp(t, "R[A-Z]{9}", build.Release)
 	assert.Equal(t, "complete", build.Status)
@@ -177,19 +166,29 @@ func TestBuildList(t *testing.T) {
 	assert.Equal(t, ids[0], builds[10].Id)
 }
 
-func tarReader() io.Reader {
+type File struct {
+	Name, Body string
+}
+
+func tarReader(files ...File) io.Reader {
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
 
-	var files = []struct {
-		Name, Body string
-	}{
-		{"convox.yml", `services:
+	files = append(files,
+		File{
+			"convox.yml",
+			`services:
   web:
-    image: httpd
+    build: .
+    environment:
+      - FOO=
     port: 80`},
-		{"README.md", "hello"},
-	}
+		File{
+			"Dockerfile",
+			`FROM httpd
+COPY . .`,
+		},
+	)
 
 	for _, file := range files {
 		hdr := &tar.Header{
