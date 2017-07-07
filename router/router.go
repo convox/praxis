@@ -27,6 +27,7 @@ type Router struct {
 	Domain    string
 	Interface string
 	Subnet    string
+	Version   string
 
 	ca        tls.Certificate
 	dns       *DNS
@@ -36,7 +37,7 @@ type Router struct {
 	net       *net.IPNet
 }
 
-func New(domain, iface, subnet string) (*Router, error) {
+func New(version, domain, iface, subnet string) (*Router, error) {
 	ip, net, err := net.ParseCIDR(subnet)
 	if err != nil {
 		return nil, err
@@ -46,6 +47,7 @@ func New(domain, iface, subnet string) (*Router, error) {
 		Domain:    domain,
 		Interface: iface,
 		Subnet:    subnet,
+		Version:   version,
 		endpoints: map[string]Endpoint{},
 		ip:        ip,
 		net:       net,
@@ -66,6 +68,8 @@ func New(domain, iface, subnet string) (*Router, error) {
 	go d.Serve()
 
 	r.dns = d
+
+	fmt.Printf("ns=convox.router at=new version=%q domain=%q iface=%q subnet=%q\n", r.Version, r.Domain, r.Interface, r.Subnet)
 
 	return r, nil
 }
@@ -100,6 +104,9 @@ func (r *Router) Serve() error {
 	a.Route("DELETE", "/endpoints/{host}", r.EndpointDelete)
 
 	a.Route("POST", "/endpoints/{host}/proxies/{port}", r.ProxyCreate)
+
+	a.Route("GET", "/version", r.VersionGet)
+	a.Route("POST", "/version/{version}", r.VersionCheck)
 
 	if err := a.Listen("h2", fmt.Sprintf("%s:443", r.ip)); err != nil {
 		return err
