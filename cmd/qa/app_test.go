@@ -22,8 +22,9 @@ func TestAppCreate(t *testing.T) {
 	assert.Nil(t, app)
 
 	app, err = appCreate(Rack, "valid")
-	defer appDelete(Rack, app.Name)
 	assert.NoError(t, err)
+	defer appDelete(Rack, app.Name)
+
 	assert.EqualValues(t, &types.App{
 		Name:    "valid",
 		Release: "",
@@ -48,10 +49,10 @@ func TestAppDelete(t *testing.T) {
 	err = Rack.AppDelete("missing")
 	assert.EqualError(t, err, "no such app: missing")
 
-	_, err = Rack.AppCreate("valid")
+	app, err := appCreate(Rack, "valid")
 	assert.NoError(t, err)
-	err = Rack.AppDelete("valid")
-	assert.NoError(t, err)
+	err = appDelete(Rack, app.Name)
+	assert.EqualError(t, err, "no such app: valid")
 }
 
 func TestAppGet(t *testing.T) {
@@ -67,8 +68,9 @@ func TestAppGet(t *testing.T) {
 	assert.Nil(t, app)
 
 	app, err = appCreate(Rack, "valid")
-	defer appDelete(Rack, app.Name)
 	assert.NoError(t, err)
+	defer appDelete(Rack, app.Name)
+
 	a, err := Rack.AppGet("valid")
 	assert.NoError(t, err)
 	assert.EqualValues(t, app, a)
@@ -83,12 +85,12 @@ func TestAppList(t *testing.T) {
 	assert.EqualValues(t, types.Apps{}, apps)
 
 	app, err := appCreate(Rack, "foo")
-	defer appDelete(Rack, app.Name)
 	assert.NoError(t, err)
+	defer appDelete(Rack, app.Name)
 
 	app, err = appCreate(Rack, "bar")
-	defer appDelete(Rack, app.Name)
 	assert.NoError(t, err)
+	defer appDelete(Rack, app.Name)
 
 	apps, err = Rack.AppList()
 	assert.NoError(t, err)
@@ -111,6 +113,7 @@ func TestAppLogs(t *testing.T) {
 	assert.NoError(t, err)
 
 	app, err := appCreate(Rack, "valid")
+	assert.NoError(t, err)
 	defer appDelete(Rack, app.Name)
 
 	r, err := Rack.AppLogs(app.Name, types.LogsOptions{})
