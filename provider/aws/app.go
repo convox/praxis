@@ -9,10 +9,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
 
 func (p *Provider) AppCreate(name string) (*types.App, error) {
+	if err := helpers.ValidateAppName(name); err != nil {
+		return nil, err
+	}
+
 	data, err := formationTemplate("app", nil)
 	if err != nil {
 		return nil, err
@@ -44,6 +49,10 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 }
 
 func (p *Provider) AppDelete(name string) error {
+	if err := helpers.ValidateAppName(name); err != nil {
+		return err
+	}
+
 	bucket, _ := p.appResource(name, "Bucket")
 
 	_, err := p.CloudFormation().DeleteStack(&cloudformation.DeleteStackInput{
@@ -63,6 +72,10 @@ func (p *Provider) AppDelete(name string) error {
 }
 
 func (p *Provider) AppGet(name string) (*types.App, error) {
+	if err := helpers.ValidateAppName(name); err != nil {
+		return nil, err
+	}
+
 	stack, err := p.describeStack(fmt.Sprintf("%s-%s", p.Name, name))
 	if awsError(err) == "ValidationError" {
 		return nil, fmt.Errorf("no such app: %s", name)
