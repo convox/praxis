@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/simpledb"
+	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
@@ -137,6 +138,12 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 }
 
 func (p *Provider) ReleasePromote(app string, id string) error {
+	// clear the AppGet cache to avoid "response status 404"
+	err := cache.Clear("describeStack", fmt.Sprintf("%s-%s", p.Name, app))
+	if err != nil {
+		return err
+	}
+
 	a, err := p.AppGet(app)
 	if err != nil {
 		return err
@@ -343,9 +350,21 @@ func (p *Provider) releaseStore(release *types.Release) error {
 			return err
 		}
 
-		eo, err := p.ObjectStore(release.App, fmt.Sprintf("convox/release/%s/env", release.Id), bytes.NewReader(data), types.ObjectStoreOptions{})
-		if err != nil {
-			return err
+		var eo *types.Object
+		for i := 0; i < 5; i++ {
+			eo, err = p.ObjectStore(release.App, fmt.Sprintf("convox/release/%s/env", release.Id), bytes.NewReader(data), types.ObjectStoreOptions{})
+			if err != nil {
+				switch awsError(err) {
+				case "NoSuchBucket":
+					time.Sleep(1)
+					continue
+				default:
+					return err
+				}
+			}
+			if err == nil {
+				break
+			}
 		}
 
 		attrs = append(attrs, &simpledb.ReplaceableAttribute{
