@@ -144,7 +144,7 @@ func (p *Provider) BuildLogs(app, id string) (io.ReadCloser, error) {
 	}
 
 	switch build.Status {
-	case "running":
+	case "created", "running":
 		log.Success()
 		return p.ProcessLogs(app, build.Process, types.LogsOptions{Follow: true, Prefix: false})
 	default:
