@@ -16,26 +16,27 @@ func TestProcessRun(t *testing.T) {
 	Rack, err := rack.NewFromEnv()
 	assert.NoError(t, err)
 
-	app, err := appCreate(Rack, "valid")
+	name := fmt.Sprintf("test-%d", time.Now().Unix())
+	_, err = appCreate(Rack, name)
 	assert.NoError(t, err)
-	defer appDelete(Rack, "valid")
+	defer appDelete(Rack, name)
 
-	code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{})
+	code, err := Rack.ProcessRun(name, types.ProcessRunOptions{})
 	assert.EqualError(t, err, "Output is required")
 	assert.Equal(t, 255, code)
 
 	logs := bytes.NewBuffer([]byte{})
-	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+	code, err = Rack.ProcessRun(name, types.ProcessRunOptions{
 		Output: logs,
 	})
 	assert.EqualError(t, err, "Image or service is required")
 	assert.Equal(t, 255, code)
 
-	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+	code, err = Rack.ProcessRun(name, types.ProcessRunOptions{
 		Output:  logs,
 		Service: "web",
 	})
-	assert.EqualError(t, err, "[no release promoted for app: valid]")
+	assert.EqualError(t, err, fmt.Sprintf("[no release promoted for app: %s]", name))
 	assert.Equal(t, 255, code)
 
 	bs, err := ioutil.ReadAll(logs)
@@ -44,7 +45,7 @@ func TestProcessRun(t *testing.T) {
 
 	assert.Equal(t, "", out)
 
-	r, err := Rack.ReleaseCreate(app.Name, types.ReleaseCreateOptions{
+	r, err := Rack.ReleaseCreate(name, types.ReleaseCreateOptions{
 		Env: map[string]string{
 			"FOO": "bar",
 		},
@@ -53,40 +54,40 @@ func TestProcessRun(t *testing.T) {
 	assert.NotEmpty(t, r.Id)
 
 	logs = bytes.NewBuffer([]byte{})
-	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+	code, err = Rack.ProcessRun(name, types.ProcessRunOptions{
 		Output:  logs,
 		Service: "web",
 	})
-	assert.EqualError(t, err, "[no release promoted for app: valid]")
+	assert.EqualError(t, err, fmt.Sprintf("[no release promoted for app: %s]", name))
 	assert.Equal(t, 255, code)
 
-	obj, err := Rack.ObjectStore(app.Name, "", tarReader(), types.ObjectStoreOptions{})
+	obj, err := Rack.ObjectStore(name, "", tarReader(), types.ObjectStoreOptions{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, obj.Key)
 
-	b, err := Rack.BuildCreate(app.Name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{})
+	b, err := Rack.BuildCreate(name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, b.Id)
 
-	l, err := Rack.BuildLogs(app.Name, b.Id)
+	l, err := Rack.BuildLogs(name, b.Id)
 	assert.NoError(t, err)
 	_, err = ioutil.ReadAll(l)
 	assert.NoError(t, err)
 
-	b, err = Rack.BuildGet(app.Name, b.Id)
+	b, err = Rack.BuildGet(name, b.Id)
 	assert.NoError(t, err)
 
-	err = Rack.ReleasePromote(app.Name, b.Release)
+	err = Rack.ReleasePromote(name, b.Release)
 	assert.NoError(t, err)
 
-	l, err = Rack.ReleaseLogs(app.Name, b.Release, types.LogsOptions{
+	l, err = Rack.ReleaseLogs(name, b.Release, types.LogsOptions{
 		Follow: true,
 	})
 	assert.NoError(t, err)
 	_, err = ioutil.ReadAll(l)
 	assert.NoError(t, err)
 
-	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+	code, err = Rack.ProcessRun(name, types.ProcessRunOptions{
 		Output:  logs,
 		Service: "thunk",
 	})
@@ -94,7 +95,7 @@ func TestProcessRun(t *testing.T) {
 	assert.Equal(t, 255, code)
 
 	logs = bytes.NewBuffer([]byte{})
-	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+	code, err = Rack.ProcessRun(name, types.ProcessRunOptions{
 		Command: "echo hi",
 		Output:  logs,
 		Service: "web",
@@ -114,7 +115,7 @@ func TestProcessRun(t *testing.T) {
 	for i := 0; i < n; i++ {
 		go func() {
 			logs = bytes.NewBuffer([]byte{})
-			code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+			code, err = Rack.ProcessRun(name, types.ProcessRunOptions{
 				Command: "echo hi",
 				Output:  logs,
 				Service: "web",
@@ -136,11 +137,12 @@ func TestProcessRunReleases(t *testing.T) {
 	Rack, err := rack.NewFromEnv()
 	assert.NoError(t, err)
 
-	app, err := appCreate(Rack, "valid")
+	name := fmt.Sprintf("test-%d", time.Now().Unix())
+	_, err = appCreate(Rack, name)
 	assert.NoError(t, err)
-	defer appDelete(Rack, "valid")
+	defer appDelete(Rack, name)
 
-	r, err := Rack.ReleaseCreate(app.Name, types.ReleaseCreateOptions{
+	r, err := Rack.ReleaseCreate(name, types.ReleaseCreateOptions{
 		Env: map[string]string{
 			"FOO": "bar",
 		},
@@ -149,25 +151,25 @@ func TestProcessRunReleases(t *testing.T) {
 	assert.NotEmpty(t, r.Id)
 	r1 := r.Id
 
-	obj, err := Rack.ObjectStore(app.Name, "", tarReader(File{"a.txt", "a"}), types.ObjectStoreOptions{})
+	obj, err := Rack.ObjectStore(name, "", tarReader(File{"a.txt", "a"}), types.ObjectStoreOptions{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, obj.Key)
 
-	b, err := Rack.BuildCreate(app.Name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{})
+	b, err := Rack.BuildCreate(name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, b.Id)
 
-	l, err := Rack.BuildLogs(app.Name, b.Id)
+	l, err := Rack.BuildLogs(name, b.Id)
 	assert.NoError(t, err)
 	_, err = ioutil.ReadAll(l)
 	assert.NoError(t, err)
 
-	b, err = Rack.BuildGet(app.Name, b.Id)
+	b, err = Rack.BuildGet(name, b.Id)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, b.Release)
 	r2 := b.Release
 
-	r, err = Rack.ReleaseCreate(app.Name, types.ReleaseCreateOptions{
+	r, err = Rack.ReleaseCreate(name, types.ReleaseCreateOptions{
 		Env: map[string]string{
 			"FOO": "baz",
 		},
@@ -176,41 +178,41 @@ func TestProcessRunReleases(t *testing.T) {
 	assert.NotEmpty(t, r.Id)
 	r3 := r.Id
 
-	obj, err = Rack.ObjectStore(app.Name, "", tarReader(File{"b.txt", "b"}), types.ObjectStoreOptions{})
+	obj, err = Rack.ObjectStore(name, "", tarReader(File{"b.txt", "b"}), types.ObjectStoreOptions{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, obj.Key)
 
-	b, err = Rack.BuildCreate(app.Name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{})
+	b, err = Rack.BuildCreate(name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, b.Id)
 
-	l, err = Rack.BuildLogs(app.Name, b.Id)
+	l, err = Rack.BuildLogs(name, b.Id)
 	assert.NoError(t, err)
 	_, err = ioutil.ReadAll(l)
 	assert.NoError(t, err)
 
-	b, err = Rack.BuildGet(app.Name, b.Id)
+	b, err = Rack.BuildGet(name, b.Id)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, b.Release)
 	r4 := b.Release
 
 	logs := bytes.NewBuffer([]byte{})
-	code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+	code, err := Rack.ProcessRun(name, types.ProcessRunOptions{
 		Command: "env ; ls",
 		Output:  logs,
 		Service: "web",
 	})
-	assert.EqualError(t, err, "[no release promoted for app: valid]")
+	assert.EqualError(t, err, fmt.Sprintf("[no release promoted for app: %s]", name))
 	assert.Equal(t, 255, code)
 
 	logs = bytes.NewBuffer([]byte{})
-	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+	code, err = Rack.ProcessRun(name, types.ProcessRunOptions{
 		Command: "env ; ls",
 		Output:  logs,
 		Release: r1,
 		Service: "web",
 	})
-	assert.EqualError(t, err, "[no builds for app: valid]")
+	assert.EqualError(t, err, fmt.Sprintf("[no builds for app: %s]", name))
 	assert.Equal(t, 255, code)
 
 	bs, err := ioutil.ReadAll(logs)
@@ -219,7 +221,7 @@ func TestProcessRunReleases(t *testing.T) {
 	assert.Equal(t, "", out)
 
 	logs = bytes.NewBuffer([]byte{})
-	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+	code, err = Rack.ProcessRun(name, types.ProcessRunOptions{
 		Command: "env ; ls",
 		Output:  logs,
 		Release: r2,
@@ -234,7 +236,7 @@ func TestProcessRunReleases(t *testing.T) {
 	assert.Contains(t, out, "a.txt")
 
 	logs = bytes.NewBuffer([]byte{})
-	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+	code, err = Rack.ProcessRun(name, types.ProcessRunOptions{
 		Command: "env ; ls",
 		Output:  logs,
 		Release: r3,
@@ -249,7 +251,7 @@ func TestProcessRunReleases(t *testing.T) {
 	assert.Contains(t, out, "a.txt")
 
 	logs = bytes.NewBuffer([]byte{})
-	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+	code, err = Rack.ProcessRun(name, types.ProcessRunOptions{
 		Command: "env ; ls",
 		Output:  logs,
 		Release: r4,
