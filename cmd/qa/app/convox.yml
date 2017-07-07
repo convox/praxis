@@ -1,0 +1,6 @@
+services:
+  web:
+    build: .
+    environment:
+      - FOO=
+    port: 80
