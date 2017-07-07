@@ -6,10 +6,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/convox/praxis/api"
+	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
@@ -240,6 +242,26 @@ func ProcessRun(rw io.ReadWriteCloser, c *api.Context) error {
 		opts.Links = strings.Split(links, ",")
 	}
 
+	if opts.Release == "" {
+		// clear the AppGet cache to avoid "no releases for app"
+		// TODO: leaking aws caching into controller
+		err := cache.Clear("describeStack", fmt.Sprintf("%s-%s", os.Getenv("NAME"), app))
+		if err != nil {
+			return err
+		}
+
+		a, err := Provider.AppGet(app)
+		if err != nil {
+			return helpers.CodeError(rw, 255, err)
+		}
+
+		if a.Release == "" {
+			return helpers.CodeError(rw, 255, fmt.Errorf("no release promoted for app: %s", app))
+		}
+
+		opts.Release = a.Release
+	}
+
 	if opts.Service != "" {
 		m, _, err := helpers.ReleaseManifest(Provider, app, opts.Release)
 		if err != nil {
@@ -329,6 +351,26 @@ func ProcessStart(w http.ResponseWriter, r *http.Request, c *api.Context) error 
 
 	if links != "" {
 		opts.Links = strings.Split(links, ",")
+	}
+
+	if opts.Release == "" {
+		// clear the AppGet cache to avoid "no releases for app"
+		// TODO: leaking aws caching into controller
+		err := cache.Clear("describeStack", fmt.Sprintf("%s-%s", os.Getenv("NAME"), app))
+		if err != nil {
+			return err
+		}
+
+		a, err := Provider.AppGet(app)
+		if err != nil {
+			return err
+		}
+
+		if a.Release == "" {
+			return fmt.Errorf("no release promoted for app: %s", app)
+		}
+
+		opts.Release = a.Release
 	}
 
 	pid, err := Provider.ProcessStart(app, opts)
