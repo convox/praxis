@@ -65,7 +65,7 @@ func runTest(c *cli.Context) error {
 
 	defer Rack(c).AppDelete(name)
 
-	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(Rack(c), name, "creating")); err != nil {
+	if err := tickWithTimeout(2*time.Second, 2*time.Minute, notAppStatus(Rack(c), name, "creating")); err != nil {
 		return err
 	}
 
