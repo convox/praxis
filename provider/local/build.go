@@ -130,7 +130,11 @@ func (p *Provider) BuildList(app string) (types.Builds, error) {
 		builds[i] = *build
 	}
 
-	sort.Slice(builds, func(i, j int) bool { return builds[i].Created.Before(builds[j].Created) })
+	sort.Slice(builds, func(i, j int) bool { return builds[i].Created.After(builds[j].Created) })
+
+	if len(builds) > 10 {
+		builds = builds[0:10]
+	}
 
 	return builds, log.Success()
 }
