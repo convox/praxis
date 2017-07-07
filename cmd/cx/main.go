@@ -57,7 +57,7 @@ func init() {
 	cliID()
 }
 
-var sysExitCode = 255 // Used to indicate an internal system error
+const SysExitCode = 255 // Used to indicate an internal system error
 
 func main() {
 	if err := run(); err != nil {
@@ -65,7 +65,7 @@ func main() {
 		if ee, ok := err.(*cli.ExitError); ok {
 			os.Exit(ee.ExitCode())
 		}
-		os.Exit(sysExitCode)
+		os.Exit(SysExitCode)
 	}
 }
 
