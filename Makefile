@@ -43,8 +43,6 @@ qa:
 	chmod +x /usr/local/bin/cx
 	sudo cx rack install local --version $(RELEASE)
 	sleep 5
-	cx rack update $(RELEASE)
-	sleep 5
 	cx version
 	RACK_URL=https://localhost:5443 go test -v ./cmd/qa/...
 	# aws
