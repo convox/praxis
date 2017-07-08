@@ -1,7 +1,8 @@
 .PHONY: all build check cli ci coverage dev image lint mocks release stats test vendor
 
+DATE=$(shell date +%Y%m%d%H%M%S)
 RELEASE ?= latest
-VERSION ?= $(shell date +%Y%m%d%H%M%S)
+VERSION ?= $(DATE)
 
 all: build
 
@@ -35,16 +36,20 @@ mocks:
 	mockery -all -dir types
 
 qa:
+	# local
 	sudo cx rack uninstall local
 	rm -rf /Users/Shared/convox
 	curl https://s3.amazonaws.com/praxis-releases/release/$(RELEASE)/cli/darwin/cx -o /usr/local/bin/cx
 	chmod +x /usr/local/bin/cx
 	sudo cx rack install local --version $(RELEASE)
-	sleep 2
+	sleep 5
+	cx rack update $(RELEASE)
+	sleep 5
 	cx version
 	RACK_URL=https://localhost:5443 go test -v ./cmd/qa/...
-	# cx rack install aws --name test-$(RELEASE) --version $(RELEASE) | tee /tmp/install-$(RELEASE).log
-
+	# aws
+	cx rack install aws --name test-$(DATE) --version $(RELEASE) | tee /tmp/install-$(RELEASE).log
+	export $$(tail -1 /tmp/install-$(RELEASE).log) && cx rack && go test -v ./cmd/qa/...
 
 release:
 	docker build -t convox/praxis:$(VERSION) .
