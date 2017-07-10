@@ -49,15 +49,14 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 }
 
 func (p *Provider) AppDelete(name string) error {
-	app, err := p.AppGet(name)
-	if err != nil {
+	if err := helpers.ValidateAppName(name); err != nil {
 		return err
 	}
 
-	bucket, _ := p.appResource(app.Name, "Bucket")
+	bucket, _ := p.appResource(name, "Bucket")
 
-	_, err = p.CloudFormation().DeleteStack(&cloudformation.DeleteStackInput{
-		StackName: aws.String(fmt.Sprintf("%s-%s", p.Name, app.Name)),
+	_, err := p.CloudFormation().DeleteStack(&cloudformation.DeleteStackInput{
+		StackName: aws.String(fmt.Sprintf("%s-%s", p.Name, name)),
 	})
 	if err != nil {
 		return err
