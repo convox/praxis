@@ -19,36 +19,35 @@ func TestBuildCreate(t *testing.T) {
 	Rack, err := rack.NewFromEnv()
 	assert.NoError(t, err)
 
-	name := fmt.Sprintf("test-%d", time.Now().Unix())
-	_, err = appCreate(Rack, name)
+	app, err := Rack.AppCreate("valid")
+	defer Rack.AppDelete("valid")
 	assert.NoError(t, err)
-	defer appDelete(Rack, name)
 
 	build, err := Rack.BuildCreate("invalid", "object:///thunk", types.BuildCreateOptions{})
 	assert.EqualError(t, err, "no such app: invalid")
 
-	build, err = Rack.BuildCreate(name, "", types.BuildCreateOptions{})
+	build, err = Rack.BuildCreate("valid", "", types.BuildCreateOptions{})
 	assert.NoError(t, err)
 	// assert.EqualError(t, err, "object is required") // FIXME
 
-	build, err = Rack.BuildCreate(name, "invalid", types.BuildCreateOptions{})
+	build, err = Rack.BuildCreate("valid", "invalid", types.BuildCreateOptions{})
 	assert.NoError(t, err)
 	// assert.EqualError(t, err, "object url is invalid") // FIXME
 
-	build, err = Rack.BuildCreate(name, "object://missing", types.BuildCreateOptions{})
+	build, err = Rack.BuildCreate("valid", "object://missing", types.BuildCreateOptions{})
 	assert.NoError(t, err)
 	// assert.EqualError(t, err, "object does not exist") // FIXME
 
-	obj, err := Rack.ObjectStore(name, "", tarReader(), types.ObjectStoreOptions{})
+	obj, err := Rack.ObjectStore(app.Name, "", tarReader(), types.ObjectStoreOptions{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, obj.Key)
 
-	build, err = Rack.BuildCreate(name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{})
+	build, err = Rack.BuildCreate(app.Name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{})
 	assert.NoError(t, err)
 	assert.Regexp(t, "B[A-Z]{9}", build.Id)
-	assert.Equal(t, name, build.App)
+	assert.Equal(t, "valid", build.App)
 	assert.Equal(t, "", build.Manifest)
-	assert.Regexp(t, "[a-z0-9-]{36,64}", build.Process)
+	assert.Regexp(t, "[a-z0-9]{64}", build.Process)
 	assert.Equal(t, "", build.Release)
 	assert.Equal(t, "created", build.Status)
 	assert.WithinDuration(t, time.Now(), build.Created, 2*time.Minute)
@@ -61,21 +60,20 @@ func TestBuildCreateOptions(t *testing.T) {
 	Rack, err := rack.NewFromEnv()
 	assert.NoError(t, err)
 
-	name := fmt.Sprintf("test-%d", time.Now().Unix())
-	_, err = appCreate(Rack, name)
+	app, err := Rack.AppCreate("valid")
+	defer Rack.AppDelete("valid")
 	assert.NoError(t, err)
-	defer appDelete(Rack, name)
 
-	obj, err := Rack.ObjectStore(name, "", tarReader(), types.ObjectStoreOptions{})
+	obj, err := Rack.ObjectStore(app.Name, "", tarReader(), types.ObjectStoreOptions{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, obj.Key)
 
-	b, err := Rack.BuildCreate(name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{
+	b, err := Rack.BuildCreate(app.Name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{
 		Manifest: "missing.yml",
 	})
 	assert.NoError(t, err)
 
-	logs, err := Rack.BuildLogs(name, b.Id)
+	logs, err := Rack.BuildLogs(app.Name, b.Id)
 	assert.NoError(t, err)
 
 	bs, err := ioutil.ReadAll(logs)
@@ -85,12 +83,12 @@ func TestBuildCreateOptions(t *testing.T) {
 	assert.Contains(t, out, "Step 1/2 : FROM httpd")
 	// assert.Contains(t, out, "missing.yml: no such file or directory") // FIXME
 
-	b, err = Rack.BuildCreate(name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{
+	b, err = Rack.BuildCreate(app.Name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{
 		Cache: false,
 	})
 	assert.NoError(t, err)
 
-	logs, err = Rack.BuildLogs(name, b.Id)
+	logs, err = Rack.BuildLogs(app.Name, b.Id)
 	assert.NoError(t, err)
 
 	bs, err = ioutil.ReadAll(logs)
@@ -105,19 +103,18 @@ func TestBuildGetLogs(t *testing.T) {
 	Rack, err := rack.NewFromEnv()
 	assert.NoError(t, err)
 
-	name := fmt.Sprintf("test-%d", time.Now().Unix())
-	_, err = appCreate(Rack, name)
+	app, err := Rack.AppCreate("valid")
+	defer Rack.AppDelete("valid")
 	assert.NoError(t, err)
-	defer appDelete(Rack, name)
 
-	obj, err := Rack.ObjectStore(name, "", tarReader(), types.ObjectStoreOptions{})
+	obj, err := Rack.ObjectStore(app.Name, "", tarReader(), types.ObjectStoreOptions{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, obj.Key)
 
-	b, err := Rack.BuildCreate(name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{})
+	b, err := Rack.BuildCreate(app.Name, fmt.Sprintf("object:///%s", obj.Key), types.BuildCreateOptions{})
 	assert.NoError(t, err)
 
-	logs, err := Rack.BuildLogs(name, b.Id)
+	logs, err := Rack.BuildLogs(app.Name, b.Id)
 	assert.NoError(t, err)
 
 	bytes, err := ioutil.ReadAll(logs)
@@ -129,11 +126,11 @@ func TestBuildGetLogs(t *testing.T) {
 	assert.Contains(t, out, "building: .")
 	assert.Contains(t, out, "Step 1/2 : FROM httpd")
 	assert.Contains(t, out, "running: docker tag")
-	assert.Contains(t, out, fmt.Sprintf("%s/web:%s", name, b.Id))
+	assert.Contains(t, out, fmt.Sprintf("convox/valid/web:%s", b.Id))
 	assert.Contains(t, out, "storing artifacts")
 	assert.Contains(t, out, "build complete")
 
-	build, err := Rack.BuildGet(name, b.Id)
+	build, err := Rack.BuildGet(app.Name, b.Id)
 	assert.Equal(t, b.Id, build.Id)
 	assert.Equal(t, b.App, build.App)
 	assert.Equal(t, "services:\n  web:\n    build: .\n    environment:\n      - FOO=\n    port: 80", build.Manifest)
@@ -149,19 +146,18 @@ func TestBuildList(t *testing.T) {
 	Rack, err := rack.NewFromEnv()
 	assert.NoError(t, err)
 
-	name := fmt.Sprintf("test-%d", time.Now().Unix())
-	_, err = appCreate(Rack, name)
+	app, err := Rack.AppCreate("valid")
+	defer Rack.AppDelete("valid")
 	assert.NoError(t, err)
-	defer Rack.AppDelete(name)
 
 	ids := []string{}
 	for i := 0; i < 11; i++ {
-		b, err := Rack.BuildCreate(name, "", types.BuildCreateOptions{})
+		b, err := Rack.BuildCreate(app.Name, "", types.BuildCreateOptions{})
 		assert.NoError(t, err)
 		ids = append(ids, b.Id)
 	}
 
-	builds, err := Rack.BuildList(name)
+	builds, err := Rack.BuildList(app.Name)
 	assert.NoError(t, err)
 
 	assert.Len(t, builds, 11)

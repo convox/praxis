@@ -23,7 +23,7 @@ func TestAppCreate(t *testing.T) {
 
 	app, err = appCreate(Rack, "valid")
 	assert.NoError(t, err)
-	defer appDelete(Rack, "valid")
+	defer appDelete(Rack, app.Name)
 
 	assert.EqualValues(t, &types.App{
 		Name:    "valid",
@@ -69,7 +69,7 @@ func TestAppGet(t *testing.T) {
 
 	app, err = appCreate(Rack, "valid")
 	assert.NoError(t, err)
-	defer appDelete(Rack, "valid")
+	defer appDelete(Rack, app.Name)
 
 	a, err := Rack.AppGet("valid")
 	assert.NoError(t, err)
@@ -84,13 +84,13 @@ func TestAppList(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualValues(t, types.Apps{}, apps)
 
-	_, err = appCreate(Rack, "foo")
+	app, err := appCreate(Rack, "foo")
 	assert.NoError(t, err)
-	defer appDelete(Rack, "foo")
+	defer appDelete(Rack, app.Name)
 
-	_, err = appCreate(Rack, "bar")
+	app, err = appCreate(Rack, "bar")
 	assert.NoError(t, err)
-	defer appDelete(Rack, "bar")
+	defer appDelete(Rack, app.Name)
 
 	apps, err = Rack.AppList()
 	assert.NoError(t, err)
@@ -114,7 +114,7 @@ func TestAppLogs(t *testing.T) {
 
 	app, err := appCreate(Rack, "valid")
 	assert.NoError(t, err)
-	defer appDelete(Rack, "valid")
+	defer appDelete(Rack, app.Name)
 
 	r, err := Rack.AppLogs(app.Name, types.LogsOptions{})
 	assert.NoError(t, err)
