@@ -11,7 +11,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/types"
 	docker "github.com/fsouza/go-dockerclient"
 	shellquote "github.com/kballard/go-shellquote"
@@ -241,12 +240,6 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 }
 
 func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
-	// clear the AppGet cache to avoid "no releases for app"
-	err := cache.Clear("describeStack", fmt.Sprintf("%s-%s", p.Name, app))
-	if err != nil {
-		return "", err
-	}
-
 	cluster, err := p.rackResource("RackCluster")
 	if err != nil {
 		return "", err
