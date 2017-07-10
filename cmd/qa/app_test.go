@@ -25,18 +25,19 @@ func TestAppCreate(t *testing.T) {
 	assert.EqualError(t, err, "app name invalid")
 	assert.Nil(t, app)
 
-	app, err = appCreate(Rack, "valid")
+	name := fmt.Sprintf("test-%d", time.Now().Unix())
+	app, err = appCreate(Rack, name)
 	assert.NoError(t, err)
-	defer appDelete(Rack, "valid")
+	defer appDelete(Rack, name)
 
 	assert.EqualValues(t, &types.App{
-		Name:    "valid",
+		Name:    name,
 		Release: "",
 		Status:  "running",
 	}, app)
 
-	app, err = Rack.AppCreate("valid")
-	assert.EqualError(t, err, "app already exists: valid")
+	app, err = Rack.AppCreate(name)
+	assert.EqualError(t, err, fmt.Sprintf("app already exists: %s", name))
 	assert.Nil(t, app)
 }
 
@@ -53,10 +54,11 @@ func TestAppDelete(t *testing.T) {
 	err = Rack.AppDelete("missing")
 	assert.EqualError(t, err, "no such app: missing")
 
-	app, err := appCreate(Rack, "valid")
+	name := fmt.Sprintf("test-%d", time.Now().Unix())
+	_, err = appCreate(Rack, name)
 	assert.NoError(t, err)
-	err = appDelete(Rack, app.Name)
-	assert.EqualError(t, err, "no such app: valid")
+	err = appDelete(Rack, name)
+	assert.EqualError(t, err, fmt.Sprintf("no such app: %s", name))
 }
 
 func TestAppGet(t *testing.T) {
@@ -71,11 +73,12 @@ func TestAppGet(t *testing.T) {
 	assert.EqualError(t, err, "app name invalid")
 	assert.Nil(t, app)
 
-	app, err = appCreate(Rack, "valid")
+	name := fmt.Sprintf("test-%d", time.Now().Unix())
+	app, err = appCreate(Rack, name)
 	assert.NoError(t, err)
-	defer appDelete(Rack, "valid")
+	defer appDelete(Rack, name)
 
-	a, err := Rack.AppGet("valid")
+	a, err := Rack.AppGet(name)
 	assert.NoError(t, err)
 	assert.EqualValues(t, app, a)
 }
@@ -88,24 +91,26 @@ func TestAppList(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualValues(t, types.Apps{}, apps)
 
-	_, err = appCreate(Rack, "foo")
+	name1 := fmt.Sprintf("foo-%d", time.Now().Unix())
+	_, err = appCreate(Rack, name1)
 	assert.NoError(t, err)
-	defer appDelete(Rack, "foo")
+	defer appDelete(Rack, name1)
 
-	_, err = appCreate(Rack, "bar")
+	name2 := fmt.Sprintf("bar-%d", time.Now().Unix())
+	_, err = appCreate(Rack, name2)
 	assert.NoError(t, err)
-	defer appDelete(Rack, "bar")
+	defer appDelete(Rack, name2)
 
 	apps, err = Rack.AppList()
 	assert.NoError(t, err)
 	assert.EqualValues(t, types.Apps{
 		types.App{
-			Name:    "bar",
+			Name:    name2,
 			Release: "",
 			Status:  "running",
 		},
 		types.App{
-			Name:    "foo",
+			Name:    name1,
 			Release: "",
 			Status:  "running",
 		},
@@ -115,11 +120,12 @@ func TestAppLogs(t *testing.T) {
 	Rack, err := rack.NewFromEnv()
 	assert.NoError(t, err)
 
-	app, err := appCreate(Rack, "valid")
+	name := fmt.Sprintf("test-%d", time.Now().Unix())
+	_, err = appCreate(Rack, name)
 	assert.NoError(t, err)
-	defer appDelete(Rack, "valid")
+	defer appDelete(Rack, name)
 
-	r, err := Rack.AppLogs(app.Name, types.LogsOptions{})
+	r, err := Rack.AppLogs(name, types.LogsOptions{})
 	assert.NoError(t, err)
 	b, err := ioutil.ReadAll(r)
 	assert.NoError(t, err)
@@ -133,10 +139,11 @@ func TestAppRegistry(t *testing.T) {
 	Rack, err := rack.NewFromEnv()
 	assert.NoError(t, err)
 
-	app, err := appCreate(Rack, "valid")
-	defer appDelete(Rack, app.Name)
+	name := fmt.Sprintf("test-%d", time.Now().Unix())
+	_, err = appCreate(Rack, name)
+	defer appDelete(Rack, name)
 
-	r, err := Rack.AppRegistry(app.Name)
+	r, err := Rack.AppRegistry(name)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, r.Hostname)
 }
