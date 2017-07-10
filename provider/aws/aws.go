@@ -444,8 +444,6 @@ func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOp
 		req.StartTime = aws.Int64(opts.Since.UTC().Unix() * 1000)
 	}
 
-	retries := 0
-
 	for {
 		// Always make sure there is something we can write to
 		if _, err := fmt.Fprintf(w, ""); err != nil {
@@ -465,15 +463,6 @@ func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOp
 			return true
 		})
 		if err != nil {
-			switch awsError(err) {
-			case "ResourceNotFoundException":
-				// retry a couple times for newly created log streams
-				retries++
-				if retries < 5 {
-					time.Sleep(1)
-					continue
-				}
-			}
 			fmt.Fprintf(os.Stderr, "error: %s\n", err)
 			break
 		}
