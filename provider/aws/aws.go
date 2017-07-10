@@ -606,7 +606,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 
 	logs, err := p.appResource(app, "Logs")
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 
 	req := &ecs.RegisterTaskDefinitionInput{
@@ -672,12 +672,12 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		if opts.Service != "" {
 			account, err := p.accountID()
 			if err != nil {
-				return "", err
+				return "", errors.WithStack(err)
 			}
 
 			repo, err := p.appResource(app, "Repository")
 			if err != nil {
-				return "", err
+				return "", errors.WithStack(err)
 			}
 
 			opts.Image = fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s:%s.%s", account, p.Region, repo, opts.Service, release.Build)
@@ -750,12 +750,12 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 
 	endpoint, err := p.stackOutput(p.Name, "Endpoint")
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 
 	u, err := url.Parse(endpoint)
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 
 	u.User = url.UserPassword(p.Password, "")
@@ -804,7 +804,7 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 
 	res, err := p.ECS().RegisterTaskDefinition(req)
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 
 	return *res.TaskDefinition.TaskDefinitionArn, nil

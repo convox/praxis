@@ -301,7 +301,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		// app environment
 		menv, err := helpers.AppEnvironment(p, a.Name)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 
 		for k, v := range menv {
