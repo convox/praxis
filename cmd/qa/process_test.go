@@ -17,8 +17,8 @@ func TestProcessRun(t *testing.T) {
 	assert.NoError(t, err)
 
 	app, err := appCreate(Rack, "valid")
+	defer appDelete(Rack, app.Name)
 	assert.NoError(t, err)
-	defer appDelete(Rack, "valid")
 
 	code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{})
 	assert.EqualError(t, err, "Output is required")
@@ -137,8 +137,8 @@ func TestProcessRunReleases(t *testing.T) {
 	assert.NoError(t, err)
 
 	app, err := appCreate(Rack, "valid")
+	defer appDelete(Rack, app.Name)
 	assert.NoError(t, err)
-	defer appDelete(Rack, "valid")
 
 	r, err := Rack.ReleaseCreate(app.Name, types.ReleaseCreateOptions{
 		Env: map[string]string{
