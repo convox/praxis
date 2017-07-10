@@ -21,10 +21,6 @@ const (
 func (p *Provider) AppCreate(name string) (*types.App, error) {
 	log := p.logger("AppCreate").Append("name=%q", name)
 
-	if err := helpers.ValidateAppName(name); err != nil {
-		return nil, log.Error(err)
-	}
-
 	if p.storageExists(fmt.Sprintf("apps/%s/app.json", name)) {
 		return nil, log.Error(fmt.Errorf("app already exists: %s", name))
 	}
@@ -41,29 +37,25 @@ func (p *Provider) AppCreate(name string) (*types.App, error) {
 	return app, log.Success()
 }
 
-func (p *Provider) AppDelete(name string) error {
-	log := p.logger("AppDelete").Append("app=%q", name)
+func (p *Provider) AppDelete(app string) error {
+	log := p.logger("AppDelete").Append("app=%q", app)
 
-	if err := helpers.ValidateAppName(name); err != nil {
+	if _, err := p.AppGet(app); err != nil {
 		return log.Error(err)
 	}
 
-	if _, err := p.AppGet(name); err != nil {
-		return log.Error(err)
-	}
-
-	pss, err := p.ProcessList(name, types.ProcessListOptions{})
+	pss, err := p.ProcessList(app, types.ProcessListOptions{})
 	if err != nil {
 		return errors.WithStack(log.Error(err))
 	}
 
 	for _, ps := range pss {
-		if err := p.ProcessStop(name, ps.Id); err != nil {
+		if err := p.ProcessStop(app, ps.Id); err != nil {
 			return errors.WithStack(log.Error(err))
 		}
 	}
 
-	if err := p.storageDeleteAll(fmt.Sprintf("apps/%s", name)); err != nil {
+	if err := p.storageDeleteAll(fmt.Sprintf("apps/%s", app)); err != nil {
 		return errors.WithStack(log.Error(err))
 	}
 
@@ -72,10 +64,6 @@ func (p *Provider) AppDelete(name string) error {
 
 func (p *Provider) AppGet(name string) (*types.App, error) {
 	log := p.logger("AppGet").Append("name=%q", name)
-
-	if err := helpers.ValidateAppName(name); err != nil {
-		return nil, log.Error(err)
-	}
 
 	var app types.App
 
