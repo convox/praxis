@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -16,12 +15,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	var port = flag.Int("port", 3000, "port to listen on")
-	flag.Parse()
+	// go http.ListenAndServe(":3001", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	//   u := r.URL
 
-	addr := fmt.Sprintf(":%d", *port)
+	//   u.Host = strings.Split(r.Host, ":")[0]
+	//   u.Scheme = "https"
 
-	if err := s.Listen("tcp", addr); err != nil {
+	//   http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
+	// }))
+
+	if err := s.Listen("tcp", ":3000"); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
 		os.Exit(1)
 	}
