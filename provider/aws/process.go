@@ -113,7 +113,7 @@ func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
 	}
 
 	if ps.App != app {
-		return nil, fmt.Errorf("process not found: %s", pid)
+		return nil, fmt.Errorf("process not found: %s\n", pid)
 	}
 
 	return ps, nil
@@ -214,28 +214,12 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 			return 0, err
 		}
 
-		code, err := p.ProcessExec(app, pid, opts.Command, types.ProcessExecOptions{
+		return p.ProcessExec(app, pid, opts.Command, types.ProcessExecOptions{
 			Height: opts.Height,
 			Width:  opts.Width,
 			Input:  opts.Input,
 			Output: opts.Output,
 		})
-
-		// terminate parent to free up task reservation
-		serr := p.ProcessStop(app, pid)
-
-		// report exec error
-		if err != nil {
-			return code, err
-		}
-
-		// report terminate error
-		if serr != nil {
-			return code, serr
-		}
-
-		// success
-		return code, nil
 	}
 
 	if err := p.ECS().WaitUntilTasksStopped(treq); err != nil {
