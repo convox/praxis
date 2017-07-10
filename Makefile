@@ -1,6 +1,5 @@
 .PHONY: all build check cli ci coverage dev image lint mocks release stats test vendor
 
-RELEASE ?= latest
 VERSION ?= $(shell date +%Y%m%d%H%M%S)
 
 all: build
@@ -33,18 +32,6 @@ mocks:
 	go get -u github.com/vektra/mockery/.../
 	rm -rf mocks
 	mockery -all -dir types
-
-qa:
-	sudo cx rack uninstall local
-	rm -rf /Users/Shared/convox
-	curl https://s3.amazonaws.com/praxis-releases/release/$(RELEASE)/cli/darwin/cx -o /usr/local/bin/cx
-	chmod +x /usr/local/bin/cx
-	sudo cx rack install local --version $(RELEASE)
-	sleep 2
-	cx version
-	RACK_URL=https://localhost:5443 go test -v ./cmd/qa/...
-	# cx rack install aws --name test-$(RELEASE) --version $(RELEASE) | tee /tmp/install-$(RELEASE).log
-
 
 release:
 	docker build -t convox/praxis:$(VERSION) .
