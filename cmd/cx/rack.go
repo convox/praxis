@@ -145,11 +145,7 @@ func runRackInstall(c *cli.Context) error {
 
 	version := c.String("version")
 
-	if version == "latest" {
-		v, err := latestVersion()
-		if err != nil {
-			return err
-		}
+	if v, _ := latestVersion(); v != "" {
 		version = v
 	}
 
