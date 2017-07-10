@@ -166,7 +166,7 @@ func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.Read
 		return nil, err
 	}
 	if len(t.Containers) != 1 {
-		return nil, fmt.Errorf("invalid container for task: %s", pid)
+		return nil, fmt.Errorf("invalid container for task: %s\n", pid)
 	}
 
 	stream := fmt.Sprintf("convox/%s/%s", *t.Containers[0].Name, pid)
