@@ -27,13 +27,6 @@ func TestProcessRun(t *testing.T) {
 	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
 		Output: logs,
 	})
-	assert.EqualError(t, err, "Image or service is required")
-	assert.Equal(t, 255, code)
-
-	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
-		Output:  logs,
-		Service: "web",
-	})
 	assert.EqualError(t, err, "[no releases for app: valid]")
 	assert.Equal(t, 255, code)
 
@@ -53,8 +46,7 @@ func TestProcessRun(t *testing.T) {
 
 	logs = bytes.NewBuffer([]byte{})
 	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
-		Output:  logs,
-		Service: "web",
+		Output: logs,
 	})
 	assert.EqualError(t, err, "[no releases for app: valid]")
 	// assert.EqualError(t, err, "[no builds for app: valid]") // FIXME
@@ -78,15 +70,6 @@ func TestProcessRun(t *testing.T) {
 
 	err = Rack.ReleasePromote(app.Name, b.Release)
 	assert.NoError(t, err)
-
-	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
-		Output:  logs,
-		Service: "thunk",
-	})
-	assert.NoError(t, err)
-	// assert.EqualError(t, err, "Service is not valid") // FIXME
-	assert.Equal(t, 125, code)
-	// assert.Equal(t, 255, code) // FIXME
 
 	logs = bytes.NewBuffer([]byte{})
 	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
