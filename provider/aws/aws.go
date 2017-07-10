@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/helpers"
+	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/pkg/errors"
@@ -594,16 +595,6 @@ func (p *Provider) fetchTaskDefinition(arn string) (*ecs.TaskDefinition, error) 
 }
 
 func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (string, error) {
-	a, err := p.AppGet(app)
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-
-	// if no release specified, use current release
-	if opts.Release == "" {
-		opts.Release = a.Release
-	}
-
 	logs, err := p.appResource(app, "Logs")
 	if err != nil {
 		return "", err
@@ -630,25 +621,53 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 		Family: aws.String(fmt.Sprintf("%s-%s", p.Name, app)),
 	}
 
-	// use last promoted release (if there was one) for initial resource and app environment
-	if a.Release != "" {
-		// resource environment
-		rs, err := p.ResourceList(app)
+	// get release and manifest for initial environment and volumes
+	var m *manifest.Manifest
+	var release *types.Release
+	var service *manifest.Service
+
+	if opts.Release != "" {
+		m, release, err = helpers.ReleaseManifest(p, app, opts.Release)
 		if err != nil {
 			return "", errors.WithStack(err)
 		}
 
-		for _, r := range rs {
-			k := strings.ToUpper(fmt.Sprintf("%s_URL", r.Name))
-			v := r.Endpoint
+		// if service is not defined in manifest, i.e. "build", carry on
+		service, err = m.Service(opts.Service)
+		if err != nil && !strings.Contains(err.Error(), "no such service") {
+			return "", errors.WithStack(err)
+		}
+	}
+
+	if service != nil {
+		// manifest environment
+		env, err := m.ServiceEnvironment(opts.Service)
+		if err != nil {
+			return "", err
+		}
+
+		for k, v := range env {
 			req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
 				Name:  aws.String(k),
 				Value: aws.String(v),
 			})
 		}
 
+		// resource environment
+		rs, err := p.ResourceList(app)
+		if err != nil {
+			return "", err
+		}
+
+		for _, r := range rs {
+			req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
+				Name:  aws.String(strings.ToUpper(fmt.Sprintf("%s_URL", r.Name))),
+				Value: aws.String(r.Endpoint),
+			})
+		}
+
 		// app environment
-		menv, err := helpers.AppEnvironment(p, a.Name)
+		menv, err := helpers.AppEnvironment(p, app)
 		if err != nil {
 			return "", err
 		}
@@ -659,77 +678,41 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 				Value: aws.String(v),
 			})
 		}
-	}
 
-	// if release and service specified, set proper image
-	// and get manifest env vars and volumes
-	if opts.Release != "" {
-		m, release, err := helpers.ReleaseManifest(p, app, opts.Release)
+		// volumes for service
+		s, err := m.Service(opts.Service)
 		if err != nil {
-			return "", errors.WithStack(err)
+			return "", err
 		}
 
-		if opts.Service != "" {
-			account, err := p.accountID()
-			if err != nil {
-				return "", err
+		for i, v := range s.Volumes {
+			var from, to string
+			parts := strings.SplitN(v, ":", 2)
+			switch len(parts) {
+			case 1:
+				from = path.Join("/volumes", v)
+				to = v
+			case 2:
+				from = parts[0]
+				to = parts[1]
+			default:
+				return "", fmt.Errorf("invalid volume definition: %s", v)
+
 			}
 
-			repo, err := p.appResource(app, "Repository")
-			if err != nil {
-				return "", err
-			}
+			name := fmt.Sprintf("volume-%d", i) // manifest volumes
 
-			opts.Image = fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s:%s.%s", account, p.Region, repo, opts.Service, release.Build)
+			req.Volumes = append(req.Volumes, &ecs.Volume{
+				Host: &ecs.HostVolumeProperties{
+					SourcePath: aws.String(from),
+				},
+				Name: aws.String(name),
+			})
 
-			// manifest environment
-			env, err := m.ServiceEnvironment(opts.Service)
-			if err != nil {
-				return "", errors.WithStack(err)
-			}
-
-			for k, v := range env {
-				req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
-					Name:  aws.String(k),
-					Value: aws.String(v),
-				})
-			}
-
-			// volumes
-			s, err := m.Service(opts.Service)
-			if err != nil {
-				return "", errors.WithStack(err)
-			}
-
-			for i, v := range s.Volumes {
-				var from, to string
-				parts := strings.SplitN(v, ":", 2)
-				switch len(parts) {
-				case 1:
-					from = path.Join("/volumes", v)
-					to = v
-				case 2:
-					from = parts[0]
-					to = parts[1]
-				default:
-					return "", fmt.Errorf("invalid volume definition: %s", v)
-
-				}
-
-				name := fmt.Sprintf("volume-%d", i) // manifest volumes
-
-				req.Volumes = append(req.Volumes, &ecs.Volume{
-					Host: &ecs.HostVolumeProperties{
-						SourcePath: aws.String(from),
-					},
-					Name: aws.String(name),
-				})
-
-				req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{
-					ContainerPath: aws.String(to),
-					SourceVolume:  aws.String(name),
-				})
-			}
+			req.ContainerDefinitions[0].MountPoints = append(req.ContainerDefinitions[0].MountPoints, &ecs.MountPoint{
+				ContainerPath: aws.String(to),
+				SourceVolume:  aws.String(name),
+			})
 		}
 	}
 
@@ -763,7 +746,6 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 	aenv := map[string]string{
 		"APP":      app,
 		"RACK_URL": u.String(),
-		"RELEASE":  opts.Release,
 	}
 
 	for k, v := range aenv {
@@ -771,6 +753,29 @@ func (p *Provider) taskDefinition(app string, opts types.ProcessRunOptions) (str
 			Name:  aws.String(k),
 			Value: aws.String(v),
 		})
+	}
+
+	if opts.Service != "" && opts.Image == "" {
+		if release == nil {
+			return "", fmt.Errorf("no release for app: %s", app)
+		}
+
+		req.ContainerDefinitions[0].Environment = append(req.ContainerDefinitions[0].Environment, &ecs.KeyValuePair{
+			Name:  aws.String("RELEASE"),
+			Value: aws.String(release.Id),
+		})
+
+		account, err := p.accountID()
+		if err != nil {
+			return "", err
+		}
+
+		repo, err := p.appResource(app, "Repository")
+		if err != nil {
+			return "", err
+		}
+
+		req.ContainerDefinitions[0].Image = aws.String(fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s:%s.%s", account, p.Region, repo, opts.Service, release.Build))
 	}
 
 	if opts.Image != "" {
