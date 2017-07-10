@@ -11,7 +11,7 @@ import (
 func AppEnvironment(p types.Provider, app string) (types.Environment, error) {
 	rs, err := p.ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	if len(rs) < 1 {
@@ -24,11 +24,11 @@ func AppEnvironment(p types.Provider, app string) (types.Environment, error) {
 func AppManifest(p types.Provider, app string) (*manifest.Manifest, *types.Release, error) {
 	a, err := p.AppGet(app)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.WithStack(err)
 	}
 
 	if a.Release == "" {
-		return nil, nil, errors.WithStack(fmt.Errorf("helper no release promoted for app: %s", app))
+		return nil, nil, errors.WithStack(fmt.Errorf("no release promoted for app: %s", app))
 	}
 
 	return ReleaseManifest(p, app, a.Release)

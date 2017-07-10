@@ -8,6 +8,7 @@ import (
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/manifest"
 	"github.com/convox/praxis/types"
+	"github.com/pkg/errors"
 )
 
 func (p *Provider) ResourceGet(app, name string) (*types.Resource, error) {
@@ -28,7 +29,7 @@ func (p *Provider) ResourceGet(app, name string) (*types.Resource, error) {
 func (p *Provider) ResourceList(app string) (types.Resources, error) {
 	m, _, err := helpers.AppManifest(p, app)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	rs := make(types.Resources, len(m.Resources))
@@ -36,7 +37,7 @@ func (p *Provider) ResourceList(app string) (types.Resources, error) {
 	for i, r := range m.Resources {
 		rr, err := p.resourceFromManifest(app, r)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 
 		rs[i] = *rr

@@ -301,7 +301,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		// app environment
 		menv, err := helpers.AppEnvironment(p, a.Name)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 
 		for k, v := range menv {
@@ -440,10 +440,6 @@ func processList(filters []string, all bool) (types.Processes, error) {
 			if len(parts) == 2 {
 				labels[parts[0]] = parts[1]
 			}
-		}
-
-		if labels["convox.service"] == "" {
-			continue
 		}
 
 		started, err := time.Parse("2006-01-02 15:04:05 -0700 MST", dps.CreatedAt)

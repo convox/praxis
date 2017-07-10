@@ -53,9 +53,8 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 			"BUILD_PREFIX": fmt.Sprintf("%s-%s", p.Name, app),
 			"BUILD_PUSH":   fmt.Sprintf("%s/%s", ar.Hostname, repo),
 		},
-		Name:    fmt.Sprintf("%s-%s-build-%s", p.Name, app, id),
-		Image:   sys.Image,
-		Service: "build",
+		Name:  fmt.Sprintf("%s-%s-build-%s", p.Name, app, id),
+		Image: sys.Image,
 		Volumes: map[string]string{
 			"/var/run/docker.sock": "/var/run/docker.sock",
 		},

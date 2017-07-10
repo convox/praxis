@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os"
+
+	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -16,11 +19,28 @@ func init() {
 
 func runSwitch(c *cli.Context) error {
 	if len(c.Args()) == 0 {
+		sw := *stdcli.DefaultWriter
+
+		if os.Getenv("RACK_URL") != "" {
+			r, err := rack.NewFromEnv()
+			if err != nil {
+				return stdcli.Error(err)
+			}
+
+			s, err := r.SystemGet()
+			if err != nil {
+				return stdcli.Error(err)
+			}
+
+			sw.Writef("RACK_URL/%s\n", s.Name)
+			return nil
+		}
+
 		rack, err := currentRack(c)
 		if err != nil {
 			return stdcli.Error(err)
 		}
-		sw := *stdcli.DefaultWriter
+
 		sw.Writef("%s\n", rack)
 		return nil
 	}

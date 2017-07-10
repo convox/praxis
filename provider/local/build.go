@@ -59,8 +59,6 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 	buildUpdateLock.Lock()
 	defer buildUpdateLock.Unlock()
 
-	fmt.Printf("opts = %+v\n", opts)
-
 	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{
@@ -72,7 +70,6 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 		Name:    fmt.Sprintf("%s-build-%s", app, id),
 		Image:   sys.Image,
 		Release: a.Release,
-		Service: "build",
 		Volumes: map[string]string{
 			"/var/run/docker.sock": "/var/run/docker.sock",
 		},
