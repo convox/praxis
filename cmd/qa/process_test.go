@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"testing"
-	"time"
 
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/types"
@@ -16,8 +15,8 @@ func TestProcessRun(t *testing.T) {
 	Rack, err := rack.NewFromEnv()
 	assert.NoError(t, err)
 
-	app, err := appCreate(Rack, "valid")
-	defer appDelete(Rack, app.Name)
+	app, err := Rack.AppCreate("valid")
+	defer Rack.AppDelete(app.Name)
 	assert.NoError(t, err)
 
 	code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{})
@@ -58,6 +57,7 @@ func TestProcessRun(t *testing.T) {
 		Service: "web",
 	})
 	assert.EqualError(t, err, "[no release promoted for app: valid]")
+	// assert.EqualError(t, err, "[no builds for app: valid]") // FIXME
 	assert.Equal(t, 255, code)
 
 	obj, err := Rack.ObjectStore(app.Name, "", tarReader(), types.ObjectStoreOptions{})
@@ -77,13 +77,6 @@ func TestProcessRun(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = Rack.ReleasePromote(app.Name, b.Release)
-	assert.NoError(t, err)
-
-	l, err = Rack.ReleaseLogs(app.Name, b.Release, types.LogsOptions{
-		Follow: true,
-	})
-	assert.NoError(t, err)
-	_, err = ioutil.ReadAll(l)
 	assert.NoError(t, err)
 
 	code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
@@ -112,8 +105,8 @@ func TestProcessRunReleases(t *testing.T) {
 	Rack, err := rack.NewFromEnv()
 	assert.NoError(t, err)
 
-	app, err := appCreate(Rack, "valid")
-	defer appDelete(Rack, app.Name)
+	app, err := Rack.AppCreate("valid")
+	defer Rack.AppDelete(app.Name)
 	assert.NoError(t, err)
 
 	r, err := Rack.ReleaseCreate(app.Name, types.ReleaseCreateOptions{
@@ -239,67 +232,4 @@ func TestProcessRunReleases(t *testing.T) {
 	assert.Contains(t, out, "FOO=baz")
 	assert.Contains(t, out, "b.txt")
 	assert.NotContains(t, out, "a.txt")
-}
-
-func appCreate(r rack.Rack, name string) (*types.App, error) {
-	a, err := r.AppCreate(name)
-	if err != nil {
-		return a, err
-	}
-
-	if err := tickWithTimeout(2*time.Second, 2*time.Minute, notAppStatus(r, name, "creating")); err != nil {
-		return nil, err
-	}
-
-	return a, nil
-}
-
-func appDelete(r rack.Rack, name string) error {
-	err := r.AppDelete(name)
-	if err != nil {
-		return err
-	}
-
-	if err := tickWithTimeout(2*time.Second, 2*time.Minute, notAppStatus(r, name, "deleting")); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func notAppStatus(r rack.Rack, app, status string) func() (bool, error) {
-	return func() (bool, error) {
-		app, err := r.AppGet(app)
-		if err != nil {
-			return true, err
-		}
-		fmt.Printf("APP %q %q\n", app.Name, app.Status)
-		if app.Status != status {
-			return true, nil
-		}
-
-		return false, nil
-	}
-}
-
-func tickWithTimeout(tick time.Duration, timeout time.Duration, fn func() (stop bool, err error)) error {
-	tickch := time.Tick(tick)
-	timeoutch := time.After(timeout)
-
-	for {
-		stop, err := fn()
-		if err != nil {
-			return err
-		}
-		if stop {
-			return nil
-		}
-
-		select {
-		case <-tickch:
-			continue
-		case <-timeoutch:
-			return fmt.Errorf("timeout")
-		}
-	}
 }
