@@ -20,12 +20,14 @@ func init() {
 }
 
 func runVersion(c *cli.Context) error {
+	fmt.Printf("client: %s\n", Version)
+
 	rack, err := Rack(c).SystemGet()
 	if err != nil {
+		fmt.Printf("server: error: %s\n", err)
 		return err
 	}
 
-	fmt.Printf("client: %s\n", Version)
 	fmt.Printf("server: %s\n", rack.Version)
 
 	return nil
