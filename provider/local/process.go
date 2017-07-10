@@ -442,10 +442,6 @@ func processList(filters []string, all bool) (types.Processes, error) {
 			}
 		}
 
-		if labels["convox.service"] == "" {
-			continue
-		}
-
 		started, err := time.Parse("2006-01-02 15:04:05 -0700 MST", dps.CreatedAt)
 		if err != nil {
 			return nil, err
