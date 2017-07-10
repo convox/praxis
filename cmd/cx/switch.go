@@ -20,8 +20,8 @@ func runSwitch(c *cli.Context) error {
 		if err != nil {
 			return stdcli.Error(err)
 		}
-		sw := *stdcli.DefaultWriter
-		sw.Writef("%s\n", rack)
+
+		stdcli.Writef("%s\n", rack)
 		return nil
 	}
 
