@@ -28,7 +28,7 @@ func AppManifest(p types.Provider, app string) (*manifest.Manifest, *types.Relea
 	}
 
 	if a.Release == "" {
-		return nil, nil, errors.WithStack(fmt.Errorf("helper no release promoted for app: %s", app))
+		return nil, nil, errors.WithStack(fmt.Errorf("no release for app: %s", app))
 	}
 
 	return ReleaseManifest(p, app, a.Release)
