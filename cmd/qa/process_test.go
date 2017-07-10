@@ -106,30 +106,6 @@ func TestProcessRun(t *testing.T) {
 	out = string(bs)
 	assert.NoError(t, err)
 	assert.Equal(t, "hi\r\n", out)
-
-	// Parallel runs
-	n := 5
-	codes := make(chan int, n)
-	errs := make(chan error, n)
-	for i := 0; i < n; i++ {
-		go func() {
-			logs = bytes.NewBuffer([]byte{})
-			code, err = Rack.ProcessRun(app.Name, types.ProcessRunOptions{
-				Command: "echo hi",
-				Output:  logs,
-				Service: "web",
-			})
-			codes <- code
-			errs <- err
-		}()
-	}
-
-	for i := 0; i < n; i++ {
-		code := <-codes
-		err := <-errs
-		assert.NoError(t, err)
-		assert.Equal(t, 0, code)
-	}
 }
 
 func TestProcessRunReleases(t *testing.T) {
