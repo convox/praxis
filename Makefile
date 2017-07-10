@@ -22,6 +22,9 @@ coverage: ci
 dev: cli image
 	cx rack start
 
+integration:
+	bin/integration
+
 image:
 	docker build -t convox/praxis .
 
@@ -45,7 +48,9 @@ release:
 stats:
 	cloc . --exclude-dir=vendor
 
-test: check
+test: check unit integration
+
+unit:
 	env govendor test +local
 
 vendor:
