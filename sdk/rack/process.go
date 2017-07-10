@@ -81,10 +81,6 @@ func (c *Client) ProcessProxy(app, pid string, port int, in io.Reader) (io.ReadC
 }
 
 func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
-	if opts.Output == nil {
-		return 255, errors.New("Output is required")
-	}
-
 	ev := url.Values{}
 
 	for k, v := range opts.Environment {
