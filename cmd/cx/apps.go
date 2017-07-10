@@ -74,7 +74,7 @@ func runAppsCreate(c *cli.Context) error {
 		return stdcli.Error(err)
 	}
 
-	if err := tickWithTimeout(2*time.Second, 2*time.Minute, notAppStatus(Rack(c), name, "creating")); err != nil {
+	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(Rack(c), name, "creating")); err != nil {
 		return err
 	}
 
