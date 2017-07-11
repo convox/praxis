@@ -22,15 +22,17 @@ func (p *Provider) Workers() {
 		}
 	}()
 
-	go func() {
-		for {
-			time.Sleep(10 * time.Second)
+	if !p.Test {
+		go func() {
+			for {
+				time.Sleep(10 * time.Second)
 
-			if err := p.workerConverge(); err != nil {
-				log.Error(errors.WithStack(err))
+				if err := p.workerConverge(); err != nil {
+					log.Error(errors.WithStack(err))
+				}
 			}
-		}
-	}()
+		}()
+	}
 }
 
 func (p *Provider) workerConverge() error {

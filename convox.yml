@@ -8,6 +8,7 @@ services:
       - NAME=convox
       - PASSWORD=
       - PROVIDER=
+      - TEST=false
       - VERSION=
     port: https:3000
     scale:
