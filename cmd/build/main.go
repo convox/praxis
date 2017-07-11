@@ -248,7 +248,14 @@ func build() error {
 }
 
 func release() error {
-	release, err := Rack.ReleaseCreate(flagApp, types.ReleaseCreateOptions{Build: flagId})
+	opts := types.ReleaseCreateOptions{Build: flagId}
+
+	env := types.Environment{
+		"DEVELOPMENT": fmt.Sprintf("%t", flagDevelopment),
+	}
+	opts.Env = env
+
+	release, err := Rack.ReleaseCreate(flagApp, opts)
 	if err != nil {
 		return err
 	}
