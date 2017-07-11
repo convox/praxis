@@ -44,6 +44,7 @@ func FromEnv() (*Provider, error) {
 		Name:    coalesce(os.Getenv("NAME"), "convox"),
 		Root:    coalesce(os.Getenv("PROVIDER_ROOT"), "/var/convox"),
 		Router:  coalesce(os.Getenv("PROVIDER_ROUTER"), "10.42.0.0"),
+		Test:    os.Getenv("TEST") == "true",
 		Version: "latest",
 	}
 

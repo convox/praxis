@@ -22,7 +22,9 @@ func init() {
 }
 
 func runTest(c *cli.Context) error {
-	env := manifest.Environment{}
+	env := manifest.Environment{
+		"TEST": "true",
+	}
 
 	for _, e := range os.Environ() {
 		parts := strings.SplitN(e, "=", 2)
