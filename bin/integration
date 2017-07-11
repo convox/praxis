@@ -7,7 +7,8 @@ env
 go install ./cmd/cx
 cx apps
 
-cx services
 export RACK_URL=$(cx services -a $APP | grep "^rack" | cut -d" " -f3)
 sleep 20
 cx apps
+
+govendor test ./cmd/qa -tags="qa"
