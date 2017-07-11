@@ -42,7 +42,7 @@ func runDeploy(c *cli.Context) error {
 		return err
 	}
 
-	if r.Status != "promoted" {
+	if r.Status != "active" {
 		return fmt.Errorf("deploy failed")
 	}
 
