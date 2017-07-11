@@ -57,17 +57,16 @@ func runTest(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	defer Rack(c).AppDelete(name)
+
+	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(Rack(c), name, "creating")); err != nil {
+		return err
+	}
 
 	_, err = Rack(c).ReleaseCreate(name, types.ReleaseCreateOptions{
 		Env: m.Environment,
 	})
 	if err != nil {
-		return err
-	}
-
-	defer Rack(c).AppDelete(name)
-
-	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(Rack(c), name, "creating")); err != nil {
 		return err
 	}
 
