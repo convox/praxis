@@ -5,6 +5,7 @@ import (
 	"io"
 	"math/rand"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/convox/praxis/types"
@@ -53,6 +54,9 @@ func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
 	var r *types.Release
 
 	if err := p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), &r, ReleaseCacheDuration); err != nil {
+		if strings.Contains(err.Error(), "no such key") {
+			return nil, fmt.Errorf("release not found")
+		}
 		return nil, errors.WithStack(log.Error(err))
 	}
 	if r == nil {
