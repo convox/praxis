@@ -1,4 +1,4 @@
-.env
+.env*
 .git
 cmd/cx/pkg
 examples
