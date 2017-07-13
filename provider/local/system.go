@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"strings"
 	"text/template"
 	"time"
 
@@ -24,8 +25,26 @@ var (
 func (p *Provider) SystemGet() (*types.System, error) {
 	log := p.logger("SystemGet")
 
+	image := fmt.Sprintf("convox/praxis:%s", p.Version)
+
+	// in development, use most recently built images, e.g.
+	// convox/praxis-local/rack:BRFDOIYWTD
+	if os.Getenv("DEVELOPMENT") == "true" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			return nil, err
+		}
+
+		data, err := exec.Command("docker", "inspect", hostname, "--format", "{{.Config.Image}}").CombinedOutput()
+		if err != nil {
+			return nil, err
+		}
+
+		image = strings.TrimSpace(string(data))
+	}
+
 	system := &types.System{
-		Image:   fmt.Sprintf("convox/praxis:%s", p.Version),
+		Image:   image,
 		Name:    p.Name,
 		Status:  "running",
 		Version: p.Version,

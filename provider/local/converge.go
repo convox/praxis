@@ -101,24 +101,27 @@ func (p *Provider) converge(app string) error {
 	}
 
 	// TODO: remove
-	dt := http.DefaultTransport.(*http.Transport)
-	dt.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: true,
+	fmt.Printf("ROUTER: %+v\n", p.Router)
+	if p.Router != "none" {
+		dt := http.DefaultTransport.(*http.Transport)
+		dt.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+
+		hc := http.Client{Transport: dt}
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/version/%s", p.Router, p.Version), nil)
+		if err != nil {
+			return err
+		}
+
+		res, err := hc.Do(req)
+		if err != nil {
+			return err
+		}
+
+		defer res.Body.Close()
 	}
-
-	hc := http.Client{Transport: dt}
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/version/%s", p.Router, p.Version), nil)
-	if err != nil {
-		return err
-	}
-
-	res, err := hc.Do(req)
-	if err != nil {
-		return err
-	}
-
-	defer res.Body.Close()
 
 	return log.Success()
 }

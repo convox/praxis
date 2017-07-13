@@ -3,7 +3,7 @@
 set -ex
 export CONVOX_DEBUG=true
 
-go install ./cmd/cx
+env
 cx apps
 
 export RACK_URL=$(cx services -a $APP | grep "^rack" | cut -d" " -f3)

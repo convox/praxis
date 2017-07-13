@@ -9,6 +9,7 @@ services:
       - NAME=convox
       - PASSWORD=
       - PROVIDER=
+      - PROVIDER_ROUTER=
       - TEST=false
       - VERSION=
     port: https:3000

@@ -1,6 +1,9 @@
 package local
 
+import "fmt"
+
 func coalesce(strings ...string) string {
+	fmt.Printf("COALESCE: %+v\n", strings)
 	for _, s := range strings {
 		if s != "" {
 			return s

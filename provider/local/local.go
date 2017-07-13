@@ -48,6 +48,8 @@ func FromEnv() (*Provider, error) {
 		Version: "latest",
 	}
 
+	fmt.Printf("Provider FromEnv: %+v\n", p)
+
 	if v := os.Getenv("VERSION"); v != "" {
 		p.Version = v
 	}

@@ -44,6 +44,9 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
+	fmt.Printf("OS ENV: %+v\n", os.Environ())
+	fmt.Printf("M ENV: %+v\n", m.Environment)
+
 	system := m.Writer("convox", os.Stdout)
 
 	stdcli.DefaultWriter.Stdout = system
