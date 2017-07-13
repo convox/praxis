@@ -20,7 +20,7 @@
     "Password": {
       "MinLength": "8",
       "NoEcho": true,
-      "Type": "String",
+      "Type": "String"
     },
     "Rack": {
       "MinLength": "1",
@@ -34,7 +34,7 @@
     "SecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
-        "GroupDescription": "postgres resource",
+        "GroupDescription": "redis resource",
         "SecurityGroupIngress": [
           { "IpProtocol": "tcp", "FromPort": "6379", "ToPort": "6379", "CidrIp": { "Fn::ImportValue": { "Fn::Sub": "${Rack}:VpcCidr" } } }
         ],
@@ -42,9 +42,9 @@
       }
     },
     "SubnetGroup": {
-      "Type": "AWS::RDS::DBSubnetGroup",
+      "Type": "AWS::ElastiCache::SubnetGroup",
       "Properties": {
-        "DBSubnetGroupDescription": { "Fn::Sub": "${AWS::StackName} subnets" },
+        "Description": { "Fn::Sub": "${AWS::StackName} subnets" },
         "SubnetIds": [
           { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Subnet0" } },
           { "Fn::ImportValue": { "Fn::Sub": "${Rack}:Subnet1" } }
