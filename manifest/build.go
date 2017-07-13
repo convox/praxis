@@ -395,7 +395,7 @@ func buildArgs(dockerfile string, opts BuildOptions) ([]string, error) {
 		case "ARG":
 			k := strings.TrimSpace(parts[0])
 			if v, ok := opts.Env[k]; ok {
-				args = append(args, "--build-args", fmt.Sprintf("%s=%s", k, v))
+				args = append(args, "--build-arg", fmt.Sprintf("%s=%s", k, v))
 			}
 		}
 	}
