@@ -175,6 +175,16 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 		return err
 	}
 
+	obj, err := p.ObjectStore(r.App, fmt.Sprintf("convox/release/%s/template", r.Id), bytes.NewReader(data), types.ObjectStoreOptions{})
+	if err != nil {
+		return err
+	}
+
+	bucket, err := p.appResource(app, "Bucket")
+	if err != nil {
+		return err
+	}
+
 	domain, err := p.rackOutput("Domain")
 	if err != nil {
 		return err
@@ -242,7 +252,7 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 		Parameters:         params,
 		NotificationARNs:   []*string{aws.String(topic)},
 		StackName:          aws.String(stack),
-		TemplateBody:       aws.String(string(data)),
+		TemplateURL:        aws.String(fmt.Sprintf("https://s3.amazonaws.com/%s/%s", bucket, obj.Key)),
 	})
 	if err != nil {
 		return err
