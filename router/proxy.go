@@ -113,13 +113,7 @@ func (p *Proxy) proxyHTTP(listen, target *url.URL) (http.Handler, error) {
 
 	px := httputil.NewSingleHostReverseProxy(target)
 
-	dt := http.DefaultTransport.(*http.Transport)
-
-	dt.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: true,
-	}
-
-	px.Transport = logTransport{RoundTripper: dt}
+	px.Transport = logTransport{RoundTripper: defaultTransport()}
 
 	return px, nil
 }
@@ -240,7 +234,7 @@ func (p *Proxy) rackDirector(r *http.Request) {
 }
 
 func serviceTransport(app, service string, port int) http.RoundTripper {
-	tr := http.DefaultTransport.(*http.Transport)
+	tr := defaultTransport()
 
 	tr.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
 		r, err := rack.NewFromEnv()

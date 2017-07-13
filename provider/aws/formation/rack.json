@@ -287,8 +287,11 @@
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "S3Bucket": "praxis-releases",
-          "S3Key": { "Fn::Sub": "release/${Version}/lambda/lifecycle.zip" }
+          "S3Bucket": { "Fn::Sub": "praxis-releases-${AWS::Region}" },
+          "S3Key": { "Fn::Sub": [
+            "release/${Version}/lambda/lifecycle.zip",
+            { "Version": { "Fn::FindInMap": [ "Constants", "Values", "Version" ] } } ]
+          }
         },
         "Description": { "Fn::Join": [ "", [ "{\"Cluster\": \"", { "Ref": "RackCluster" }, "\", \"Rack\": \"", { "Ref": "AWS::StackName" }, "\"}" ] ] },
         "Handler": "index.external",

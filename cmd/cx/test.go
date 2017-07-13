@@ -17,7 +17,7 @@ func init() {
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "test",
 		Description: "run tests",
-		Action:      errorExit(runTest, 1),
+		Action:      errorExit(runTest, SysExitCode),
 	})
 }
 
@@ -56,6 +56,13 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
+	_, err = Rack(c).ReleaseCreate(name, types.ReleaseCreateOptions{
+		Env: m.Environment,
+	})
+	if err != nil {
+		return err
+	}
+
 	defer Rack(c).AppDelete(name)
 
 	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(Rack(c), name, "creating")); err != nil {
@@ -64,7 +71,7 @@ func runTest(c *cli.Context) error {
 
 	stdcli.OK()
 
-	if err := m.Validate(); err != nil {
+	if err := m.ValidateEnv(); err != nil {
 		return err
 	}
 
@@ -86,7 +93,9 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	if r.Status != "promoted" {
+	switch r.Status {
+	case "promoted", "active":
+	default:
 		return fmt.Errorf("promote failed")
 	}
 

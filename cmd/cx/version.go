@@ -20,12 +20,14 @@ func init() {
 }
 
 func runVersion(c *cli.Context) error {
+	fmt.Printf("client: %s\n", Version)
+
 	rack, err := Rack(c).SystemGet()
 	if err != nil {
+		fmt.Printf("server: error: %s\n", err)
 		return err
 	}
 
-	fmt.Printf("client: %s\n", Version)
 	fmt.Printf("server: %s\n", rack.Version)
 
 	return nil
@@ -37,12 +39,13 @@ func latestVersion() (string, error) {
 		return "", err
 	}
 
-	id, err := cliID()
-	if err != nil {
-		return "", err
+	agent := fmt.Sprintf("convox/%s (%s/%s)", Version, runtime.GOOS, runtime.GOARCH)
+
+	if id, _ := cliID(); id != "" {
+		agent = fmt.Sprintf("%s (%s)", agent, id)
 	}
 
-	req.Header.Set("User-Agent", fmt.Sprintf("convox/%s (%s; %s/%s)", Version, id, runtime.GOOS, runtime.GOARCH))
+	req.Header.Set("User-Agent", agent)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

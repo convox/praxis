@@ -38,7 +38,8 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 }
 
 func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
-	if _, err := p.AppGet(app); err != nil {
+	a, err := p.AppGet(app)
+	if err != nil {
 		return nil, err
 	}
 
@@ -60,11 +61,16 @@ func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error
 		return nil, err
 	}
 
+	if a.Release == r.Id {
+		r.Status = "active"
+	}
+
 	return r, nil
 }
 
 func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
-	if _, err := p.AppGet(app); err != nil {
+	a, err := p.AppGet(app)
+	if err != nil {
 		return nil, err
 	}
 
@@ -91,6 +97,10 @@ func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types
 		release, err := p.releaseFromAttributes(*item.Name, item.Attributes)
 		if err != nil {
 			return nil, err
+		}
+
+		if a.Release == release.Id {
+			release.Status = "active"
 		}
 
 		releases = append(releases, *release)
@@ -164,10 +174,6 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("string(data) = %+v\n", string(data))
-
-	// return nil, fmt.Errorf("stop")
 
 	domain, err := p.rackOutput("Domain")
 	if err != nil {

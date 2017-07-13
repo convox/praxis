@@ -353,9 +353,11 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		image = fmt.Sprintf("%s/%s/%s:%s", p.Name, app, opts.Service, release.Build)
 	}
 
-	if p.Router != "" {
-		args = append(args, "--dns", p.Router)
-	}
+	// FIXME try letting docker daemon pass through dns
+	// if this works long term can delete this
+	// if p.Router != "" {
+	//   args = append(args, "--dns", p.Router)
+	// }
 
 	for k, v := range opts.Environment {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))

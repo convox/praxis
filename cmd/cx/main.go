@@ -57,13 +57,15 @@ func init() {
 	cliID()
 }
 
+const SysExitCode = 255 // Used to indicate an internal system error
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		if ee, ok := err.(*cli.ExitError); ok {
 			os.Exit(ee.ExitCode())
 		}
-		os.Exit(255) // 255 used to indicate system error
+		os.Exit(SysExitCode)
 	}
 }
 
@@ -381,7 +383,10 @@ func setShellRack(rack string) error {
 func errorExit(fn cli.ActionFunc, code int) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		if err := fn(c); err != nil {
-			return cli.NewExitError(err.Error(), code)
+			if _, ok := err.(cli.ExitCoder); !ok {
+				return cli.NewExitError(err.Error(), code)
+			}
+			return err
 		}
 		return nil
 	}

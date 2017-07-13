@@ -89,7 +89,14 @@ func runReleasesInfo(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("r = %+v\n", r)
+	info := stdcli.NewInfo()
+
+	info.Add("Id", r.Id)
+	info.Add("App", r.App)
+	info.Add("Status", r.Status)
+	info.Add("Build", r.Build)
+
+	info.Print()
 
 	return nil
 }
@@ -174,7 +181,7 @@ func releaseLogs(r rack.Rack, app string, id string, w io.Writer, opts types.Log
 		}
 
 		switch r.Status {
-		case "promoted", "failed":
+		case "promoted", "active", "failed":
 			return nil
 		}
 

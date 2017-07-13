@@ -45,7 +45,8 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
 	log := p.logger("ReleaseGet").Append("app=%q id=%q", app, id)
 
-	if _, err := p.AppGet(app); err != nil {
+	a, err := p.AppGet(app)
+	if err != nil {
 		return nil, log.Error(err)
 	}
 
@@ -60,6 +61,10 @@ func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
 
 	if r.Env == nil {
 		r.Env = types.Environment{}
+	}
+
+	if a.Release == r.Id {
+		r.Status = "active"
 	}
 
 	return r, log.Success()
@@ -146,7 +151,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 				continue
 			}
 
-			if r.Status == "promoted" || r.Status == "failed" {
+			if r.Status == "promoted" || r.Status == "failed" || r.Status == "active" {
 				break
 			}
 		}

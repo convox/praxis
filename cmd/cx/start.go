@@ -110,7 +110,7 @@ func runStart(c *cli.Context) error {
 	}
 
 	switch r.Status {
-	case "created", "promoting", "promoted":
+	case "created", "promoting", "promoted", "active":
 	case "failed":
 		return fmt.Errorf("release failed")
 	default:
@@ -170,10 +170,10 @@ func handleSignals(r rack.Rack, ch chan os.Signal, errch chan error, m *manifest
 	for _, p := range ps {
 		m.Writef("convox", "stopping %s\n", p.Id)
 
-		go func() {
+		go func(id string) {
 			defer wg.Done()
-			r.ProcessStop(app, p.Id)
-		}()
+			r.ProcessStop(app, id)
+		}(p.Id)
 	}
 
 	wg.Wait()
