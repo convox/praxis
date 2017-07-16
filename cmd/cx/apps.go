@@ -1,7 +1,13 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
 	"time"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
@@ -9,6 +15,13 @@ import (
 )
 
 func init() {
+	flags := []cli.Flag{
+		cli.BoolFlag{
+			Name:  "force",
+			Usage: "delete without verification prompt",
+		},
+	}
+
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "apps",
 		Description: "list applications",
@@ -28,7 +41,7 @@ func init() {
 				Description: "delete an application",
 				Usage:       "<name>",
 				Action:      runAppsDelete,
-				Flags:       globalFlags,
+				Flags:       append(flags, globalFlags...),
 			},
 			cli.Command{
 				Name:        "info",
@@ -89,10 +102,38 @@ func runAppsDelete(c *cli.Context) error {
 	}
 
 	name := c.Args()[0]
+	app := name
+
+	if !c.Bool("force") {
+		if terminal.IsTerminal(int(os.Stdin.Fd())) {
+			rack, err := currentRack(c)
+			if err != nil {
+				return stdcli.Error(err)
+			}
+
+			name = fmt.Sprintf("%s/%s", rack, name)
+
+			stdcli.Writef("Are you sure? Type <bad>%s</bad> to confirm:\n", name)
+			stdcli.Writef("> ")
+
+			input := bufio.NewReader(os.Stdin)
+
+			confirm, err := input.ReadString('\n')
+			if err != nil {
+				return stdcli.Error(err)
+			}
+
+			if strings.TrimSpace(confirm) != name {
+				return stdcli.Errorf("Aborting deletion.")
+			}
+		} else {
+			return stdcli.Errorf("Use the --force flag for a non-interactive session.")
+		}
+	}
 
 	stdcli.Startf("deleting <name>%s</name>", name)
 
-	if err := Rack(c).AppDelete(name); err != nil {
+	if err := Rack(c).AppDelete(app); err != nil {
 		return stdcli.Error(err)
 	}
 

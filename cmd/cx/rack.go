@@ -69,6 +69,7 @@ func init() {
 				Name:        "start",
 				Description: "start a local rack",
 				Action:      runRackStart,
+				Usage:       "<version>",
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "router",
@@ -299,13 +300,21 @@ func runRackUpdate(c *cli.Context) error {
 }
 
 func rackCommand(version string, router string) (*exec.Cmd, error) {
-	name := "convox"
+	name := os.Getenv("NAME")
+	if name == "" {
+		name = "convox"
+	}
 
-	config := "/var/convox"
+	config := fmt.Sprintf("/var/%s", name)
 
 	switch runtime.GOOS {
 	case "darwin":
-		config = "/Users/Shared/convox"
+		config = fmt.Sprintf("/Users/Shared/%s", name)
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "5443"
 	}
 
 	exec.Command("docker", "rm", "-f", name).Run()
@@ -313,13 +322,16 @@ func rackCommand(version string, router string) (*exec.Cmd, error) {
 	args := []string{"run", "--rm"}
 	args = append(args, "-m", "256m")
 	args = append(args, "-i", fmt.Sprintf("--name=%s", name))
+	args = append(args, "-e", fmt.Sprintf("NAME=%s", name))
 	args = append(args, "-e", "PROVIDER=local")
 	args = append(args, "-e", fmt.Sprintf("PROVIDER_ROUTER=%s", router))
 	args = append(args, "-e", fmt.Sprintf("VERSION=%s", version))
-	args = append(args, "-p", "5443:3000")
+	args = append(args, "-p", fmt.Sprintf("%s:3000", port))
 	args = append(args, "-v", fmt.Sprintf("%s:/var/convox", config))
 	args = append(args, "-v", "/var/run/docker.sock:/var/run/docker.sock")
 	args = append(args, fmt.Sprintf("convox/praxis:%s", version))
+
+	fmt.Printf("ARGS: %+v\n", args)
 
 	return exec.Command("docker", args...), nil
 }

@@ -59,8 +59,6 @@ func (p *Provider) BuildCreate(app, url string, opts types.BuildCreateOptions) (
 	buildUpdateLock.Lock()
 	defer buildUpdateLock.Unlock()
 
-	fmt.Printf("opts = %+v\n", opts)
-
 	pid, err := p.ProcessStart(app, types.ProcessRunOptions{
 		Command: fmt.Sprintf("build -id %s -url %s", id, url),
 		Environment: map[string]string{

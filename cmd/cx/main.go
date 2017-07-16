@@ -176,7 +176,7 @@ func Rack(c *cli.Context) rack.Rack {
 		}
 
 		if proxy != nil {
-			rack, err := currentRack(c)
+			rack, err := rackFromContext(c)
 			if err != nil {
 				exit(err)
 			}
@@ -285,6 +285,19 @@ func consoleProxy() (*url.URL, error) {
 }
 
 func currentRack(c *cli.Context) (string, error) {
+	// RACK_URL always wins so use it if set
+	if os.Getenv("RACK_URL") != "" {
+		rack, err := Rack(c).SystemGet()
+		if err != nil {
+			return "", err
+		}
+		return rack.Name, nil
+	}
+
+	return rackFromContext(c)
+}
+
+func rackFromContext(c *cli.Context) (string, error) {
 	if c.GlobalString("rack") != "" {
 		return c.GlobalString("rack"), nil
 	}

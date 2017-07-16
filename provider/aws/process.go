@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/types"
 	docker "github.com/fsouza/go-dockerclient"
 	shellquote "github.com/kballard/go-shellquote"
@@ -112,7 +113,7 @@ func (p *Provider) ProcessGet(app, pid string) (*types.Process, error) {
 	}
 
 	if ps.App != app {
-		return nil, fmt.Errorf("process not found: %s\n", pid)
+		return nil, fmt.Errorf("process not found: %s", pid)
 	}
 
 	return ps, nil
@@ -213,12 +214,28 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 			return 0, err
 		}
 
-		return p.ProcessExec(app, pid, opts.Command, types.ProcessExecOptions{
+		code, err := p.ProcessExec(app, pid, opts.Command, types.ProcessExecOptions{
 			Height: opts.Height,
 			Width:  opts.Width,
 			Input:  opts.Input,
 			Output: opts.Output,
 		})
+
+		// terminate parent to free up task reservation
+		serr := p.ProcessStop(app, pid)
+
+		// report exec error
+		if err != nil {
+			return code, err
+		}
+
+		// report terminate error
+		if serr != nil {
+			return code, serr
+		}
+
+		// success
+		return code, nil
 	}
 
 	if err := p.ECS().WaitUntilTasksStopped(treq); err != nil {
@@ -240,6 +257,12 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 }
 
 func (p *Provider) ProcessStart(app string, opts types.ProcessRunOptions) (string, error) {
+	// clear the AppGet cache to avoid "no releases for app"
+	err := cache.Clear("describeStack", fmt.Sprintf("%s-%s", p.Name, app))
+	if err != nil {
+		return "", err
+	}
+
 	cluster, err := p.rackResource("RackCluster")
 	if err != nil {
 		return "", err

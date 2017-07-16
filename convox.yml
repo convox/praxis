@@ -5,9 +5,11 @@ services:
       - AWS_REGION=
       - AWS_ACCESS_KEY_ID=
       - AWS_SECRET_ACCESS_KEY=
+      - DEVELOPMENT=false
       - NAME=convox
       - PASSWORD=
       - PROVIDER=
+      - PROVIDER_ROUTER=
       - TEST=false
       - VERSION=
     port: https:3000

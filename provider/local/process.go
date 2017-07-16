@@ -187,7 +187,7 @@ func (p *Provider) ProcessRun(app string, opts types.ProcessRunOptions) (int, er
 	log := p.logger("ProcessRun").Append("app=%q", app)
 
 	if opts.Name != "" {
-		exec.Command("docker", "rm", "-f", opts.Name).Run()
+		exec.Command("docker", "-f", opts.Name).Run()
 	}
 
 	oargs, err := p.argsFromOpts(app, opts)
@@ -355,9 +355,9 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 
 	// FIXME try letting docker daemon pass through dns
 	// if this works long term can delete this
-	// if p.Router != "" {
-	//   args = append(args, "--dns", p.Router)
-	// }
+	if p.Router != "" {
+		args = append(args, "--dns", p.Router)
+	}
 
 	for k, v := range opts.Environment {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
@@ -406,6 +406,7 @@ func (p *Provider) argsFromOpts(app string, opts types.ProcessRunOptions) ([]str
 		args = append(args, "sh", "-c", opts.Command)
 	}
 
+	fmt.Printf("args: %v\n", args)
 	return args, nil
 }
 

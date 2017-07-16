@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -ex
+export CONVOX_DEBUG=true
+
+env
+cx apps
+
+export RACK_URL=$(cx services -a $APP | grep "^rack" | cut -d" " -f3)
+sleep 20
+cx apps
+
+govendor test -tags="qa" -v ./cmd/qa
