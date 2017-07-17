@@ -559,6 +559,10 @@ func (p *Provider) stackResource(name string, resource string) (string, error) {
 		return "", err
 	}
 
+	if *res.StackResourceDetail.ResourceStatus == "CREATE_FAILED" {
+		return "", fmt.Errorf(*res.StackResourceDetail.ResourceStatusReason)
+	}
+
 	r := *res.StackResourceDetail.PhysicalResourceId
 
 	if err := cache.Set("stackResource", ck, r, 1*time.Minute); err != nil {
