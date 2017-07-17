@@ -127,6 +127,20 @@ func runAppsInfo(c *cli.Context) error {
 	return nil
 }
 
+func isAppStatus(r rack.Rack, app, status string) func() (bool, error) {
+	return func() (bool, error) {
+		app, err := r.AppGet(app)
+		if err != nil {
+			return true, err
+		}
+		if app.Status == status {
+			return true, nil
+		}
+
+		return false, nil
+	}
+}
+
 func notAppStatus(r rack.Rack, app, status string) func() (bool, error) {
 	return func() (bool, error) {
 		app, err := r.AppGet(app)
