@@ -59,7 +59,7 @@ func runTest(c *cli.Context) error {
 	}
 
 	defer func() {
-		if err := tickWithTimeout(2*time.Second, 1*time.Minute, isAppStatus(Rack(c), name, "running")); err != nil {
+		if err := tickWithTimeout(2*time.Second, 5*time.Minute, isAppStatus(Rack(c), name, "running")); err != nil {
 			system.Writef("unable to wait for app status: %s\n", err)
 		}
 
