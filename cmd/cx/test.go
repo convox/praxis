@@ -58,13 +58,6 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	_, err = Rack(c).ReleaseCreate(name, types.ReleaseCreateOptions{
-		Env: m.Environment,
-	})
-	if err != nil {
-		return err
-	}
-
 	defer func() {
 		if err := tickWithTimeout(2*time.Second, 1*time.Minute, isAppStatus(Rack(c), name, "running")); err != nil {
 			system.Writef("unable to wait for app status: %s\n", err)
@@ -76,6 +69,13 @@ func runTest(c *cli.Context) error {
 	}()
 
 	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(Rack(c), name, "creating")); err != nil {
+		return err
+	}
+
+	_, err = Rack(c).ReleaseCreate(name, types.ReleaseCreateOptions{
+		Env: m.Environment,
+	})
+	if err != nil {
 		return err
 	}
 
