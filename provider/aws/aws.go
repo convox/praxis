@@ -335,6 +335,10 @@ func (p *Provider) deleteBucket(bucket string) error {
 	return nil
 }
 
+func (p *Provider) clearDescribeStackCache(name string) error {
+	return cache.Clear("describeStack", name)
+}
+
 func (p *Provider) describeStack(name string) (*cloudformation.Stack, error) {
 	if v, ok := cache.Get("describeStack", name).(*cloudformation.Stack); ok {
 		return v, nil
