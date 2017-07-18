@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/simpledb"
-	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
 )
@@ -138,7 +137,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 }
 
 func (p *Provider) ReleasePromote(app string, id string) error {
-	cache.Clear("describeStack", fmt.Sprintf("%s-%s", p.Name, app))
+	p.clearDescribeStackCache(fmt.Sprintf("%s-%s", p.Name, app))
 
 	a, err := p.AppGet(app)
 	if err != nil {
