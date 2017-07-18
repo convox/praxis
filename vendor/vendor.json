@@ -516,6 +516,12 @@
 			"revisionTime": "2014-09-26T15:38:14Z"
 		},
 		{
+			"checksumSHA1": "GD6bB4d/l4Qf/r1/nlZSplzJdZg=",
+			"path": "github.com/gorilla/websocket",
+			"revision": "462d5c5828f6203e4047c47be2920315937be380",
+			"revisionTime": "2017-07-08T07:26:55Z"
+		},
+		{
 			"checksumSHA1": "Uzyon2091lmwacNsl1hCytjhHtg=",
 			"path": "github.com/hashicorp/go-cleanhttp",
 			"revision": "ad28ea4487f05916463e2423a55166280e8254b5",
