@@ -141,7 +141,7 @@ func autoUpdate(ch chan error) {
 		return
 	}
 
-	v, err := latestVersion()
+	v, err := latestVersion("stable")
 	if err != nil {
 		ch <- err
 		return

@@ -16,11 +16,21 @@ func init() {
 		Description: "update the cli",
 		Usage:       "<version>",
 		Action:      runUpdate,
-	})
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "channel",
+				Usage: "release channel",
+				Value: "stable",
+			},
+		},
+	},
+	)
 }
 
 func runUpdate(c *cli.Context) error {
-	version, err := latestVersion()
+	channel := c.String("channel")
+
+	version, err := latestVersion(channel)
 	if err != nil {
 		return err
 	}
