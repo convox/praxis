@@ -32,6 +32,11 @@ func init() {
 				Usage:       "<provider>",
 				Flags: []cli.Flag{
 					cli.StringFlag{
+						Name:  "channel",
+						Usage: "release channel",
+						Value: "stable",
+					},
+					cli.StringFlag{
 						Name:  "name",
 						Usage: "rack name",
 						Value: "convox",
@@ -39,7 +44,7 @@ func init() {
 					cli.StringFlag{
 						Name:  "version",
 						Usage: "rack version",
-						Value: "latest",
+						Value: "",
 					},
 				},
 			},
@@ -95,7 +100,14 @@ func init() {
 				Description: "update the rack",
 				Usage:       "[version]",
 				Action:      runRackUpdate,
-				Flags:       []cli.Flag{rackFlag},
+				Flags: []cli.Flag{
+					rackFlag,
+					cli.StringFlag{
+						Name:  "channel",
+						Usage: "release channel",
+						Value: "stable",
+					},
+				},
 			},
 		},
 	})
@@ -145,7 +157,14 @@ func runRackInstall(c *cli.Context) error {
 
 	version := c.String("version")
 
-	if v, _ := latestVersion(); v != "" {
+	if version == "" {
+		channel := c.String("channel")
+
+		v, err := latestVersion(channel)
+		if err != nil {
+			return err
+		}
+
 		version = v
 	}
 
@@ -201,7 +220,7 @@ func runRackLogs(c *cli.Context) error {
 }
 
 func runRackStart(c *cli.Context) error {
-	version, err := latestVersion()
+	version, err := latestVersion("stable")
 	if err != nil {
 		return err
 	}
@@ -268,7 +287,9 @@ func runRackUninstall(c *cli.Context) error {
 }
 
 func runRackUpdate(c *cli.Context) error {
-	version, err := latestVersion()
+	channel := c.String("channel")
+
+	version, err := latestVersion(channel)
 	if err != nil {
 		return err
 	}
