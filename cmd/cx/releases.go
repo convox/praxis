@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -123,8 +122,6 @@ func runReleasesLogs(c *cli.Context) error {
 		Follow: c.Bool("follow"),
 		Since:  r.Created,
 	}
-
-	fmt.Printf("opts = %+v\n", opts)
 
 	if err := releaseLogs(Rack(c), app, id, os.Stdout, opts); err != nil {
 		return err
