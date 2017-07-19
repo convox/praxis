@@ -34,8 +34,6 @@ func runVersion(c *cli.Context) error {
 }
 
 func latestVersion(channel string) (string, error) {
-	fmt.Printf("channel = %+v\n", channel)
-
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://releases.convox.com/releases/%s/next", channel), nil)
 	if err != nil {
 		return "", err
