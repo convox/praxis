@@ -14,7 +14,6 @@ main: *.go
 release: lambda.zip
 	for region in $(shell cat ../../../../REGIONS); do \
 		aws s3 cp lambda.zip s3://praxis-releases-$$region/release/$(VERSION)/lambda/lifecycle.zip --acl public-read --region $$region; \
-		aws s3 cp lambda.zip s3://praxis-releases-$$region/release/latest/lambda/lifecycle.zip --acl public-read --region $$region; \
 	done
 
 test:
