@@ -61,7 +61,7 @@ func (d *DNS) resolveConvox(w dns.ResponseWriter, r *dns.Msg) {
 		for _, q := range m.Question {
 			switch q.Qtype {
 			case dns.TypeA:
-				if ep, ok := d.router.endpoints[strings.TrimSuffix(q.Name, ".")]; ok {
+				if ep, _ := d.router.matchEndpoint(strings.TrimSuffix(q.Name, ".")); ep != nil {
 					if rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ep.IP)); err == nil {
 						rr.Header().Ttl = 5
 						m.Answer = append(m.Answer, rr)

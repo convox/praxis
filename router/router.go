@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/convox/praxis/api"
@@ -140,6 +141,21 @@ func (r *Router) createEndpoint(host string) (*Endpoint, error) {
 	r.endpoints[host] = e
 
 	return &e, nil
+}
+
+func (r *Router) matchEndpoint(host string) (*Endpoint, error) {
+	parts := strings.Split(host, ".")
+
+	switch len(parts) {
+	case 3:
+		ep := r.endpoints[host]
+		return &ep, nil
+	case 4:
+		ep := r.endpoints[strings.Join(parts[1:4], ".")]
+		return &ep, nil
+	}
+
+	return nil, fmt.Errorf("no such endpoint: %s", host)
 }
 
 func (r *Router) createProxy(host, listen, target string) (*Proxy, error) {
