@@ -102,10 +102,9 @@ func (r *Router) Serve() error {
 	a.Route("GET", "/endpoints", r.EndpointList)
 	a.Route("POST", "/endpoints/{host}", r.EndpointCreate)
 	a.Route("DELETE", "/endpoints/{host}", r.EndpointDelete)
-
 	a.Route("POST", "/endpoints/{host}/proxies/{port}", r.ProxyCreate)
-
 	a.Route("POST", "/terminate", r.Terminate)
+	a.Route("GET", "/version", r.VersionGet)
 
 	if err := a.Listen("h2", fmt.Sprintf("%s:443", r.ip)); err != nil {
 		return err
