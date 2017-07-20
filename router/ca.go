@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
 	"math/big"
 	"time"
@@ -99,7 +100,7 @@ func (r *Router) generateCertificate(host string) (tls.Certificate, error) {
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		DNSNames:              []string{host},
+		DNSNames:              []string{host, fmt.Sprintf("*.%s", host)},
 	}
 
 	data, err := x509.CreateCertificate(rand.Reader, &template, cpub, &rkey.PublicKey, r.ca.PrivateKey)
