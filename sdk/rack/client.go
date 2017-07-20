@@ -112,8 +112,11 @@ func (c *Client) Stream(path string, opts RequestOptions) (io.ReadCloser, error)
 		for k, v := range opts.Headers {
 			header.Add(k, v)
 		}
-		creds := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:", c.Endpoint.User.Username())))
-		header.Add("Authorization", fmt.Sprintf("Basic %s", creds))
+
+		if c.Endpoint.User != nil {
+			creds := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:", c.Endpoint.User.Username())))
+			header.Add("Authorization", fmt.Sprintf("Basic %s", creds))
+		}
 
 		config := &websocket.Config{
 			Header:   header,

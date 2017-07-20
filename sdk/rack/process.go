@@ -72,12 +72,12 @@ func (c *Client) ProcessProxy(app, pid string, port int, in io.Reader) (io.ReadC
 		Body: in,
 	}
 
-	res, err := c.PostStream(fmt.Sprintf("/apps/%s/processes/%s/proxy/%d", app, pid, port), ro)
+	r, err := c.Stream(fmt.Sprintf("/apps/%s/processes/%s/proxy/%d", app, pid, port), ro)
 	if err != nil {
 		return nil, err
 	}
 
-	return res.Body, nil
+	return r, nil
 }
 
 func (c *Client) ProcessRun(app string, opts types.ProcessRunOptions) (int, error) {
