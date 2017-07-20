@@ -54,3 +54,9 @@ func (rt *Router) Terminate(w http.ResponseWriter, r *http.Request, c *api.Conte
 	}()
 	return c.RenderOK()
 }
+
+func (rt *Router) VersionGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	return c.RenderJSON(map[string]string{
+		"version": rt.Version,
+	})
+}
