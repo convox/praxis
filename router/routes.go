@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/convox/praxis/api"
 )
@@ -46,19 +47,10 @@ func (rt *Router) ProxyCreate(w http.ResponseWriter, r *http.Request, c *api.Con
 	return c.RenderJSON(p)
 }
 
-func (rt *Router) VersionGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	return c.RenderJSON(map[string]string{
-		"version": rt.Version,
-	})
-}
-
-func (rt *Router) VersionCheck(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	version := c.Var("version")
-
-	if rt.Version != "dev" && version > rt.Version {
-		fmt.Printf("ns=convox.router at=version client=%s router=%s action=die\n", version, rt.Version)
+func (rt *Router) Terminate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	go func() {
+		time.Sleep(1 * time.Second)
 		os.Exit(0)
-	}
-
-	return nil
+	}()
+	return c.RenderOK()
 }
