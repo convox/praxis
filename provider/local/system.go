@@ -118,7 +118,7 @@ func (p *Provider) SystemOptions() (map[string]string, error) {
 	log := p.logger("SystemOptions")
 
 	options := map[string]string{
-		"streaming": "http2",
+		"streaming": "websocket",
 	}
 
 	return options, log.Success()
