@@ -56,6 +56,10 @@ func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error
 		return nil, err
 	}
 
+	if len(res.Attributes) == 0 {
+		return nil, fmt.Errorf("release not found")
+	}
+
 	r, err := p.releaseFromAttributes(id, res.Attributes)
 	if err != nil {
 		return nil, err
