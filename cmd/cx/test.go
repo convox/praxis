@@ -87,7 +87,7 @@ func runTest(c *cli.Context) error {
 		return err
 	}
 
-	build, err := buildDirectory(Rack(c), app.Name, ".", types.BuildCreateOptions{Development: true}, m.Writer("build", os.Stdout))
+	build, err := buildDirectory(Rack(c), app.Name, ".", types.BuildCreateOptions{}, m.Writer("build", os.Stdout))
 	if err != nil {
 		return err
 	}
