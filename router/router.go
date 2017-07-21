@@ -66,8 +66,6 @@ func New(version, domain, iface, subnet string) (*Router, error) {
 		return nil, err
 	}
 
-	go d.Serve()
-
 	r.dns = d
 
 	fmt.Printf("ns=convox.router at=new version=%q domain=%q iface=%q subnet=%q\n", r.Version, r.Domain, r.Interface, r.Subnet)
@@ -97,6 +95,8 @@ func (r *Router) Serve() error {
 	if _, err := r.createProxy(rh, fmt.Sprintf("https://%s:443", ep.IP), "https://localhost:5443"); err != nil {
 		return err
 	}
+
+	go logError(r.dns.Serve())
 
 	a := api.New("convox.router", fmt.Sprintf("router.%s", r.Domain))
 
@@ -147,7 +147,7 @@ func (r *Router) matchEndpoint(host string) (*Endpoint, error) {
 	parts := strings.Split(host, ".")
 
 	switch len(parts) {
-	case 3:
+	case 2, 3:
 		ep := r.endpoints[host]
 		return &ep, nil
 	case 4:
