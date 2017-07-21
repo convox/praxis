@@ -9,29 +9,35 @@
 package dns
 
 //go:generate go run msg_generate.go
+//go:generate go run compress_generate.go
 
 import (
 	crand "crypto/rand"
 	"encoding/binary"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"strconv"
 	"sync"
 )
 
-const maxCompressionOffset = 2 << 13 // We have 14 bits for the compression pointer
+const (
+	maxCompressionOffset    = 2 << 13 // We have 14 bits for the compression pointer
+	maxDomainNameWireOctets = 255     // See RFC 1035 section 2.3.4
+)
 
 var (
 	ErrAlg           error = &Error{err: "bad algorithm"}                  // ErrAlg indicates an error with the (DNSSEC) algorithm.
 	ErrAuth          error = &Error{err: "bad authentication"}             // ErrAuth indicates an error in the TSIG authentication.
-	ErrBuf           error = &Error{err: "buffer size too small"}          // ErrBuf indicates that the buffer used it too small for the message.
-	ErrConnEmpty     error = &Error{err: "conn has no connection"}         // ErrConnEmpty indicates a connection is being uses before it is initialized.
+	ErrBuf           error = &Error{err: "buffer size too small"}          // ErrBuf indicates that the buffer used is too small for the message.
+	ErrConnEmpty     error = &Error{err: "conn has no connection"}         // ErrConnEmpty indicates a connection is being used before it is initialized.
 	ErrExtendedRcode error = &Error{err: "bad extended rcode"}             // ErrExtendedRcode ...
 	ErrFqdn          error = &Error{err: "domain must be fully qualified"} // ErrFqdn indicates that a domain name does not have a closing dot.
 	ErrId            error = &Error{err: "id mismatch"}                    // ErrId indicates there is a mismatch with the message's ID.
 	ErrKeyAlg        error = &Error{err: "bad key algorithm"}              // ErrKeyAlg indicates that the algorithm in the key is not valid.
 	ErrKey           error = &Error{err: "bad key"}
 	ErrKeySize       error = &Error{err: "bad key size"}
+	ErrLongDomain    error = &Error{err: fmt.Sprintf("domain name exceeded %d wire-format octets", maxDomainNameWireOctets)}
 	ErrNoSig         error = &Error{err: "no signature found"}
 	ErrPrivKey       error = &Error{err: "bad private key"}
 	ErrRcode         error = &Error{err: "bad rcode"}
@@ -262,7 +268,9 @@ func packDomainName(s string, msg []byte, off int, compression map[string]int, c
 				bsFresh = true
 			}
 			// Don't try to compress '.'
-			if compress && roBs[begin:] != "." {
+			// We should only compress when compress it true, but we should also still pick
+			// up names that can be used for *future* compression(s).
+			if compression != nil && roBs[begin:] != "." {
 				if p, ok := compression[roBs[begin:]]; !ok {
 					// Only offsets smaller than this can be used.
 					if offset < maxCompressionOffset {
@@ -326,6 +334,7 @@ func UnpackDomainName(msg []byte, off int) (string, int, error) {
 	s := make([]byte, 0, 64)
 	off1 := 0
 	lenmsg := len(msg)
+	maxLen := maxDomainNameWireOctets
 	ptr := 0 // number of pointers followed
 Loop:
 	for {
@@ -350,8 +359,10 @@ Loop:
 					fallthrough
 				case '"', '\\':
 					s = append(s, '\\', b)
+					// presentation-format \X escapes add an extra byte
+					maxLen += 1
 				default:
-					if b < 32 || b >= 127 { // unprintable use \DDD
+					if b < 32 || b >= 127 { // unprintable, use \DDD
 						var buf [3]byte
 						bufs := strconv.AppendInt(buf[:0], int64(b), 10)
 						s = append(s, '\\')
@@ -361,6 +372,8 @@ Loop:
 						for _, r := range bufs {
 							s = append(s, r)
 						}
+						// presentation-format \DDD escapes add 3 extra bytes
+						maxLen += 3
 					} else {
 						s = append(s, b)
 					}
@@ -385,6 +398,9 @@ Loop:
 			if ptr++; ptr > 10 {
 				return "", lenmsg, &Error{err: "too many compression pointers"}
 			}
+			// pointer should guarantee that it advances and points forwards at least
+			// but the condition on previous three lines guarantees that it's
+			// at least loop-free
 			off = (c^0xC0)<<8 | int(c1)
 		default:
 			// 0x80 and 0x40 are reserved
@@ -396,6 +412,9 @@ Loop:
 	}
 	if len(s) == 0 {
 		s = []byte(".")
+	} else if len(s) >= maxLen {
+		// error if the name is too long, but don't throw it away
+		return string(s), lenmsg, ErrLongDomain
 	}
 	return string(s), off1, nil
 }
@@ -731,12 +750,10 @@ func (dns *Msg) PackBuffer(buf []byte) (msg []byte, err error) {
 
 	// We need the uncompressed length here, because we first pack it and then compress it.
 	msg = buf
-	compress := dns.Compress
-	dns.Compress = false
-	if packLen := dns.Len() + 1; len(msg) < packLen {
+	uncompressedLen := compressedLen(dns, false)
+	if packLen := uncompressedLen + 1; len(msg) < packLen {
 		msg = make([]byte, packLen)
 	}
-	dns.Compress = compress
 
 	// Pack it in: header and then the pieces.
 	off := 0
@@ -889,16 +906,18 @@ func (dns *Msg) String() string {
 // If dns.Compress is true compression it is taken into account. Len()
 // is provided to be a faster way to get the size of the resulting packet,
 // than packing it, measuring the size and discarding the buffer.
-func (dns *Msg) Len() int {
+func (dns *Msg) Len() int { return compressedLen(dns, dns.Compress) }
+
+// compressedLen returns the message length when in compressed wire format
+// when compress is true, otherwise the uncompressed length is returned.
+func compressedLen(dns *Msg, compress bool) int {
 	// We always return one more than needed.
 	l := 12 // Message header is always 12 bytes
-	var compression map[string]int
-	if dns.Compress {
-		compression = make(map[string]int)
-	}
+	compression := map[string]int{}
+
 	for i := 0; i < len(dns.Question); i++ {
 		l += dns.Question[i].len()
-		if dns.Compress {
+		if compress {
 			compressionLenHelper(compression, dns.Question[i].Name)
 		}
 	}
@@ -907,7 +926,7 @@ func (dns *Msg) Len() int {
 			continue
 		}
 		l += dns.Answer[i].len()
-		if dns.Compress {
+		if compress {
 			k, ok := compressionLenSearch(compression, dns.Answer[i].Header().Name)
 			if ok {
 				l += 1 - k
@@ -925,7 +944,7 @@ func (dns *Msg) Len() int {
 			continue
 		}
 		l += dns.Ns[i].len()
-		if dns.Compress {
+		if compress {
 			k, ok := compressionLenSearch(compression, dns.Ns[i].Header().Name)
 			if ok {
 				l += 1 - k
@@ -943,7 +962,7 @@ func (dns *Msg) Len() int {
 			continue
 		}
 		l += dns.Extra[i].len()
-		if dns.Compress {
+		if compress {
 			k, ok := compressionLenSearch(compression, dns.Extra[i].Header().Name)
 			if ok {
 				l += 1 - k
@@ -987,97 +1006,6 @@ func compressionLenSearch(c map[string]int, s string) (int, bool) {
 			break
 		}
 		off, end = NextLabel(s, off)
-	}
-	return 0, false
-}
-
-// TODO(miek): should add all types, because the all can be *used* for compression. Autogenerate from msg_generate and put in zmsg.go
-func compressionLenHelperType(c map[string]int, r RR) {
-	switch x := r.(type) {
-	case *NS:
-		compressionLenHelper(c, x.Ns)
-	case *MX:
-		compressionLenHelper(c, x.Mx)
-	case *CNAME:
-		compressionLenHelper(c, x.Target)
-	case *PTR:
-		compressionLenHelper(c, x.Ptr)
-	case *SOA:
-		compressionLenHelper(c, x.Ns)
-		compressionLenHelper(c, x.Mbox)
-	case *MB:
-		compressionLenHelper(c, x.Mb)
-	case *MG:
-		compressionLenHelper(c, x.Mg)
-	case *MR:
-		compressionLenHelper(c, x.Mr)
-	case *MF:
-		compressionLenHelper(c, x.Mf)
-	case *MD:
-		compressionLenHelper(c, x.Md)
-	case *RT:
-		compressionLenHelper(c, x.Host)
-	case *RP:
-		compressionLenHelper(c, x.Mbox)
-		compressionLenHelper(c, x.Txt)
-	case *MINFO:
-		compressionLenHelper(c, x.Rmail)
-		compressionLenHelper(c, x.Email)
-	case *AFSDB:
-		compressionLenHelper(c, x.Hostname)
-	case *SRV:
-		compressionLenHelper(c, x.Target)
-	case *NAPTR:
-		compressionLenHelper(c, x.Replacement)
-	case *RRSIG:
-		compressionLenHelper(c, x.SignerName)
-	case *NSEC:
-		compressionLenHelper(c, x.NextDomain)
-		// HIP?
-	}
-}
-
-// Only search on compressing these types.
-func compressionLenSearchType(c map[string]int, r RR) (int, bool) {
-	switch x := r.(type) {
-	case *NS:
-		return compressionLenSearch(c, x.Ns)
-	case *MX:
-		return compressionLenSearch(c, x.Mx)
-	case *CNAME:
-		return compressionLenSearch(c, x.Target)
-	case *DNAME:
-		return compressionLenSearch(c, x.Target)
-	case *PTR:
-		return compressionLenSearch(c, x.Ptr)
-	case *SOA:
-		k, ok := compressionLenSearch(c, x.Ns)
-		k1, ok1 := compressionLenSearch(c, x.Mbox)
-		if !ok && !ok1 {
-			return 0, false
-		}
-		return k + k1, true
-	case *MB:
-		return compressionLenSearch(c, x.Mb)
-	case *MG:
-		return compressionLenSearch(c, x.Mg)
-	case *MR:
-		return compressionLenSearch(c, x.Mr)
-	case *MF:
-		return compressionLenSearch(c, x.Mf)
-	case *MD:
-		return compressionLenSearch(c, x.Md)
-	case *RT:
-		return compressionLenSearch(c, x.Host)
-	case *MINFO:
-		k, ok := compressionLenSearch(c, x.Rmail)
-		k1, ok1 := compressionLenSearch(c, x.Email)
-		if !ok && !ok1 {
-			return 0, false
-		}
-		return k + k1, true
-	case *AFSDB:
-		return compressionLenSearch(c, x.Hostname)
 	}
 	return 0, false
 }
