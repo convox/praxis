@@ -146,18 +146,20 @@ func (r *Router) createEndpoint(host string) (*Endpoint, error) {
 }
 
 func (r *Router) matchEndpoint(host string) (*Endpoint, error) {
-	parts := strings.Split(host, ".")
-
-	switch len(parts) {
-	case 2, 3:
-		ep := r.endpoints[host]
-		return &ep, nil
-	case 4:
-		ep := r.endpoints[strings.Join(parts[1:4], ".")]
+	if ep, ok := r.endpoints[host]; ok {
 		return &ep, nil
 	}
 
-	return nil, fmt.Errorf("no such endpoint: %s", host)
+	parts := strings.Split(host, ".")
+
+	if len(parts) < 3 {
+		return nil, fmt.Errorf("no such endpoint: %s", host)
+	}
+
+	base := strings.Join(parts[len(parts)-3:len(parts)], ".")
+	ep := r.endpoints[base]
+
+	return &ep, nil
 }
 
 func (r *Router) createProxy(host, listen, target string) (*Proxy, error) {
