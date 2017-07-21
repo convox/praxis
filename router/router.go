@@ -96,7 +96,9 @@ func (r *Router) Serve() error {
 		return err
 	}
 
-	go logError(r.dns.Serve())
+	go func() {
+		logError(r.dns.Serve())
+	}()
 
 	a := api.New("convox.router", fmt.Sprintf("router.%s", r.Domain))
 
