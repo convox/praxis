@@ -43,7 +43,7 @@ const (
 	PRIVATEOID uint8 = 254
 )
 
-// ALgorithmToString is a map of algorithm IDs to algorithm names.
+// AlgorithmToString is a map of algorithm IDs to algorithm names.
 var AlgorithmToString = map[uint8]string{
 	RSAMD5:           "RSAMD5",
 	DH:               "DH",
@@ -515,7 +515,7 @@ func (k *DNSKEY) publicKeyRSA() *rsa.PublicKey {
 	}
 	// Remainder
 	expo += uint64(keybuf[keyoff])
-	if expo > 2<<31 {
+	if expo > (2<<31)+1 {
 		// Larger expo than supported.
 		// println("dns: F5 primes (or larger) are not supported")
 		return nil

@@ -582,10 +582,10 @@
 			"revisionTime": "2017-03-22T23:44:13Z"
 		},
 		{
-			"checksumSHA1": "bm+LYMH3gA6Xiq8kwh0FOueSjTM=",
+			"checksumSHA1": "9pAG14mHB6groQiA9mrDf2oQC28=",
 			"path": "github.com/miekg/dns",
-			"revision": "5a15a35f5f671cf6ad8b316b50607c76e5e87fb6",
-			"revisionTime": "2017-02-15T20:40:16Z"
+			"revision": "0f3adef2e2201d72e50309a36fc99d8a9d1a4960",
+			"revisionTime": "2017-07-21T15:02:54Z"
 		},
 		{
 			"checksumSHA1": "V/quM7+em2ByJbWBLOsEwnY3j/Q=",
