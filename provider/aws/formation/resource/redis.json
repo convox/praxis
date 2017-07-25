@@ -21,7 +21,7 @@
     }
   },
   "Outputs": {
-    "Url": { "Value": { "Fn::Sub": "redis://${ReplicationGroup.PrimaryEndPoint.Address}:${ReplicationGroup.PrimaryEndPoint.Port}/app" } }
+    "Url": { "Value": { "Fn::Sub": "redis://${ReplicationGroup.PrimaryEndPoint.Address}:${ReplicationGroup.PrimaryEndPoint.Port}/0" } }
   },
   "Resources": {
     "SecurityGroup": {
