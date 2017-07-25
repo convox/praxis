@@ -109,7 +109,7 @@ func (r *Router) Serve() error {
 	a.Route("POST", "/terminate", r.Terminate)
 	a.Route("GET", "/version", r.VersionGet)
 
-	if err := a.Listen("h2", fmt.Sprintf("%s:443", r.ip)); err != nil {
+	if err := a.Listen("https", fmt.Sprintf("%s:443", r.ip)); err != nil {
 		return err
 	}
 
