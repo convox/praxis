@@ -24,7 +24,7 @@ func (s *Server) Listen(proto, addr string) error {
 	}
 
 	switch proto {
-	case "http2", "h2", "tcp":
+	case "h2", "https", "tls":
 		config := &tls.Config{
 			NextProtos: []string{"h2"},
 		}
