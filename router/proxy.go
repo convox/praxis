@@ -185,7 +185,9 @@ func proxyRackTCP(cn net.Conn, target *url.URL) error {
 		return fmt.Errorf("unknown proxy type: %s", kind)
 	}
 
-	if _, err := io.Copy(cn, pr); err != nil {
+	defer pr.Close()
+
+	if err := helpers.Stream(cn, pr); err != nil {
 		return err
 	}
 
@@ -274,6 +276,8 @@ func serviceProxy(rk rack.Rack, app, pid string, port int, rw io.ReadWriter) err
 	if err != nil {
 		return err
 	}
+
+	defer pr.Close()
 
 	if _, err := io.Copy(rw, pr); err != nil {
 		return err
