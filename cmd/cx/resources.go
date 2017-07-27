@@ -126,6 +126,8 @@ func handleProxyConnection(r rack.Rack, cn net.Conn, app, resource string) error
 		return err
 	}
 
+	defer rc.Close()
+
 	stdcli.OK()
 
 	return helpers.Stream(cn, rc)
