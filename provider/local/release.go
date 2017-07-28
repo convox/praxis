@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/types"
 	"github.com/pkg/errors"
 )
@@ -171,6 +172,9 @@ func (p *Provider) ReleasePromote(app, id string) error {
 	if err != nil {
 		return log.Error(err)
 	}
+
+	// clear current release cache so its no longer "active"
+	cache.Clear("storage", fmt.Sprintf("apps/%s/releases/%s/release.json", app, a.Release))
 
 	r, err := p.ReleaseGet(app, id)
 
