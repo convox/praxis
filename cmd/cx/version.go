@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime"
+	"strings"
 
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
@@ -24,7 +26,10 @@ func runVersion(c *cli.Context) error {
 
 	rack, err := Rack(c).SystemGet()
 	if err != nil {
-		fmt.Printf("server: error\n")
+		if os.Getenv("RACK_URL") == "https://localhost:5443" && strings.Contains(err.Error(), "connection refused") {
+			fmt.Printf("server: error\n")
+			return fmt.Errorf("Could not connect to local Rack. Is it installed and Docker running?")
+		}
 		return err
 	}
 
