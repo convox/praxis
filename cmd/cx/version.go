@@ -24,7 +24,7 @@ func runVersion(c *cli.Context) error {
 
 	rack, err := Rack(c).SystemGet()
 	if err != nil {
-		fmt.Printf("server: error: %s\n", err)
+		fmt.Printf("server: error\n")
 		return err
 	}
 
