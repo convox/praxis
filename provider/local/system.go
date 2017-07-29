@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"runtime"
 	"text/template"
 	"time"
 
@@ -51,6 +52,17 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 
 	if opts.Output != nil {
 		fmt.Fprintf(opts.Output, "pulling: convox/praxis:%s\n", opts.Version)
+	}
+
+	vf := "/var/convox/version"
+
+	switch runtime.GOOS {
+	case "darwin":
+		vf = "/Users/Shared/convox/version"
+	}
+
+	if err := ioutil.WriteFile(vf, []byte(opts.Version), 0644); err != nil {
+		return "", err
 	}
 
 	cmd := exec.Command("docker", "pull", fmt.Sprintf("convox/praxis:%s", opts.Version))
