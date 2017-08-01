@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"os"
 	"time"
 )
 
@@ -58,6 +59,10 @@ func generateCACertificate() (tls.Certificate, error) {
 
 	cert, err := tls.X509KeyPair(pub, key)
 	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	if err := os.MkdirAll("/Users/Shared/convox", 0755); err != nil {
 		return tls.Certificate{}, err
 	}
 

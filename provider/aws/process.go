@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/convox/praxis/types"
 	docker "github.com/fsouza/go-dockerclient"
@@ -172,7 +173,7 @@ func (p *Provider) ProcessLogs(app, pid string, opts types.LogsOptions) (io.Read
 
 	r, w := io.Pipe()
 
-	go p.subscribeLogsCallback(group, stream, opts, w, func() bool {
+	go p.subscribeLogsCallback(group, stream, opts, w, func(events []*cloudwatchlogs.FilteredLogEvent) bool {
 		t, err := p.taskForPid(pid)
 		if err != nil {
 			return false
