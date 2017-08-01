@@ -428,7 +428,7 @@ func (p *Provider) subscribeLogs(group, stream string, opts types.LogsOptions, w
 	return p.subscribeLogsCallback(group, stream, opts, w, nil)
 }
 
-func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOptions, w io.WriteCloser, fn func() bool) error {
+func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOptions, w io.WriteCloser, fn func([]*cloudwatchlogs.FilteredLogEvent) bool) error {
 	defer w.Close()
 
 	req := &cloudwatchlogs.FilterLogEventsInput{
@@ -502,7 +502,7 @@ func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOp
 		}
 
 		if fn != nil {
-			if !fn() {
+			if !fn(events) {
 				return nil
 			}
 		}

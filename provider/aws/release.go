@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/simpledb"
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
@@ -123,15 +124,18 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 
 	r, w := io.Pipe()
 
-	go p.subscribeLogsCallback(group, stream, opts, w, func() bool {
-		r, err := p.ReleaseGet(app, id)
-		if err != nil {
-			return false
-		}
+	go p.subscribeLogsCallback(group, stream, opts, w, func(events []*cloudwatchlogs.FilteredLogEvent) bool {
+		for _, e := range events {
+			if e.Message == nil {
+				continue
+			}
 
-		switch r.Status {
-		case "promoted", "failed", "active":
-			return false
+			switch strings.Split(*e.Message, ":")[0] {
+			case "release promoted":
+				return false
+			case "promote failed":
+				return false
+			}
 		}
 
 		return true
