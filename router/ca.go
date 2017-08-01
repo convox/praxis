@@ -20,6 +20,11 @@ func caCertificate() (tls.Certificate, error) {
 		return generateCACertificate()
 	}
 
+	cert, err = tls.LoadX509KeyPair("/etc/convox/ca.crt", "/etc/convox/ca.key")
+	if err != nil {
+		return generateCACertificate()
+	}
+
 	return cert, nil
 }
 
@@ -62,15 +67,15 @@ func generateCACertificate() (tls.Certificate, error) {
 		return tls.Certificate{}, err
 	}
 
-	if err := os.MkdirAll("/Users/Shared/convox", 0755); err != nil {
+	if err := os.MkdirAll("/etc/convox", 0755); err != nil {
 		return tls.Certificate{}, err
 	}
 
-	if err := ioutil.WriteFile("/Users/Shared/convox/ca.crt", pub, 0644); err != nil {
+	if err := ioutil.WriteFile("/etc/convox/ca.crt", pub, 0644); err != nil {
 		return tls.Certificate{}, err
 	}
 
-	if err := ioutil.WriteFile("/Users/Shared/convox/ca.key", key, 0600); err != nil {
+	if err := ioutil.WriteFile("/etc/convox/ca.key", key, 0600); err != nil {
 		return tls.Certificate{}, err
 	}
 
