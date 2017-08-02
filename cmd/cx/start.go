@@ -312,7 +312,7 @@ func handleAdds(r rack.Rack, app, pid, remote string, adds []changes.Change) err
 		stat, err := os.Stat(local)
 		if err != nil {
 			// skip transient files like '.git/.COMMIT_EDITMSG.swp'
-			if strings.Contains(err.Error(), "no such file or directory") {
+			if os.IsNotExist(err) {
 				continue
 			}
 
