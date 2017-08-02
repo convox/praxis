@@ -43,6 +43,9 @@ func Routes(server *api.Server) {
 	auth.Route("POST", "/apps/{app}/keys/{key}/decrypt", controllers.KeyDecrypt)
 	auth.Route("POST", "/apps/{app}/keys/{key}/encrypt", controllers.KeyEncrypt)
 
+	auth.Route("GET", "/apps/{app}/metrics/{name}", controllers.MetricGet)
+	auth.Route("GET", "/apps/{app}/metrics", controllers.MetricList)
+
 	auth.Route("HEAD", "/apps/{app}/objects/{key:.*}", controllers.ObjectExists)
 	auth.Route("GET", "/apps/{app}/objects/{key:.*}", controllers.ObjectFetch)
 	auth.Route("POST", "/apps/{app}/objects/{key:.*}", controllers.ObjectStore)

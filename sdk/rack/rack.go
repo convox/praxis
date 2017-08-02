@@ -13,7 +13,7 @@ const (
 
 type Rack types.Provider
 
-func New(endpoint string) (Rack, error) {
+func New(endpoint string) (*Client, error) {
 	u, err := url.Parse(coalesce(endpoint, "https://localhost:5443"))
 	if err != nil {
 		return nil, err
@@ -22,6 +22,6 @@ func New(endpoint string) (Rack, error) {
 	return &Client{Debug: os.Getenv("CONVOX_DEBUG") == "true", Endpoint: u, Version: "dev"}, nil
 }
 
-func NewFromEnv() (Rack, error) {
+func NewFromEnv() (*Client, error) {
 	return New(os.Getenv("RACK_URL"))
 }
