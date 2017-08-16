@@ -10,17 +10,17 @@
       }
     },
     "RegionConfig": {
-      "us-east-2": { "Ami": "ami-207b5a45" },
-      "us-east-1": { "Ami": "ami-04351e12" },
-      "us-west-2": { "Ami": "ami-57d9cd2e" },
-      "us-west-1": { "Ami": "ami-7d664a1d" },
-      "eu-west-2": { "Ami": "ami-ff15039b" },
-      "eu-west-1": { "Ami": "ami-809f84e6" },
-      "eu-central-1": { "Ami": "ami-a3a006cc" },
-      "ap-northeast-1": { "Ami": "ami-e4657283" },
-      "ap-southeast-2": { "Ami": "ami-42e9f921" },
-      "ap-southeast-1": { "Ami": "ami-19f7787a" },
-      "ca-central-1": { "Ami": "ami-3da81759" }
+      "us-east-2": { "Ami": "ami-bb8eaede" },
+      "us-east-1": { "Ami": "ami-d61027ad" },
+      "us-west-2": { "Ami": "ami-c6f81abe" },
+      "us-west-1": { "Ami": "ami-514e6431" },
+      "eu-west-2": { "Ami": "ami-0a85946e" },
+      "eu-west-1": { "Ami": "ami-bd7e8dc4" },
+      "eu-central-1": { "Ami": "ami-f15ff69e" },
+      "ap-northeast-1": { "Ami": "ami-ab5ea9cd" },
+      "ap-southeast-2": { "Ami": "ami-c3233ba0" },
+      "ap-southeast-1": { "Ami": "ami-ae0b91cd" },
+      "ca-central-1": { "Ami": "ami-32bb0556" }
     }
   },
   "Outputs": {
