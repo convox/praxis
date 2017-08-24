@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
 	"github.com/docker/docker/pkg/archive"
@@ -20,9 +21,7 @@ func init() {
 		Name:        "diff",
 		Description: "show changes to be promoted",
 		Action:      runDiff,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Flags:       globalFlags,
 	})
 }
 
@@ -32,7 +31,7 @@ func runDiff(c *cli.Context) error {
 		return err
 	}
 
-	a, err := Rack.AppGet(app)
+	a, err := Rack(c).AppGet(app)
 	if err != nil {
 		return err
 	}
@@ -41,7 +40,7 @@ func runDiff(c *cli.Context) error {
 		return fmt.Errorf("no releases for app: %s", app)
 	}
 
-	rs, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	rs, err := Rack(c).ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return err
 	}
@@ -52,14 +51,14 @@ func runDiff(c *cli.Context) error {
 
 	rt := rs[0]
 
-	rc, err := Rack.ReleaseGet(app, a.Release)
+	rc, err := Rack(c).ReleaseGet(app, a.Release)
 	if err != nil {
 		return err
 	}
 
 	stdcli.Startf("fetching <name>%s</name>", rt.Id)
 
-	bdt, err := fetchBuild(app, rt)
+	bdt, err := fetchBuild(Rack(c), app, rt)
 	if err != nil {
 		return err
 	}
@@ -68,7 +67,7 @@ func runDiff(c *cli.Context) error {
 
 	stdcli.Startf("fetching <name>%s</name>", rc.Id)
 
-	bdc, err := fetchBuild(app, *rc)
+	bdc, err := fetchBuild(Rack(c), app, *rc)
 	if err != nil {
 		return err
 	}
@@ -85,13 +84,13 @@ func runDiff(c *cli.Context) error {
 	return nil
 }
 
-func fetchBuild(app string, r types.Release) (string, error) {
+func fetchBuild(r rack.Rack, app string, release types.Release) (string, error) {
 	tmp, err := ioutil.TempDir("", "")
 	if err != nil {
 		return "", err
 	}
 
-	c, err := Rack.ObjectFetch(app, fmt.Sprintf("convox/builds/%s/context.tgz", r.Build))
+	c, err := r.ObjectFetch(app, fmt.Sprintf("convox/builds/%s/context.tgz", release.Build))
 	if err != nil {
 		return "", err
 	}
@@ -102,7 +101,7 @@ func fetchBuild(app string, r types.Release) (string, error) {
 
 	ep := []string{}
 
-	for k, v := range r.Env {
+	for k, v := range release.Env {
 		ep = append(ep, fmt.Sprintf("%s=%s", k, v))
 	}
 

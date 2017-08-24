@@ -32,6 +32,11 @@ func init() {
 				Usage:       "<provider>",
 				Flags: []cli.Flag{
 					cli.StringFlag{
+						Name:  "channel",
+						Usage: "release channel",
+						Value: "stable",
+					},
+					cli.StringFlag{
 						Name:  "name",
 						Usage: "rack name",
 						Value: "convox",
@@ -39,7 +44,7 @@ func init() {
 					cli.StringFlag{
 						Name:  "version",
 						Usage: "rack version",
-						Value: "latest",
+						Value: "",
 					},
 				},
 			},
@@ -48,7 +53,7 @@ func init() {
 				Description: "show rack logs",
 				Action:      runRackLogs,
 				Flags: []cli.Flag{
-					appFlag,
+					rackFlag,
 					cli.StringFlag{
 						Name:  "filter",
 						Usage: "filter logs",
@@ -95,13 +100,21 @@ func init() {
 				Description: "update the rack",
 				Usage:       "[version]",
 				Action:      runRackUpdate,
+				Flags: []cli.Flag{
+					rackFlag,
+					cli.StringFlag{
+						Name:  "channel",
+						Usage: "release channel",
+						Value: "stable",
+					},
+				},
 			},
 		},
 	})
 }
 
 func runRack(c *cli.Context) error {
-	rack, err := Rack.SystemGet()
+	rack, err := Rack(c).SystemGet()
 	if err != nil {
 		return err
 	}
@@ -144,7 +157,14 @@ func runRackInstall(c *cli.Context) error {
 
 	version := c.String("version")
 
-	if v, _ := latestVersion(); v != "" {
+	if version == "" {
+		channel := c.String("channel")
+
+		v, err := latestVersion(channel)
+		if err != nil {
+			return err
+		}
+
 		version = v
 	}
 
@@ -187,7 +207,7 @@ func runRackLogs(c *cli.Context) error {
 		Since:  time.Now().Add(-1 * since),
 	}
 
-	logs, err := Rack.SystemLogs(opts)
+	logs, err := Rack(c).SystemLogs(opts)
 	if err != nil {
 		return err
 	}
@@ -200,7 +220,10 @@ func runRackLogs(c *cli.Context) error {
 }
 
 func runRackStart(c *cli.Context) error {
-	version := "latest"
+	version, err := latestVersion("stable")
+	if err != nil {
+		return err
+	}
 
 	vf := "/Users/Shared/convox/version"
 
@@ -264,7 +287,9 @@ func runRackUninstall(c *cli.Context) error {
 }
 
 func runRackUpdate(c *cli.Context) error {
-	version, err := latestVersion()
+	channel := c.String("channel")
+
+	version, err := latestVersion(channel)
 	if err != nil {
 		return err
 	}
@@ -273,7 +298,7 @@ func runRackUpdate(c *cli.Context) error {
 		version = c.Args()[0]
 	}
 
-	s, err := Rack.SystemGet()
+	s, err := Rack(c).SystemGet()
 	if err != nil {
 		return err
 	}
@@ -285,7 +310,7 @@ func runRackUpdate(c *cli.Context) error {
 
 	stdcli.Startf("updating <name>%s</name> to <version>%s</version>", s.Name, opts.Version)
 
-	if err := Rack.SystemUpdate(opts); err != nil {
+	if err := Rack(c).SystemUpdate(opts); err != nil {
 		return stdcli.Error(err)
 	}
 

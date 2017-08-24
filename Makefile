@@ -36,8 +36,6 @@ mocks:
 release:
 	docker build -t convox/praxis:$(VERSION) .
 	docker push convox/praxis:$(VERSION)
-	docker tag convox/praxis:$(VERSION) convox/praxis:latest
-	docker push convox/praxis:latest
 	make -C cmd/cx release VERSION=$(VERSION)
 	make -C provider release VERSION=$(VERSION)
 	env VERSION=$(VERSION) bin/release

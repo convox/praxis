@@ -5,8 +5,10 @@ import (
 	"io"
 	"math/rand"
 	"sort"
+	"strings"
 	"time"
 
+	"github.com/convox/praxis/cache"
 	"github.com/convox/praxis/types"
 	"github.com/pkg/errors"
 )
@@ -45,13 +47,17 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
 	log := p.logger("ReleaseGet").Append("app=%q id=%q", app, id)
 
-	if _, err := p.AppGet(app); err != nil {
+	a, err := p.AppGet(app)
+	if err != nil {
 		return nil, log.Error(err)
 	}
 
 	var r *types.Release
 
 	if err := p.storageLoad(fmt.Sprintf("apps/%s/releases/%s/release.json", app, id), &r, ReleaseCacheDuration); err != nil {
+		if strings.Contains(err.Error(), "no such key") {
+			return nil, fmt.Errorf("release not found")
+		}
 		return nil, errors.WithStack(log.Error(err))
 	}
 	if r == nil {
@@ -60,6 +66,10 @@ func (p *Provider) ReleaseGet(app, id string) (*types.Release, error) {
 
 	if r.Env == nil {
 		r.Env = types.Environment{}
+	}
+
+	if a.Release == r.Id {
+		r.Status = "active"
 	}
 
 	return r, log.Success()
@@ -146,7 +156,7 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 				continue
 			}
 
-			if r.Status == "promoted" || r.Status == "failed" {
+			if r.Status == "promoted" || r.Status == "failed" || r.Status == "active" {
 				break
 			}
 		}
@@ -162,6 +172,9 @@ func (p *Provider) ReleasePromote(app, id string) error {
 	if err != nil {
 		return log.Error(err)
 	}
+
+	// clear current release cache so its no longer "active"
+	cache.Clear("storage", fmt.Sprintf("apps/%s/releases/%s/release.json", app, a.Release))
 
 	r, err := p.ReleaseGet(app, id)
 

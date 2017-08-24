@@ -11,27 +11,27 @@ import (
 )
 
 func init() {
+	flags := []cli.Flag{
+		cli.StringFlag{
+			Name:  "filter",
+			Usage: "filter logs",
+			Value: "",
+		},
+		cli.BoolFlag{
+			Name:  "follow, f",
+			Usage: "stream logs continuously",
+		},
+		cli.StringFlag{
+			Name:  "since",
+			Usage: "how far back to retrieve logs",
+			Value: "2m",
+		},
+	}
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "logs",
 		Description: "show app logs",
 		Action:      runLogs,
-		Flags: []cli.Flag{
-			appFlag,
-			cli.StringFlag{
-				Name:  "filter",
-				Usage: "filter logs",
-				Value: "",
-			},
-			cli.BoolFlag{
-				Name:  "follow, f",
-				Usage: "stream logs continuously",
-			},
-			cli.StringFlag{
-				Name:  "since",
-				Usage: "how far back to retrieve logs",
-				Value: "2m",
-			},
-		},
+		Flags:       append(flags, globalFlags...),
 	})
 }
 
@@ -53,7 +53,7 @@ func runLogs(c *cli.Context) error {
 		Since:  time.Now().Add(-1 * since),
 	}
 
-	logs, err := Rack.AppLogs(app, opts)
+	logs, err := Rack(c).AppLogs(app, opts)
 	if err != nil {
 		return err
 	}

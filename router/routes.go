@@ -3,6 +3,8 @@ package router
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/convox/praxis/api"
 )
@@ -37,9 +39,24 @@ func (rt *Router) ProxyCreate(w http.ResponseWriter, r *http.Request, c *api.Con
 		return fmt.Errorf("no such endpoint: %s", host)
 	}
 
-	if _, err := rt.createProxy(host, fmt.Sprintf("%s://%s:%s", scheme, ep.IP, port), target); err != nil {
+	p, err := rt.createProxy(host, fmt.Sprintf("%s://%s:%s", scheme, ep.IP, port), target)
+	if err != nil {
 		return err
 	}
 
-	return nil
+	return c.RenderJSON(p)
+}
+
+func (rt *Router) Terminate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	go func() {
+		time.Sleep(1 * time.Second)
+		os.Exit(0)
+	}()
+	return c.RenderOK()
+}
+
+func (rt *Router) VersionGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
+	return c.RenderJSON(map[string]string{
+		"version": rt.Version,
+	})
 }

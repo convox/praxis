@@ -9,10 +9,12 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"runtime"
 	"text/template"
 	"time"
 
 	"github.com/convox/praxis/types"
+	"github.com/kr/text"
 	"github.com/pkg/errors"
 )
 
@@ -48,11 +50,37 @@ func (p *Provider) SystemInstall(name string, opts types.SystemInstallOptions) (
 		return "", fmt.Errorf("must be root to install a local rack")
 	}
 
-	if err := launcherInstall("convox.router", cx, "router"); err != nil {
+	if opts.Output != nil {
+		fmt.Fprintf(opts.Output, "pulling: convox/praxis:%s\n", opts.Version)
+	}
+
+	vf := "/var/convox/version"
+
+	switch runtime.GOOS {
+	case "darwin":
+		vf = "/Users/Shared/convox/version"
+	}
+
+	if err := ioutil.WriteFile(vf, []byte(opts.Version), 0644); err != nil {
 		return "", err
 	}
 
-	if err := launcherInstall("convox.rack", cx, "rack", "start"); err != nil {
+	cmd := exec.Command("docker", "pull", fmt.Sprintf("convox/praxis:%s", opts.Version))
+
+	if opts.Output != nil {
+		cmd.Stdout = text.NewIndentWriter(opts.Output, []byte("  "))
+		cmd.Stderr = text.NewIndentWriter(opts.Output, []byte("  "))
+	}
+
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+
+	if err := launcherInstall("convox.router", opts, cx, "router"); err != nil {
+		return "", err
+	}
+
+	if err := launcherInstall("convox.rack", opts, cx, "rack", "start"); err != nil {
 		return "", err
 	}
 
@@ -102,7 +130,7 @@ func (p *Provider) SystemOptions() (map[string]string, error) {
 	log := p.logger("SystemOptions")
 
 	options := map[string]string{
-		"streaming": "http2",
+		"streaming": "websocket",
 	}
 
 	return options, log.Success()
@@ -161,7 +189,7 @@ func (p *Provider) SystemUpdate(opts types.SystemUpdateOptions) error {
 	return log.Success()
 }
 
-func launcherInstall(name string, command string, args ...string) error {
+func launcherInstall(name string, opts types.SystemInstallOptions, command string, args ...string) error {
 	var buf bytes.Buffer
 
 	params := map[string]interface{}{
@@ -177,7 +205,9 @@ func launcherInstall(name string, command string, args ...string) error {
 
 	path := launcherPath(name)
 
-	fmt.Printf("installing: %s\n", path)
+	if opts.Output != nil {
+		fmt.Fprintf(opts.Output, "installing: %s\n", path)
+	}
 
 	if err := ioutil.WriteFile(path, buf.Bytes(), 0644); err != nil {
 		return err

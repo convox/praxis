@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/convox/praxis/api"
+	"github.com/convox/praxis/helpers"
 )
 
 func ResourceGet(w http.ResponseWriter, r *http.Request, c *api.Context) error {
@@ -49,7 +50,7 @@ func ResourceProxy(rw io.ReadWriteCloser, c *api.Context) error {
 
 	defer p.Close()
 
-	if _, err := io.Copy(rw, p); err != nil {
+	if err := helpers.Stream(rw, p); err != nil {
 		return err
 	}
 

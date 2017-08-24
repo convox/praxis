@@ -17,7 +17,6 @@ import (
 
 	"github.com/convox/praxis/stdcli"
 
-	"golang.org/x/net/http2"
 	"golang.org/x/net/websocket"
 )
 
@@ -113,8 +112,11 @@ func (c *Client) Stream(path string, opts RequestOptions) (io.ReadCloser, error)
 		for k, v := range opts.Headers {
 			header.Add(k, v)
 		}
-		creds := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:", c.Endpoint.User.Username())))
-		header.Add("Authorization", fmt.Sprintf("Basic %s", creds))
+
+		if c.Endpoint.User != nil {
+			creds := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:", c.Endpoint.User.Username())))
+			header.Add("Authorization", fmt.Sprintf("Basic %s", creds))
+		}
 
 		config := &websocket.Config{
 			Header:   header,
@@ -275,9 +277,11 @@ func (c *Client) Client() *http.Client {
 		},
 	}
 
-	if err := http2.ConfigureTransport(t); err != nil {
-		panic(err)
-	}
+	// disabled because HTTP2 over ALB doesn't work yet
+
+	// if err := http2.ConfigureTransport(t); err != nil {
+	//   panic(err)
+	// }
 
 	return &http.Client{
 		Transport: t,
@@ -342,9 +346,11 @@ func (c *Client) handleRequest(req *http.Request) (*http.Response, error) {
 }
 
 func responseError(res *http.Response) error {
-	if !res.ProtoAtLeast(2, 0) {
-		return fmt.Errorf("server did not respond with http/2")
-	}
+	// disabled because HTTP2 over ALB doesnt work yet
+
+	// if !res.ProtoAtLeast(2, 0) {
+	//   return fmt.Errorf("server did not respond with http/2")
+	// }
 
 	if res.StatusCode < 400 {
 		return nil

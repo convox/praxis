@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime"
+	"strings"
 
 	"github.com/convox/praxis/stdcli"
 	cli "gopkg.in/urfave/cli.v1"
@@ -20,29 +22,35 @@ func init() {
 }
 
 func runVersion(c *cli.Context) error {
-	rack, err := Rack.SystemGet()
+	fmt.Printf("client: %s\n", Version)
+
+	rack, err := Rack(c).SystemGet()
 	if err != nil {
+		if os.Getenv("RACK_URL") == "https://localhost:5443" && strings.Contains(err.Error(), "connection refused") {
+			fmt.Printf("server: error\n")
+			return fmt.Errorf("Could not connect to local Rack. Is it installed and Docker running?")
+		}
 		return err
 	}
 
-	fmt.Printf("client: %s\n", Version)
 	fmt.Printf("server: %s\n", rack.Version)
 
 	return nil
 }
 
-func latestVersion() (string, error) {
-	req, err := http.NewRequest("GET", "https://releases.convox.com/releases/edge/next", nil)
+func latestVersion(channel string) (string, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://releases.convox.com/releases/%s/next", channel), nil)
 	if err != nil {
 		return "", err
 	}
 
-	id, err := cliID()
-	if err != nil {
-		return "", err
+	agent := fmt.Sprintf("convox/%s (%s/%s)", Version, runtime.GOOS, runtime.GOARCH)
+
+	if id, _ := cliID(); id != "" {
+		agent = fmt.Sprintf("%s (%s)", agent, id)
 	}
 
-	req.Header.Set("User-Agent", fmt.Sprintf("convox/%s (%s; %s/%s)", Version, id, runtime.GOOS, runtime.GOARCH))
+	req.Header.Set("User-Agent", agent)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

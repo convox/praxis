@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/convox/praxis/api"
@@ -27,6 +28,7 @@ type Router struct {
 	Domain    string
 	Interface string
 	Subnet    string
+	Version   string
 
 	ca        tls.Certificate
 	dns       *DNS
@@ -36,7 +38,7 @@ type Router struct {
 	net       *net.IPNet
 }
 
-func New(domain, iface, subnet string) (*Router, error) {
+func New(version, domain, iface, subnet string) (*Router, error) {
 	ip, net, err := net.ParseCIDR(subnet)
 	if err != nil {
 		return nil, err
@@ -46,6 +48,7 @@ func New(domain, iface, subnet string) (*Router, error) {
 		Domain:    domain,
 		Interface: iface,
 		Subnet:    subnet,
+		Version:   version,
 		endpoints: map[string]Endpoint{},
 		ip:        ip,
 		net:       net,
@@ -63,9 +66,9 @@ func New(domain, iface, subnet string) (*Router, error) {
 		return nil, err
 	}
 
-	go d.Serve()
-
 	r.dns = d
+
+	fmt.Printf("ns=convox.router at=new version=%q domain=%q iface=%q subnet=%q\n", r.Version, r.Domain, r.Interface, r.Subnet)
 
 	return r, nil
 }
@@ -93,15 +96,20 @@ func (r *Router) Serve() error {
 		return err
 	}
 
+	go func() {
+		logError(r.dns.Serve())
+	}()
+
 	a := api.New("convox.router", fmt.Sprintf("router.%s", r.Domain))
 
 	a.Route("GET", "/endpoints", r.EndpointList)
 	a.Route("POST", "/endpoints/{host}", r.EndpointCreate)
 	a.Route("DELETE", "/endpoints/{host}", r.EndpointDelete)
-
 	a.Route("POST", "/endpoints/{host}/proxies/{port}", r.ProxyCreate)
+	a.Route("POST", "/terminate", r.Terminate)
+	a.Route("GET", "/version", r.VersionGet)
 
-	if err := a.Listen("h2", fmt.Sprintf("%s:443", r.ip)); err != nil {
+	if err := a.Listen("https", fmt.Sprintf("%s:443", r.ip)); err != nil {
 		return err
 	}
 
@@ -112,6 +120,10 @@ func (r *Router) createEndpoint(host string) (*Endpoint, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
+	if ep, ok := r.endpoints[host]; ok {
+		return &ep, nil
+	}
+
 	ip, err := r.nextIP()
 	if err != nil {
 		return nil, err
@@ -120,9 +132,6 @@ func (r *Router) createEndpoint(host string) (*Endpoint, error) {
 	if err := createAlias(r.Interface, ip.String()); err != nil {
 		return nil, err
 	}
-
-	// go r.proxy(host, fmt.Sprintf("http://%s:80", ip), target)
-	// go r.proxy(host, fmt.Sprintf("https://%s:443", ip), target)
 
 	e := Endpoint{
 		Host:    host,
@@ -134,6 +143,23 @@ func (r *Router) createEndpoint(host string) (*Endpoint, error) {
 	r.endpoints[host] = e
 
 	return &e, nil
+}
+
+func (r *Router) matchEndpoint(host string) (*Endpoint, error) {
+	if ep, ok := r.endpoints[host]; ok {
+		return &ep, nil
+	}
+
+	parts := strings.Split(host, ".")
+
+	if len(parts) < 3 {
+		return nil, fmt.Errorf("no such endpoint: %s", host)
+	}
+
+	base := strings.Join(parts[len(parts)-3:len(parts)], ".")
+	ep := r.endpoints[base]
+
+	return &ep, nil
 }
 
 func (r *Router) createProxy(host, listen, target string) (*Proxy, error) {
@@ -160,8 +186,8 @@ func (r *Router) createProxy(host, listen, target string) (*Proxy, error) {
 		return nil, err
 	}
 
-	if _, ok := r.endpoints[host].Proxies[pi]; ok {
-		return nil, fmt.Errorf("proxy already exists: %s", listen)
+	if p, ok := r.endpoints[host].Proxies[pi]; ok {
+		return &p, nil
 	}
 
 	p, err := ep.NewProxy(host, ul, ut)

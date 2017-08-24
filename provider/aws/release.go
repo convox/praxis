@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/simpledb"
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/types"
@@ -38,7 +39,8 @@ func (p *Provider) ReleaseCreate(app string, opts types.ReleaseCreateOptions) (*
 }
 
 func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error) {
-	if _, err := p.AppGet(app); err != nil {
+	a, err := p.AppGet(app)
+	if err != nil {
 		return nil, err
 	}
 
@@ -55,16 +57,25 @@ func (p *Provider) ReleaseGet(app, id string) (release *types.Release, err error
 		return nil, err
 	}
 
+	if len(res.Attributes) == 0 {
+		return nil, fmt.Errorf("release not found")
+	}
+
 	r, err := p.releaseFromAttributes(id, res.Attributes)
 	if err != nil {
 		return nil, err
+	}
+
+	if a.Release == r.Id {
+		r.Status = "active"
 	}
 
 	return r, nil
 }
 
 func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types.Releases, error) {
-	if _, err := p.AppGet(app); err != nil {
+	a, err := p.AppGet(app)
+	if err != nil {
 		return nil, err
 	}
 
@@ -93,6 +104,10 @@ func (p *Provider) ReleaseList(app string, opts types.ReleaseListOptions) (types
 			return nil, err
 		}
 
+		if a.Release == release.Id {
+			release.Status = "active"
+		}
+
 		releases = append(releases, *release)
 	}
 
@@ -109,15 +124,18 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 
 	r, w := io.Pipe()
 
-	go p.subscribeLogsCallback(group, stream, opts, w, func() bool {
-		r, err := p.ReleaseGet(app, id)
-		if err != nil {
-			return false
-		}
+	go p.subscribeLogsCallback(group, stream, opts, w, func(events []*cloudwatchlogs.FilteredLogEvent) bool {
+		for _, e := range events {
+			if e.Message == nil {
+				continue
+			}
 
-		switch r.Status {
-		case "promoted", "failed":
-			return false
+			switch strings.Split(*e.Message, ":")[0] {
+			case "release promoted":
+				return false
+			case "promote failed":
+				return false
+			}
 		}
 
 		return true
@@ -127,6 +145,8 @@ func (p *Provider) ReleaseLogs(app, id string, opts types.LogsOptions) (io.ReadC
 }
 
 func (p *Provider) ReleasePromote(app string, id string) error {
+	p.clearDescribeStackCache(fmt.Sprintf("%s-%s", p.Name, app))
+
 	a, err := p.AppGet(app)
 	if err != nil {
 		return err
@@ -165,9 +185,15 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 		return err
 	}
 
-	fmt.Printf("string(data) = %+v\n", string(data))
+	obj, err := p.ObjectStore(r.App, fmt.Sprintf("convox/release/%s/template", r.Id), bytes.NewReader(data), types.ObjectStoreOptions{})
+	if err != nil {
+		return err
+	}
 
-	// return nil, fmt.Errorf("stop")
+	bucket, err := p.appResource(app, "Bucket")
+	if err != nil {
+		return err
+	}
 
 	domain, err := p.rackOutput("Domain")
 	if err != nil {
@@ -236,7 +262,7 @@ func (p *Provider) ReleasePromote(app string, id string) error {
 		Parameters:         params,
 		NotificationARNs:   []*string{aws.String(topic)},
 		StackName:          aws.String(stack),
-		TemplateBody:       aws.String(string(data)),
+		TemplateURL:        aws.String(fmt.Sprintf("https://s3.amazonaws.com/%s/%s", bucket, obj.Key)),
 	})
 	if err != nil {
 		return err

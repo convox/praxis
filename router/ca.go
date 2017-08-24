@@ -7,13 +7,20 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
 	"math/big"
+	"os"
 	"time"
 )
 
 func caCertificate() (tls.Certificate, error) {
 	cert, err := tls.LoadX509KeyPair("/Users/Shared/convox/ca.crt", "/Users/Shared/convox/ca.key")
+	if err != nil {
+		return generateCACertificate()
+	}
+
+	cert, err = tls.LoadX509KeyPair("/etc/convox/ca.crt", "/etc/convox/ca.key")
 	if err != nil {
 		return generateCACertificate()
 	}
@@ -60,11 +67,15 @@ func generateCACertificate() (tls.Certificate, error) {
 		return tls.Certificate{}, err
 	}
 
-	if err := ioutil.WriteFile("/Users/Shared/convox/ca.crt", pub, 0644); err != nil {
+	if err := os.MkdirAll("/etc/convox", 0755); err != nil {
 		return tls.Certificate{}, err
 	}
 
-	if err := ioutil.WriteFile("/Users/Shared/convox/ca.key", key, 0600); err != nil {
+	if err := ioutil.WriteFile("/etc/convox/ca.crt", pub, 0644); err != nil {
+		return tls.Certificate{}, err
+	}
+
+	if err := ioutil.WriteFile("/etc/convox/ca.key", key, 0600); err != nil {
 		return tls.Certificate{}, err
 	}
 
@@ -99,7 +110,7 @@ func (r *Router) generateCertificate(host string) (tls.Certificate, error) {
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		DNSNames:              []string{host},
+		DNSNames:              []string{host, fmt.Sprintf("*.%s", host)},
 	}
 
 	data, err := x509.CreateCertificate(rand.Reader, &template, cpub, &rkey.PublicKey, r.ca.PrivateKey)

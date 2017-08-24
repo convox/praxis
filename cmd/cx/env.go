@@ -15,27 +15,21 @@ func init() {
 		Name:        "env",
 		Description: "display current env",
 		Action:      runEnv,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Flags:       globalFlags,
 		Subcommands: []cli.Command{
 			cli.Command{
 				Name:        "set",
 				Description: "change env values",
 				Usage:       "<KEY=value> [KEY=value]...",
 				Action:      runEnvSet,
-				Flags: []cli.Flag{
-					appFlag,
-				},
+				Flags:       globalFlags,
 			},
 			cli.Command{
 				Name:        "unset",
 				Description: "remove env values",
 				Usage:       "<KEY> [KEY]...",
 				Action:      runEnvUnset,
-				Flags: []cli.Flag{
-					appFlag,
-				},
+				Flags:       globalFlags,
 			},
 		},
 	})
@@ -47,7 +41,7 @@ func runEnv(c *cli.Context) error {
 		return err
 	}
 
-	rs, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	rs, err := Rack(c).ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return err
 	}
@@ -93,7 +87,7 @@ func runEnvSet(c *cli.Context) error {
 
 	cenv := types.Environment{}
 
-	rs, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	rs, err := Rack(c).ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return err
 	}
@@ -108,7 +102,7 @@ func runEnvSet(c *cli.Context) error {
 
 	stdcli.Startf("updating environment")
 
-	_, err = Rack.ReleaseCreate(app, types.ReleaseCreateOptions{Env: cenv})
+	_, err = Rack(c).ReleaseCreate(app, types.ReleaseCreateOptions{Env: cenv})
 	if err != nil {
 		return stdcli.Error(err)
 	}
@@ -130,7 +124,7 @@ func runEnvUnset(c *cli.Context) error {
 
 	cenv := types.Environment{}
 
-	rs, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	rs, err := Rack(c).ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return err
 	}
@@ -145,7 +139,7 @@ func runEnvUnset(c *cli.Context) error {
 
 	stdcli.Startf("updating environment")
 
-	_, err = Rack.ReleaseCreate(app, types.ReleaseCreateOptions{Env: cenv})
+	_, err = Rack(c).ReleaseCreate(app, types.ReleaseCreateOptions{Env: cenv})
 	if err != nil {
 		return stdcli.Error(err)
 	}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/convox/praxis/helpers"
+	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
 	"github.com/docker/docker/builder/dockerignore"
@@ -19,25 +20,20 @@ func init() {
 		Name:        "build",
 		Description: "build an application",
 		Action:      runBuild,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Flags:       globalFlags,
 	})
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "builds",
 		Description: "list builds",
 		Action:      runBuilds,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Flags:       globalFlags,
 		Subcommands: []cli.Command{
 			cli.Command{
 				Name:        "logs",
 				Description: "show build logs",
+				Usage:       "BUILD",
 				Action:      runBuildsLogs,
-				Flags: []cli.Flag{
-					appFlag,
-				},
+				Flags:       globalFlags,
 			},
 		},
 	})
@@ -49,7 +45,7 @@ func runBuild(c *cli.Context) error {
 		return err
 	}
 
-	_, err = buildDirectory(app, ".", types.BuildCreateOptions{}, os.Stdout)
+	_, err = buildDirectory(Rack(c), app, ".", types.BuildCreateOptions{}, os.Stdout)
 	if err != nil {
 		return err
 	}
@@ -63,7 +59,7 @@ func runBuilds(c *cli.Context) error {
 		return err
 	}
 
-	builds, err := Rack.BuildList(app)
+	builds, err := Rack(c).BuildList(app)
 	if err != nil {
 		return err
 	}
@@ -103,7 +99,7 @@ func runBuildsLogs(c *cli.Context) error {
 		return err
 	}
 
-	logs, err := Rack.BuildLogs(app, id)
+	logs, err := Rack(c).BuildLogs(app, id)
 	if err != nil {
 		return err
 	}
@@ -115,8 +111,8 @@ func runBuildsLogs(c *cli.Context) error {
 	return nil
 }
 
-func buildDirectory(app, dir string, opts types.BuildCreateOptions, w io.Writer) (*types.Build, error) {
-	if _, err := Rack.AppGet(app); err != nil {
+func buildDirectory(r rack.Rack, app, dir string, opts types.BuildCreateOptions, w io.Writer) (*types.Build, error) {
+	if _, err := r.AppGet(app); err != nil {
 		return nil, err
 	}
 
@@ -133,14 +129,14 @@ func buildDirectory(app, dir string, opts types.BuildCreateOptions, w io.Writer)
 	sw.Writef("<start>building:</start> <dir>%s</dir>\n", abs)
 	sw.Startf("uploading")
 
-	r, err := createTarball(dir)
+	rc, err := createTarball(dir)
 	if err != nil {
 		return nil, err
 	}
 
-	defer r.Close()
+	defer rc.Close()
 
-	object, err := Rack.ObjectStore(app, "", r, types.ObjectStoreOptions{})
+	object, err := r.ObjectStore(app, "", rc, types.ObjectStoreOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -149,27 +145,27 @@ func buildDirectory(app, dir string, opts types.BuildCreateOptions, w io.Writer)
 
 	sw.Startf("starting build")
 
-	build, err := Rack.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key), opts)
+	build, err := r.BuildCreate(app, fmt.Sprintf("object:///%s", object.Key), opts)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tickWithTimeout(2*time.Second, 5*time.Minute, notBuildStatus(app, build.Id, "created")); err != nil {
+	if err := tickWithTimeout(2*time.Second, 5*time.Minute, notBuildStatus(r, app, build.Id, "created")); err != nil {
 		return nil, err
 	}
 
-	build, err = Rack.BuildGet(app, build.Id)
+	build, err = r.BuildGet(app, build.Id)
 	if err != nil {
 		return nil, err
 	}
 
 	sw.Writef("<id>%s</id>\n", build.Process)
 
-	if err := buildLogs(build, stdcli.TagWriter("log", w)); err != nil {
+	if err := buildLogs(r, build, stdcli.TagWriter("log", w)); err != nil {
 		return nil, err
 	}
 
-	build, err = Rack.BuildGet(app, build.Id)
+	build, err = r.BuildGet(app, build.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -181,8 +177,8 @@ func buildDirectory(app, dir string, opts types.BuildCreateOptions, w io.Writer)
 	return build, nil
 }
 
-func buildLogs(build *types.Build, w io.Writer) error {
-	logs, err := Rack.BuildLogs(build.App, build.Id)
+func buildLogs(r rack.Rack, build *types.Build, w io.Writer) error {
+	logs, err := r.BuildLogs(build.App, build.Id)
 	if err != nil {
 		return err
 	}
@@ -190,7 +186,7 @@ func buildLogs(build *types.Build, w io.Writer) error {
 	go io.Copy(w, logs)
 
 	for {
-		b, err := Rack.BuildGet(build.App, build.Id)
+		b, err := r.BuildGet(build.App, build.Id)
 		if err != nil {
 			return err
 		}
@@ -229,9 +225,9 @@ func createTarball(dir string) (io.ReadCloser, error) {
 	return helpers.CreateTarball(dir, helpers.TarballOptions{Excludes: excludes})
 }
 
-func notBuildStatus(app, id, status string) func() (bool, error) {
+func notBuildStatus(r rack.Rack, app, id, status string) func() (bool, error) {
 	return func() (bool, error) {
-		build, err := Rack.BuildGet(app, id)
+		build, err := r.BuildGet(app, id)
 		if err != nil {
 			return true, err
 		}

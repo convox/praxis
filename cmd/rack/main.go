@@ -24,7 +24,7 @@ func main() {
 	//   http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
 	// }))
 
-	if err := s.Listen("tcp", ":3000"); err != nil {
+	if err := s.Listen("https", ":3000"); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
 		os.Exit(1)
 	}

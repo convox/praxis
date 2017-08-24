@@ -190,6 +190,34 @@ func (v *ServiceCommand) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
+func (v *ServiceEnvironment) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var w interface{}
+
+	if err := unmarshal(&w); err != nil {
+		return err
+	}
+
+	switch t := w.(type) {
+	case []interface{}:
+		for _, s := range t {
+			switch st := s.(type) {
+			case []interface{}:
+				for _, stv := range st {
+					if sv, ok := stv.(string); ok {
+						*v = append(*v, sv)
+					}
+				}
+			case string:
+				*v = append(*v, st)
+			}
+		}
+	default:
+		return fmt.Errorf("unknown type for service environment: %T", t)
+	}
+
+	return nil
+}
+
 func (v *ServiceHealth) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var w interface{}
 
@@ -306,7 +334,6 @@ func (v *ServiceScale) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			v.Memory = w
 		}
 	default:
-		fmt.Printf("w = %+v\n", w)
 		return fmt.Errorf("unknown type for service scale: %T", t)
 	}
 

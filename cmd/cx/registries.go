@@ -39,7 +39,7 @@ func init() {
 }
 
 func runRegistries(c *cli.Context) error {
-	registries, err := Rack.RegistryList()
+	registries, err := Rack(c).RegistryList()
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func runRegistriesAdd(c *cli.Context) error {
 
 	stdcli.Startf("adding <name>%s</name>", hostname)
 
-	if _, err := Rack.RegistryAdd(hostname, username, password); err != nil {
+	if _, err := Rack(c).RegistryAdd(hostname, username, password); err != nil {
 		return stdcli.Error(err)
 	}
 
@@ -84,7 +84,7 @@ func runRegistriesRemove(c *cli.Context) error {
 
 	stdcli.Startf("removing <name>%s</name>", hostname)
 
-	if err := Rack.RegistryRemove(hostname); err != nil {
+	if err := Rack(c).RegistryRemove(hostname); err != nil {
 		return stdcli.Error(err)
 	}
 

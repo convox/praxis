@@ -16,8 +16,8 @@ func TestManifestLoad(t *testing.T) {
 
 	n := &manifest.Manifest{
 		Environment: manifest.Environment{
-			"FOO":    "bar",
-			"SECRET": "shh",
+			"DEVELOPMENT": "false",
+			"SECRET":      "shh",
 		},
 		Keys: manifest.Keys{
 			manifest.Key{

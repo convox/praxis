@@ -12,14 +12,14 @@ func init() {
 		Name:        "services",
 		Description: "list services",
 		Action:      runServices,
-		Flags:       []cli.Flag{appFlag},
+		Flags:       globalFlags,
 		Subcommands: cli.Commands{
 			cli.Command{
 				Name:        "url",
 				Description: "output url for a service",
 				Usage:       "<name>",
 				Action:      runServicesUrl,
-				Flags:       []cli.Flag{appFlag},
+				Flags:       globalFlags,
 			},
 		},
 	})
@@ -31,7 +31,7 @@ func runServices(c *cli.Context) error {
 		return err
 	}
 
-	ss, err := Rack.ServiceList(app)
+	ss, err := Rack(c).ServiceList(app)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func runServicesUrl(c *cli.Context) error {
 
 	name := c.Args()[0]
 
-	s, err := Rack.ServiceGet(app, name)
+	s, err := Rack(c).ServiceGet(app, name)
 	if err != nil {
 		return err
 	}

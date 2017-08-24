@@ -20,6 +20,7 @@ import (
 	"github.com/convox/praxis/changes"
 	"github.com/convox/praxis/helpers"
 	"github.com/convox/praxis/manifest"
+	"github.com/convox/praxis/sdk/rack"
 	"github.com/convox/praxis/stdcli"
 	"github.com/convox/praxis/types"
 	cli "gopkg.in/urfave/cli.v1"
@@ -34,9 +35,7 @@ func init() {
 		Name:        "start",
 		Description: "start the app in development mode",
 		Action:      runStart,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Flags:       globalFlags,
 	})
 }
 
@@ -46,7 +45,7 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	if _, err := Rack.AppGet(app); err != nil {
+	if _, err := Rack(c).AppGet(app); err != nil {
 		return err
 	}
 
@@ -57,7 +56,7 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	env, err := helpers.AppEnvironment(Rack, app)
+	env, err := helpers.AppEnvironment(Rack(c), app)
 	if err != nil {
 		return err
 	}
@@ -67,17 +66,17 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	b, err := buildDirectory(app, ".", types.BuildCreateOptions{Development: true}, m.Writer("build", os.Stdout))
+	b, err := buildDirectory(Rack(c), app, ".", types.BuildCreateOptions{Development: true}, m.Writer("build", os.Stdout))
 	if err != nil {
 		return err
 	}
 
-	m, _, err = helpers.ReleaseManifest(Rack, app, b.Release)
+	m, _, err = helpers.ReleaseManifest(Rack(c), app, b.Release)
 	if err != nil {
 		return err
 	}
 
-	b, err = Rack.BuildGet(app, b.Id)
+	b, err = Rack(c).BuildGet(app, b.Id)
 	if err != nil {
 		return err
 	}
@@ -92,11 +91,11 @@ func runStart(c *cli.Context) error {
 
 	m.Writef("convox", "promoting <name>%s</name>\n", b.Release)
 
-	if err := Rack.ReleasePromote(app, b.Release); err != nil {
+	if err := Rack(c).ReleasePromote(app, b.Release); err != nil {
 		return err
 	}
 
-	logs, err := Rack.ReleaseLogs(app, b.Release, types.LogsOptions{Follow: true})
+	logs, err := Rack(c).ReleaseLogs(app, b.Release, types.LogsOptions{Follow: true})
 	if err != nil {
 		return err
 	}
@@ -105,13 +104,13 @@ func runStart(c *cli.Context) error {
 		return err
 	}
 
-	r, err := Rack.ReleaseGet(app, b.Release)
+	r, err := Rack(c).ReleaseGet(app, b.Release)
 	if err != nil {
 		return err
 	}
 
 	switch r.Status {
-	case "created", "promoting", "promoted":
+	case "created", "promoting", "promoted", "active":
 	case "failed":
 		return fmt.Errorf("release failed")
 	default:
@@ -120,7 +119,7 @@ func runStart(c *cli.Context) error {
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	go handleSignals(sig, errch, m, app)
+	go handleSignals(Rack(c), sig, errch, m, app)
 
 	wd, err := os.Getwd()
 	if err != nil {
@@ -128,10 +127,10 @@ func runStart(c *cli.Context) error {
 	}
 
 	for _, s := range m.Services {
-		go watchChanges(wd, m, app, s.Name, errch)
+		go watchChanges(Rack(c), wd, m, app, s.Name, errch)
 	}
 
-	logs, err = Rack.AppLogs(app, types.LogsOptions{Follow: true, Prefix: true})
+	logs, err = Rack(c).AppLogs(app, types.LogsOptions{Follow: true, Prefix: true})
 	if err != nil {
 		return err
 	}
@@ -151,14 +150,14 @@ func runStart(c *cli.Context) error {
 	return <-errch
 }
 
-func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, app string) {
+func handleSignals(r rack.Rack, ch chan os.Signal, errch chan error, m *manifest.Manifest, app string) {
 	sig := <-ch
 
 	if sig == syscall.SIGINT {
 		fmt.Println("")
 	}
 
-	ps, err := Rack.ProcessList(app, types.ProcessListOptions{})
+	ps, err := r.ProcessList(app, types.ProcessListOptions{})
 	if err != nil {
 		errch <- err
 		return
@@ -171,10 +170,10 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 	for _, p := range ps {
 		m.Writef("convox", "stopping %s\n", p.Id)
 
-		go func() {
+		go func(id string) {
 			defer wg.Done()
-			Rack.ProcessStop(app, p.Id)
-		}()
+			r.ProcessStop(app, id)
+		}(p.Id)
 	}
 
 	wg.Wait()
@@ -184,7 +183,7 @@ func handleSignals(ch chan os.Signal, errch chan error, m *manifest.Manifest, ap
 	os.Exit(0)
 }
 
-func watchChanges(root string, m *manifest.Manifest, app, service string, ch chan error) {
+func watchChanges(r rack.Rack, root string, m *manifest.Manifest, app, service string, ch chan error) {
 	bss, err := m.BuildSources(root, service)
 	if err != nil {
 		ch <- err
@@ -192,11 +191,11 @@ func watchChanges(root string, m *manifest.Manifest, app, service string, ch cha
 	}
 
 	for _, bs := range bss {
-		go watchPath(root, m, app, service, bs, ch)
+		go watchPath(r, root, m, app, service, bs, ch)
 	}
 }
 
-func watchPath(root string, m *manifest.Manifest, app, service string, bs manifest.BuildSource, ch chan error) {
+func watchPath(r rack.Rack, root string, m *manifest.Manifest, app, service string, bs manifest.BuildSource, ch chan error) {
 	cch := make(chan changes.Change, 1)
 
 	w := m.Writer("convox", os.Stdout)
@@ -243,7 +242,7 @@ func watchPath(root string, m *manifest.Manifest, app, service string, bs manife
 				continue
 			}
 
-			pss, err := Rack.ProcessList(app, types.ProcessListOptions{Service: service})
+			pss, err := r.ProcessList(app, types.ProcessListOptions{Service: service})
 			if err != nil {
 				w.Writef("sync error: %s\n", err)
 				continue
@@ -259,7 +258,7 @@ func watchPath(root string, m *manifest.Manifest, app, service string, bs manife
 					w.Writef("sync: %s to %s\n", strings.Join(changes.Files(adds), ", "), ps.Service)
 				}
 
-				if err := handleAdds(app, ps.Id, bs.Remote, adds); err != nil {
+				if err := handleAdds(r, app, ps.Id, bs.Remote, adds); err != nil {
 					w.Writef("sync add error: %s\n", err)
 				}
 
@@ -270,7 +269,7 @@ func watchPath(root string, m *manifest.Manifest, app, service string, bs manife
 					w.Writef("remove: %s to %s\n", strings.Join(changes.Files(removes), ", "), ps.Service)
 				}
 
-				if err := handleRemoves(app, ps.Id, removes); err != nil {
+				if err := handleRemoves(r, app, ps.Id, removes); err != nil {
 					w.Writef("sync remove error: %s\n", err)
 				}
 			}
@@ -280,7 +279,7 @@ func watchPath(root string, m *manifest.Manifest, app, service string, bs manife
 	}
 }
 
-func handleAdds(app, pid, remote string, adds []changes.Change) error {
+func handleAdds(r rack.Rack, app, pid, remote string, adds []changes.Change) error {
 	if len(adds) == 0 {
 		return nil
 	}
@@ -296,15 +295,15 @@ func handleAdds(app, pid, remote string, adds []changes.Change) error {
 		remote = filepath.Join(wd, remote)
 	}
 
-	r, w := io.Pipe()
+	rp, wp := io.Pipe()
 
 	ch := make(chan error)
 
 	go func() {
-		ch <- Rack.FilesUpload(app, pid, r)
+		ch <- r.FilesUpload(app, pid, rp)
 	}()
 
-	tgz := gzip.NewWriter(w)
+	tgz := gzip.NewWriter(wp)
 	tw := tar.NewWriter(tgz)
 
 	for _, add := range adds {
@@ -312,6 +311,11 @@ func handleAdds(app, pid, remote string, adds []changes.Change) error {
 
 		stat, err := os.Stat(local)
 		if err != nil {
+			// skip transient files like '.git/.COMMIT_EDITMSG.swp'
+			if os.IsNotExist(err) {
+				continue
+			}
+
 			return err
 		}
 
@@ -344,17 +348,17 @@ func handleAdds(app, pid, remote string, adds []changes.Change) error {
 		return err
 	}
 
-	if err := w.Close(); err != nil {
+	if err := wp.Close(); err != nil {
 		return err
 	}
 
 	return <-ch
 }
 
-func handleRemoves(app, pid string, removes []changes.Change) error {
+func handleRemoves(r rack.Rack, app, pid string, removes []changes.Change) error {
 	if len(removes) == 0 {
 		return nil
 	}
 
-	return Rack.FilesDelete(app, pid, changes.Files(removes))
+	return r.FilesDelete(app, pid, changes.Files(removes))
 }

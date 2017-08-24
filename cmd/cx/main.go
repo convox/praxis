@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -20,25 +22,26 @@ import (
 )
 
 var (
-	Rack    rack.Rack
 	Version = "dev"
 )
 
 var (
 	appFlag = cli.StringFlag{
 		Name:  "app, a",
-		Usage: "app name",
+		Usage: "app name inferred from current directory if not specified",
+	}
+	rackFlag = cli.StringFlag{
+		Name:  "rack",
+		Usage: "rack name",
 	}
 )
 
+var globalFlags = []cli.Flag{
+	appFlag,
+	rackFlag,
+}
+
 func init() {
-	r, err := rack.NewFromEnv()
-	if err != nil {
-		panic(err)
-	}
-
-	Rack = r
-
 	stdcli.DefaultWriter.Tags["bad"] = stdcli.RenderAttributes(160)
 	stdcli.DefaultWriter.Tags["debug"] = stdcli.RenderAttributes(208)
 	stdcli.DefaultWriter.Tags["dir"] = stdcli.RenderAttributes(246)
@@ -54,13 +57,15 @@ func init() {
 	cliID()
 }
 
+const SysExitCode = 255 // Used to indicate an internal system error
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		if ee, ok := err.(*cli.ExitError); ok {
 			os.Exit(ee.ExitCode())
 		}
-		os.Exit(255) // 255 used to indicate system error
+		os.Exit(SysExitCode)
 	}
 }
 
@@ -70,6 +75,7 @@ func run() error {
 	app.Name = "cx"
 	app.Version = Version
 	app.Usage = "convox management tool"
+	app.Flags = globalFlags
 
 	stdcli.VersionPrinter(func(c *cli.Context) {
 		runVersion(c)
@@ -135,7 +141,7 @@ func autoUpdate(ch chan error) {
 		return
 	}
 
-	v, err := latestVersion()
+	v, err := latestVersion("stable")
 	if err != nil {
 		ch <- err
 		return
@@ -144,6 +150,61 @@ func autoUpdate(ch chan error) {
 	exec.Command(ex, "update", v).Start()
 
 	ch <- nil
+}
+
+var errMissingProxyEndpoint = errors.New("Rack endpoint was not found, try cx login")
+
+func Rack(c *cli.Context) rack.Rack {
+	var endpoint *url.URL
+
+	exit := func(err error) {
+		if err != nil {
+			fmt.Fprint(os.Stderr, stdcli.Error(err))
+			os.Exit(1)
+		}
+	}
+
+	local, err := url.Parse("https://localhost:5443")
+	if err != nil {
+		exit(err)
+	}
+
+	if os.Getenv("RACK_URL") == "" {
+		proxy, err := consoleProxy()
+		if err != nil {
+			exit(err)
+		}
+
+		if proxy != nil {
+			rack, err := rackFromContext(c)
+			if err != nil {
+				exit(err)
+			}
+
+			switch rack {
+			case "":
+				fmt.Println("No Rack selected, try cx racks. Using local rack")
+				fallthrough
+			case "local":
+				endpoint = local
+			default:
+				proxy.Path = fmt.Sprintf("racks/%s", rack)
+				endpoint = proxy
+			}
+
+		} else {
+			endpoint = local
+		}
+
+		os.Setenv("RACK_URL", endpoint.String())
+	}
+
+	r, err := rack.NewFromEnv()
+	if err != nil {
+		exit(err)
+	}
+
+	return r
 }
 
 func cliID() (string, error) {
@@ -177,10 +238,168 @@ func cliID() (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
+func consoleHost() (string, error) {
+	fn, err := homedir.Expand("~/.convox/console/host")
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := os.Stat(fn); os.IsNotExist(err) {
+		return "ui.convox.com", nil
+	}
+
+	data, err := ioutil.ReadFile(fn)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(data)), nil
+}
+
+func consoleProxy() (*url.URL, error) {
+	fn, err := homedir.Expand("~/.convox/console/proxy")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = os.Stat(fn)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	data, err := ioutil.ReadFile(fn)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := url.Parse(strings.TrimSpace(string(data)))
+	if err != nil {
+		return nil, err
+	}
+
+	u.Scheme = "https"
+	return u, nil
+}
+
+func currentRack(c *cli.Context) (string, error) {
+	// RACK_URL always wins so use it if set
+	if os.Getenv("RACK_URL") != "" {
+		rack, err := Rack(c).SystemGet()
+		if err != nil {
+			return "", err
+		}
+		return rack.Name, nil
+	}
+
+	return rackFromContext(c)
+}
+
+func rackFromContext(c *cli.Context) (string, error) {
+	if c.GlobalString("rack") != "" {
+		return c.GlobalString("rack"), nil
+	}
+
+	if c.String("rack") != "" {
+		return c.String("rack"), nil
+	}
+
+	return shellRack()
+}
+
+func shellRack() (string, error) {
+	shpid := os.Getppid()
+
+	fn, err := homedir.Expand(fmt.Sprintf("~/.convox/shell/%d/rack", shpid))
+	if err != nil {
+		return "", err
+	}
+
+	_, err = os.Stat(fn)
+	if err != nil {
+		// no shell config implies "local" rack
+		if os.IsNotExist(err) {
+			return "local", nil
+		}
+		return "", err
+	}
+
+	data, err := ioutil.ReadFile(fn)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(data)), nil
+}
+
+func setConsoleHost(host string) error {
+	fn, err := homedir.Expand("~/.convox/console/host")
+	if err != nil {
+		return err
+	}
+
+	if _, err := os.Stat(fn); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(fn), 0755); err != nil {
+			return err
+		}
+	}
+
+	if err := ioutil.WriteFile(fn, []byte(host), 0644); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func setConsoleProxy(proxy string) error {
+	fn, err := homedir.Expand("~/.convox/console/proxy")
+	if err != nil {
+		return err
+	}
+
+	if _, err := os.Stat(fn); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(fn), 0755); err != nil {
+			return err
+		}
+	}
+
+	if err := ioutil.WriteFile(fn, []byte(proxy), 0644); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func setShellRack(rack string) error {
+	shpid := os.Getppid()
+
+	fn, err := homedir.Expand(fmt.Sprintf("~/.convox/shell/%d/rack", shpid))
+	if err != nil {
+		return err
+	}
+
+	if _, err := os.Stat(fn); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(fn), 0755); err != nil {
+			return err
+		}
+	}
+
+	if err := ioutil.WriteFile(fn, []byte(rack), 0644); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func errorExit(fn cli.ActionFunc, code int) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		if err := fn(c); err != nil {
-			return cli.NewExitError(err.Error(), code)
+			if _, ok := err.(cli.ExitCoder); !ok {
+				return cli.NewExitError(err.Error(), code)
+			}
+			return err
 		}
 		return nil
 	}

@@ -31,7 +31,7 @@ func TestAppCreate(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, []byte(`{"Name":"test","Release":"","Status":""}`), data)
+	assert.Equal(t, "{\n  \"Name\": \"test\",\n  \"Release\": \"\",\n  \"Status\": \"\"\n}", string(data))
 }
 
 func TestAppList(t *testing.T) {
@@ -54,5 +54,5 @@ func TestAppList(t *testing.T) {
 	data, err := ioutil.ReadAll(res.Body)
 	assert.NoError(t, err)
 
-	assert.Equal(t, `[{"Name":"bar","Release":"","Status":""},{"Name":"foo","Release":"","Status":""}]`, string(data))
+	assert.Equal(t, "[\n  {\n    \"Name\": \"bar\",\n    \"Release\": \"\",\n    \"Status\": \"\"\n  },\n  {\n    \"Name\": \"foo\",\n    \"Release\": \"\",\n    \"Status\": \"\"\n  }\n]", string(data))
 }

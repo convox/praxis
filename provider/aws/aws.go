@@ -335,6 +335,10 @@ func (p *Provider) deleteBucket(bucket string) error {
 	return nil
 }
 
+func (p *Provider) clearDescribeStackCache(name string) error {
+	return cache.Clear("describeStack", name)
+}
+
 func (p *Provider) describeStack(name string) (*cloudformation.Stack, error) {
 	if v, ok := cache.Get("describeStack", name).(*cloudformation.Stack); ok {
 		return v, nil
@@ -424,7 +428,7 @@ func (p *Provider) subscribeLogs(group, stream string, opts types.LogsOptions, w
 	return p.subscribeLogsCallback(group, stream, opts, w, nil)
 }
 
-func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOptions, w io.WriteCloser, fn func() bool) error {
+func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOptions, w io.WriteCloser, fn func([]*cloudwatchlogs.FilteredLogEvent) bool) error {
 	defer w.Close()
 
 	req := &cloudwatchlogs.FilterLogEventsInput{
@@ -498,7 +502,7 @@ func (p *Provider) subscribeLogsCallback(group, stream string, opts types.LogsOp
 		}
 
 		if fn != nil {
-			if !fn() {
+			if !fn(events) {
 				return nil
 			}
 		}
@@ -553,6 +557,10 @@ func (p *Provider) stackResource(name string, resource string) (string, error) {
 	})
 	if err != nil {
 		return "", err
+	}
+
+	if *res.StackResourceDetail.ResourceStatus == "CREATE_FAILED" {
+		return "", fmt.Errorf(*res.StackResourceDetail.ResourceStatusReason)
 	}
 
 	r := *res.StackResourceDetail.PhysicalResourceId

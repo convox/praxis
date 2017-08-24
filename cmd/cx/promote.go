@@ -15,9 +15,7 @@ func init() {
 		Name:        "promote",
 		Description: "promote a release",
 		Action:      runPromote,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Flags:       globalFlags,
 	})
 }
 
@@ -27,7 +25,7 @@ func runPromote(c *cli.Context) error {
 		return err
 	}
 
-	rs, err := Rack.ReleaseList(app, types.ReleaseListOptions{Count: 1})
+	rs, err := Rack(c).ReleaseList(app, types.ReleaseListOptions{Count: 1})
 	if err != nil {
 		return err
 	}
@@ -42,22 +40,24 @@ func runPromote(c *cli.Context) error {
 
 	since := time.Now()
 
-	if err := Rack.ReleasePromote(app, release); err != nil {
+	if err := Rack(c).ReleasePromote(app, release); err != nil {
 		return err
 	}
 
 	stdcli.OK()
 
-	if err := releaseLogs(app, release, os.Stdout, types.LogsOptions{Follow: true, Since: since}); err != nil {
+	if err := releaseLogs(Rack(c), app, release, os.Stdout, types.LogsOptions{Follow: true, Since: since}); err != nil {
 		return err
 	}
 
-	r, err := Rack.ReleaseGet(app, release)
+	r, err := Rack(c).ReleaseGet(app, release)
 	if err != nil {
 		return err
 	}
 
-	if r.Status != "promoted" {
+	switch r.Status {
+	case "promoted", "active":
+	default:
 		return fmt.Errorf("promote failed")
 	}
 

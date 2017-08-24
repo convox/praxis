@@ -22,10 +22,10 @@ func (c *Client) ResourceProxy(app, resource string, in io.Reader) (io.ReadClose
 		Body: in,
 	}
 
-	res, err := c.PostStream(fmt.Sprintf("/apps/%s/resources/%s/proxy", app, resource), ro)
+	r, err := c.Stream(fmt.Sprintf("/apps/%s/resources/%s/proxy", app, resource), ro)
 	if err != nil {
 		return nil, err
 	}
 
-	return res.Body, nil
+	return r, nil
 }

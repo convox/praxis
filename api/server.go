@@ -16,7 +16,7 @@ type Server struct {
 }
 
 func (s *Server) Listen(proto, addr string) error {
-	s.Logger.At("listen").Logf("hostname=%q addr=%q", s.Hostname, addr)
+	s.Logger.At("listen").Logf("hostname=%q proto=%q addr=%q", s.Hostname, proto, addr)
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -24,7 +24,7 @@ func (s *Server) Listen(proto, addr string) error {
 	}
 
 	switch proto {
-	case "http2", "h2", "tcp":
+	case "h2", "https", "tls":
 		config := &tls.Config{
 			NextProtos: []string{"h2"},
 		}

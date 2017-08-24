@@ -12,15 +12,14 @@ func init() {
 		Name:        "ps",
 		Description: "list processes",
 		Action:      runPs,
-		Flags: []cli.Flag{
-			appFlag,
-		},
+		Flags:       globalFlags,
 		Subcommands: cli.Commands{
 			cli.Command{
 				Name:        "stop",
 				Description: "stop a process",
 				Usage:       "<pid>",
 				Action:      runPsStop,
+				Flags:       globalFlags,
 			},
 		},
 	})
@@ -32,7 +31,7 @@ func runPs(c *cli.Context) error {
 		return err
 	}
 
-	ps, err := Rack.ProcessList(app, types.ProcessListOptions{})
+	ps, err := Rack(c).ProcessList(app, types.ProcessListOptions{})
 	if err != nil {
 		return err
 	}
@@ -60,7 +59,7 @@ func runPsStop(c *cli.Context) error {
 
 	pid := c.Args()[0]
 
-	if err := Rack.ProcessStop(app, pid); err != nil {
+	if err := Rack(c).ProcessStop(app, pid); err != nil {
 		return err
 	}
 

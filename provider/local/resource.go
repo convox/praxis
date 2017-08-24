@@ -86,7 +86,7 @@ func (p *Provider) ResourceProxy(app, resource string, in io.Reader) (io.ReadClo
 		return nil, err
 	}
 
-	go io.Copy(cn, in)
+	go helpers.Stream(cn, in)
 
 	return cn, nil
 }

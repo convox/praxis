@@ -13,5 +13,5 @@ func createInterface(name, ip string) error {
 }
 
 func destroyInterface(name string) error {
-	return execute("ifconfig", name, "destroy")
+	return execute("ip", "link", "delete", name)
 }

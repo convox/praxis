@@ -17,12 +17,14 @@ func init() {
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "test",
 		Description: "run tests",
-		Action:      errorExit(runTest, 1),
+		Action:      errorExit(runTest, SysExitCode),
 	})
 }
 
 func runTest(c *cli.Context) error {
-	env := manifest.Environment{}
+	env := manifest.Environment{
+		"TEST": "true",
+	}
 
 	for _, e := range os.Environ() {
 		parts := strings.SplitN(e, "=", 2)
@@ -51,42 +53,61 @@ func runTest(c *cli.Context) error {
 
 	stdcli.Startf("creating app <name>%s</name>", name)
 
-	app, err := Rack.AppCreate(name)
+	app, err := Rack(c).AppCreate(name)
 	if err != nil {
 		return err
 	}
 
-	defer Rack.AppDelete(name)
+	defer func() {
+		stdcli.Writef("deleting app <name>%s</name>", name)
 
-	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(name, "creating")); err != nil {
+		if err := tickWithTimeout(2*time.Second, 5*time.Minute, isAppStatus(Rack(c), name, "running")); err != nil {
+			system.Writef("unable to wait for app status: %s\n", err)
+		}
+
+		if err := Rack(c).AppDelete(name); err != nil {
+			system.Writef("failed to delete app: %s\n", err)
+		}
+	}()
+
+	if err := tickWithTimeout(2*time.Second, 1*time.Minute, notAppStatus(Rack(c), name, "creating")); err != nil {
+		return err
+	}
+
+	_, err = Rack(c).ReleaseCreate(name, types.ReleaseCreateOptions{
+		Env: m.Environment,
+	})
+	if err != nil {
 		return err
 	}
 
 	stdcli.OK()
 
-	if err := m.Validate(); err != nil {
+	if err := m.ValidateEnv(); err != nil {
 		return err
 	}
 
-	build, err := buildDirectory(app.Name, ".", types.BuildCreateOptions{Development: true}, m.Writer("build", os.Stdout))
+	build, err := buildDirectory(Rack(c), app.Name, ".", types.BuildCreateOptions{}, m.Writer("build", os.Stdout))
 	if err != nil {
 		return err
 	}
 
-	if err := Rack.ReleasePromote(app.Name, build.Release); err != nil {
+	if err := Rack(c).ReleasePromote(app.Name, build.Release); err != nil {
 		return err
 	}
 
-	if err := releaseLogs(app.Name, build.Release, m.Writer("release", os.Stdout), types.LogsOptions{Follow: true}); err != nil {
+	if err := releaseLogs(Rack(c), app.Name, build.Release, m.Writer("release", os.Stdout), types.LogsOptions{Follow: true}); err != nil {
 		return err
 	}
 
-	r, err := Rack.ReleaseGet(app.Name, build.Release)
+	r, err := Rack(c).ReleaseGet(app.Name, build.Release)
 	if err != nil {
 		return err
 	}
 
-	if r.Status != "promoted" {
+	switch r.Status {
+	case "promoted", "active":
+	default:
 		return fmt.Errorf("promote failed")
 	}
 
@@ -106,7 +127,7 @@ func runTest(c *cli.Context) error {
 			return err
 		}
 
-		code, err := Rack.ProcessRun(app.Name, types.ProcessRunOptions{
+		code, err := Rack(c).ProcessRun(app.Name, types.ProcessRunOptions{
 			Command:     s.Test,
 			Environment: senv,
 			Release:     build.Release,
