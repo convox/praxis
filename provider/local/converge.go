@@ -148,6 +148,8 @@ func resourcePort(kind string) (int, error) {
 		return 6379, nil
 	case "rabbitmq":
 		return 5672, nil
+	case "elasticsearch":
+		return 9200, nil
 	}
 
 	return 0, fmt.Errorf("unknown resource type: %s", kind)
@@ -163,6 +165,8 @@ func resourceURL(app, kind, name string) (string, error) {
 		return fmt.Sprintf("redis://%s.resource.%s.convox:6379/0", name, app), nil
 	case "rabbitmq":
 		return fmt.Sprintf("amqp://guest:guest@%s.resource.%s.convox:5672", name, app), nil
+	case "elasticsearch":
+		return fmt.Sprintf("https://%s.resource.%s.convox:9200", name, app), nil
 	}
 
 	return "", fmt.Errorf("unknown resource type: %s", kind)
@@ -178,6 +182,8 @@ func resourceVolumes(app, kind, name string) ([]string, error) {
 		return []string{}, nil
 	case "rabbitmq":
 		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/var/lib/rabbitmq/data", app, name)}, nil
+	case "elasticsearch":
+		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/usr/share/elasticsearch/data", app, name)}, nil
 	}
 
 	return []string{}, fmt.Errorf("unknown resource type: %s", kind)

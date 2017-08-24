@@ -84,6 +84,7 @@ func resourceService(service mv1.Service) bool {
 		"convox/postgres",
 		"convox/redis",
 		"convox/rabbitmq",
+		"convox/elasticsearch",
 	}
 
 	for _, image := range resourceImages {
@@ -124,6 +125,8 @@ func ManifestConvert(mOld *mv1.Manifest) (*manifest.Manifest, Report, error) {
 				t = "redis"
 			case "convox/rabbitmq":
 				t = "rabbitmq"
+			case "convox/elasticsearch":
+				t = "elasticsearch"
 			default:
 				return nil, report, fmt.Errorf("%s is not a recognized resource image", service.Image)
 			}
