@@ -12,11 +12,18 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/convox/praxis/api"
 )
 
+const (
+	cleanupInterval = 5 * time.Second
+	cleanupAge      = 60 * time.Second
+)
+
 type Endpoint struct {
+	Expires time.Time     `json:"expires"`
 	Host    string        `json:"host"`
 	IP      net.IP        `json:"ip"`
 	Proxies map[int]Proxy `json:"proxies"`
@@ -70,6 +77,8 @@ func New(version, domain, iface, subnet string) (*Router, error) {
 
 	fmt.Printf("ns=convox.router at=new version=%q domain=%q iface=%q subnet=%q\n", r.Version, r.Domain, r.Interface, r.Subnet)
 
+	go r.cleanupTick()
+
 	return r, nil
 }
 
@@ -87,7 +96,7 @@ func (r *Router) Serve() error {
 
 	rh := fmt.Sprintf("rack.%s", r.Domain)
 
-	ep, err := r.createEndpoint(rh)
+	ep, err := r.createEndpoint(rh, true)
 	if err != nil {
 		return err
 	}
@@ -116,11 +125,33 @@ func (r *Router) Serve() error {
 	return nil
 }
 
-func (r *Router) createEndpoint(host string) (*Endpoint, error) {
+func (r *Router) cleanupTick() {
+	tick := time.Tick(cleanupInterval)
+
+	for range tick {
+		for host, ep := range r.endpoints {
+			if ep.Expires.IsZero() {
+				continue
+			}
+
+			if ep.Expires.Before(time.Now()) {
+				fmt.Printf("ns=convox.router at=cleanup endpoint=%q\n", host)
+
+				if err := r.destroyEndpoint(host); err != nil {
+					logError(err)
+				}
+			}
+		}
+	}
+}
+
+func (r *Router) createEndpoint(host string, system bool) (*Endpoint, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	if ep, ok := r.endpoints[host]; ok {
+		ep.Expires = time.Now().Add(cleanupAge).UTC()
+		r.endpoints[host] = ep
 		return &ep, nil
 	}
 
@@ -140,9 +171,29 @@ func (r *Router) createEndpoint(host string) (*Endpoint, error) {
 		router:  r,
 	}
 
+	if !system {
+		e.Expires = time.Now().Add(cleanupAge).UTC()
+	}
+
 	r.endpoints[host] = e
 
 	return &e, nil
+}
+
+func (r *Router) destroyEndpoint(host string) error {
+	if ep, ok := r.endpoints[host]; ok {
+		fmt.Printf("destroying: %+v\n", ep)
+
+		for _, p := range ep.Proxies {
+			if err := p.Terminate(); err != nil {
+				logError(err)
+			}
+		}
+		delete(r.endpoints, host)
+		return nil
+	}
+
+	return fmt.Errorf("no such endpoint: %s", host)
 }
 
 func (r *Router) matchEndpoint(host string) (*Endpoint, error) {

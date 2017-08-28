@@ -12,7 +12,7 @@ import (
 func (rt *Router) EndpointCreate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	host := c.Var("host")
 
-	ep, err := rt.createEndpoint(host)
+	ep, err := rt.createEndpoint(host, false)
 	if err != nil {
 		return err
 	}
@@ -21,7 +21,9 @@ func (rt *Router) EndpointCreate(w http.ResponseWriter, r *http.Request, c *api.
 }
 
 func (rt *Router) EndpointDelete(w http.ResponseWriter, r *http.Request, c *api.Context) error {
-	return nil
+	host := c.Var("host")
+
+	return rt.destroyEndpoint(host)
 }
 
 func (rt *Router) EndpointList(w http.ResponseWriter, r *http.Request, c *api.Context) error {
@@ -50,6 +52,7 @@ func (rt *Router) ProxyCreate(w http.ResponseWriter, r *http.Request, c *api.Con
 func (rt *Router) Terminate(w http.ResponseWriter, r *http.Request, c *api.Context) error {
 	go func() {
 		time.Sleep(1 * time.Second)
+		fmt.Printf("ns=convox.router at=terminate exit=0\n")
 		os.Exit(0)
 	}()
 	return c.RenderOK()

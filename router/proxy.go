@@ -24,9 +24,11 @@ import (
 
 type Proxy struct {
 	Listen *url.URL
+	Port   int
 	Target *url.URL
 
 	endpoint *Endpoint
+	listener net.Listener
 }
 
 func (e *Endpoint) NewProxy(host string, listen, target *url.URL) (*Proxy, error) {
@@ -40,6 +42,8 @@ func (e *Endpoint) NewProxy(host string, listen, target *url.URL) (*Proxy, error
 	if err != nil {
 		return nil, err
 	}
+
+	p.Port = pi
 
 	if _, ok := e.Proxies[pi]; ok {
 		return nil, fmt.Errorf("proxy already exists for port: %d", pi)
@@ -82,6 +86,9 @@ func (p *Proxy) Serve() error {
 		ln = tls.NewListener(ln, cfg)
 	}
 
+	p.listener = ln
+	p.endpoint.Proxies[p.Port] = *p
+
 	switch p.Listen.Scheme {
 	case "http", "https":
 		h, err := p.proxyHTTP(p.Listen, p.Target)
@@ -98,6 +105,14 @@ func (p *Proxy) Serve() error {
 		}
 	default:
 		return fmt.Errorf("unknown listener scheme: %s", p.Listen.Scheme)
+	}
+
+	return nil
+}
+
+func (p *Proxy) Terminate() error {
+	if err := p.listener.Close(); err != nil {
+		return err
 	}
 
 	return nil
