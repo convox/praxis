@@ -2,12 +2,15 @@ package local
 
 import (
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -83,6 +86,10 @@ func (p *Provider) Init() error {
 		return err
 	}
 
+	if err := p.checkRouter(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -147,17 +154,37 @@ func (p *Provider) checkRouter() error {
 		return nil
 	}
 
-	c := http.DefaultClient
+	c := http.Client{
+		Timeout: 2 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
 
-	c.Timeout = 2 * time.Second
-
-	// TODO: remove
-	dt := http.DefaultTransport.(*http.Transport)
-	dt.TLSClientConfig.InsecureSkipVerify = true
-	c.Transport = dt
-
-	if _, err := c.Get(fmt.Sprintf("https://%s/endpoints", p.Router)); err != nil {
+	res, err := c.Get(fmt.Sprintf("https://%s/version", p.Router))
+	if err != nil {
 		return fmt.Errorf("unable to register with router")
+	}
+
+	defer res.Body.Close()
+
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	var v struct {
+		Version string
+	}
+
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+
+	if v.Version != "dev" && strings.Compare(v.Version, p.Version) < 0 {
+		c.PostForm(fmt.Sprintf("https://%s/terminate", p.Router), nil)
 	}
 
 	return nil
