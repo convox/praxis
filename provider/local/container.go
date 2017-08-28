@@ -38,7 +38,7 @@ type containerTarget struct {
 }
 
 func (p *Provider) containerRegister(c container) error {
-	if p.Router == "none" || c.Hostname == "" || len(c.Targets) == 0 {
+	if p.Router == "none" || c.Hostname == "" {
 		return nil
 	}
 
@@ -245,9 +245,24 @@ func containerList(args ...string) ([]container, error) {
 		}
 
 		cc := container{
-			Id:     c.Id,
-			Labels: c.Config.Labels,
-			Name:   c.Name[1:],
+			Id:       c.Id,
+			Labels:   c.Config.Labels,
+			Name:     c.Name[1:],
+			Hostname: c.Config.Labels["convox.hostname"],
+		}
+
+		app := c.Config.Labels["convox.app"]
+		service := c.Config.Labels["convox.service"]
+		scheme := c.Config.Labels["convox.scheme"]
+		port := c.Config.Labels["convox.port"]
+
+		if app != "" && service != "" && scheme != "" && port != "" {
+			st := fmt.Sprintf("%s://rack/%s/service/%s:%s", scheme, app, service, port)
+
+			cc.Targets = []containerTarget{
+				containerTarget{Scheme: "http", Port: 80, Target: st},
+				containerTarget{Scheme: "https", Port: 443, Target: st},
+			}
 		}
 
 		cs = append(cs, cc)
