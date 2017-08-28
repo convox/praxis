@@ -147,7 +147,9 @@ func autoUpdate(ch chan error) {
 		return
 	}
 
-	exec.Command(ex, "update", v).Start()
+	if strings.Compare(v, Version) > 0 {
+		exec.Command(ex, "update", v).Start()
+	}
 
 	ch <- nil
 }
