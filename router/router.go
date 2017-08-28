@@ -182,8 +182,6 @@ func (r *Router) createEndpoint(host string, system bool) (*Endpoint, error) {
 
 func (r *Router) destroyEndpoint(host string) error {
 	if ep, ok := r.endpoints[host]; ok {
-		fmt.Printf("destroying: %+v\n", ep)
-
 		for _, p := range ep.Proxies {
 			if err := p.Terminate(); err != nil {
 				logError(err)
