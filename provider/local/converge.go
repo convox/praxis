@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -49,8 +50,6 @@ func (p *Provider) converge(app string) error {
 	}
 
 	desired = append(desired, c...)
-
-	// TODO: timers
 
 	current, err := containersByLabels(map[string]string{
 		"convox.rack": p.Name,
@@ -250,9 +249,11 @@ func (p *Provider) resourceContainers(resources manifest.Resources, app, release
 			return nil, err
 		}
 
+		hostname := fmt.Sprintf("%s.resource.%s.%s", r.Name, app, p.Name)
+
 		cs = append(cs, container{
 			Name:     fmt.Sprintf("%s.%s.resource.%s", p.Name, app, r.Name),
-			Hostname: fmt.Sprintf("%s.resource.%s.%s", r.Name, app, p.Name),
+			Hostname: hostname,
 			Targets: []containerTarget{
 				containerTarget{Scheme: "tcp", Port: rp, Target: fmt.Sprintf("tcp://rack/%s/resource/%s:%d", app, r.Name, rp)},
 			},
@@ -265,6 +266,7 @@ func (p *Provider) resourceContainers(resources manifest.Resources, app, release
 				"convox.release":  release,
 				"convox.type":     "resource",
 				"convox.name":     r.Name,
+				"convox.hostname": hostname,
 				"convox.resource": r.Type,
 			},
 		})
@@ -316,9 +318,11 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 
 		st := fmt.Sprintf("%s://rack/%s/service/%s:%d", s.Port.Scheme, app, s.Name, s.Port.Port)
 
+		hostname := fmt.Sprintf("%s.%s.%s", s.Name, app, p.Name)
+
 		for i := 1; i <= s.Scale.Count.Min; i++ {
 			cs = append(cs, container{
-				Hostname: fmt.Sprintf("%s.%s.%s", s.Name, app, p.Name),
+				Hostname: hostname,
 				Targets: []containerTarget{
 					containerTarget{Scheme: "http", Port: 80, Target: st},
 					containerTarget{Scheme: "https", Port: 443, Target: st},
@@ -330,14 +334,17 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 				Memory:  s.Scale.Memory,
 				Volumes: s.Volumes,
 				Labels: map[string]string{
-					"convox.rack":    p.Name,
-					"convox.version": p.Version,
-					"convox.app":     app,
-					"convox.release": release,
-					"convox.type":    "service",
-					"convox.name":    s.Name,
-					"convox.service": s.Name,
-					"convox.index":   fmt.Sprintf("%d", i),
+					"convox.rack":     p.Name,
+					"convox.version":  p.Version,
+					"convox.app":      app,
+					"convox.release":  release,
+					"convox.type":     "service",
+					"convox.name":     s.Name,
+					"convox.hostname": hostname,
+					"convox.service":  s.Name,
+					"convox.index":    fmt.Sprintf("%d", i),
+					"convox.port":     strconv.Itoa(s.Port.Port),
+					"convox.scheme":   s.Port.Scheme,
 				},
 			})
 		}
