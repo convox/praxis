@@ -12,6 +12,25 @@ import (
 	"github.com/pkg/errors"
 )
 
+type portProtocol struct {
+	Port int
+	Protocol string
+}
+
+type appResource struct {
+	App, Kind, Name string
+	PortProtocol portProtocol
+}
+
+func parseProtocol(port string) portProtocol {
+	s, err := strings.Split(port, "/")
+	if (err) {
+		return {Port: port, Protocol: "tcp"}
+	}
+
+	return {Port: s[0], Protocol: s[1]}
+}
+
 var convergeLock sync.Mutex
 
 func (p *Provider) converge(app string) error {
@@ -138,8 +157,8 @@ func (p *Provider) prune() error {
 	return log.Success()
 }
 
-func resourcePort(kind string) (int, error) {
-	switch kind {
+func resourcePort(r appResource) (int, error) {
+	switch r.Kind {
 	case "mysql":
 		return 3306, nil
 	case "postgres":
@@ -150,26 +169,30 @@ func resourcePort(kind string) (int, error) {
 		return 5672, nil
 	case "elasticsearch":
 		return 9200, nil
+	case "machine":
+		return r.PortProtocol.Port, nil
 	}
 
 	return 0, fmt.Errorf("unknown resource type: %s", kind)
 }
 
-func resourceURL(app, kind, name string) (string, error) {
-	switch kind {
+func resourceURL(r appResource) (string, error) {
+	switch r.Kind {
 	case "mysql":
-		return fmt.Sprintf("mysql://mysql:password@%s.resource.%s.convox:3306/app", name, app), nil
+		return fmt.Sprintf("mysql://mysql:password@%s.resource.%s.convox:3306/app", r.Name, r.App), nil
 	case "postgres":
-		return fmt.Sprintf("postgres://postgres:password@%s.resource.%s.convox:5432/app?sslmode=disable", name, app), nil
+		return fmt.Sprintf("postgres://postgres:password@%s.resource.%s.convox:5432/app?sslmode=disable", r.Name, r.App), nil
 	case "redis":
-		return fmt.Sprintf("redis://%s.resource.%s.convox:6379/0", name, app), nil
+		return fmt.Sprintf("redis://%s.resource.%s.convox:6379/0", r.Name, r.App), nil
 	case "rabbitmq":
-		return fmt.Sprintf("amqp://guest:guest@%s.resource.%s.convox:5672", name, app), nil
+		return fmt.Sprintf("amqp://guest:guest@%s.resource.%s.convox:5672", r.Name, r.App), nil
 	case "elasticsearch":
-		return fmt.Sprintf("https://%s.resource.%s.convox:9200", name, app), nil
+		return fmt.Sprintf("https://%s.resource.%s.convox:9200", r.Name, r.App), nil
+	case "machine":
+		return fmt.Sprintf("%s://%s.resource.%s.convox:%d", r.PortProtocol.Protocol, r.Name, r.App, r.PortProtocol.Port), nil
 	}
 
-	return "", fmt.Errorf("unknown resource type: %s", kind)
+	return "", fmt.Errorf("unknown resource type: %s", r.Kind)
 }
 
 func resourceVolumes(app, kind, name string) ([]string, error) {
@@ -184,6 +207,8 @@ func resourceVolumes(app, kind, name string) ([]string, error) {
 		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/var/lib/rabbitmq/data", app, name)}, nil
 	case "elasticsearch":
 		return []string{fmt.Sprintf("/var/convox/%s/resource/%s:/usr/share/elasticsearch/data", app, name)}, nil
+	case "machine":
+		return []string{}, nil
 	}
 
 	return []string{}, fmt.Errorf("unknown resource type: %s", kind)
@@ -236,11 +261,19 @@ func resourceVolumes(app, kind, name string) ([]string, error) {
 //   return cs, nil
 // }
 
+func resourceContainerImage(kind, image string) string {
+	if (image != nil) {
+		return image
+	}
+
+	return fmt.Sprintf("convox/%s", kind)
+}
+
 func (p *Provider) resourceContainers(resources manifest.Resources, app, release string) ([]container, error) {
 	cs := []container{}
 
 	for _, r := range resources {
-		rp, err := resourcePort(r.Type)
+		rp, err := resourcePort({Kind: r.Type, PortProtocol: parseProtocol(r.Port)})
 		if err != nil {
 			return nil, err
 		}
@@ -256,7 +289,7 @@ func (p *Provider) resourceContainers(resources manifest.Resources, app, release
 			Targets: []containerTarget{
 				containerTarget{Scheme: "tcp", Port: rp, Target: fmt.Sprintf("tcp://rack/%s/resource/%s:%d", app, r.Name, rp)},
 			},
-			Image:   fmt.Sprintf("convox/%s", r.Type),
+			Image:   resourceContainerImage(r.Type, r.Image),
 			Volumes: vs,
 			Labels: map[string]string{
 				"convox.rack":     p.Name,
@@ -304,7 +337,7 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 		for _, sr := range s.Resources {
 			for _, r := range m.Resources {
 				if r.Name == sr {
-					u, err := resourceURL(app, r.Type, r.Name)
+					u, err := resourceURL({App: app, Kind: r.Type, Name: r.Name, PortProtocol: parseProtocol(r.Port)})
 					if err != nil {
 						return nil, err
 					}
