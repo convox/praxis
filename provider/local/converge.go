@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -13,22 +14,25 @@ import (
 )
 
 type portProtocol struct {
-	Port int
+	Port     int
 	Protocol string
 }
 
 type appResource struct {
 	App, Kind, Name string
-	PortProtocol portProtocol
+	PortProtocol    portProtocol
 }
 
 func parseProtocol(port string) portProtocol {
-	s, err := strings.Split(port, "/")
-	if (err) {
-		return {Port: port, Protocol: "tcp"}
+	s := strings.Split(port, "/")
+	portNumber, err := strconv.Atoi(s[0])
+	if err != nil {
+		panic(err)
 	}
-
-	return {Port: s[0], Protocol: s[1]}
+	if len(s) > 1 {
+		return portProtocol{Port: portNumber, Protocol: s[1]}
+	}
+	return portProtocol{Port: portNumber, Protocol: "tcp"}
 }
 
 var convergeLock sync.Mutex
@@ -173,7 +177,7 @@ func resourcePort(r appResource) (int, error) {
 		return r.PortProtocol.Port, nil
 	}
 
-	return 0, fmt.Errorf("unknown resource type: %s", kind)
+	return 0, fmt.Errorf("unknown resource type: %s", r.Kind)
 }
 
 func resourceURL(r appResource) (string, error) {
@@ -262,7 +266,7 @@ func resourceVolumes(app, kind, name string) ([]string, error) {
 // }
 
 func resourceContainerImage(kind, image string) string {
-	if (image != nil) {
+	if len(image) > 0 {
 		return image
 	}
 
@@ -273,7 +277,7 @@ func (p *Provider) resourceContainers(resources manifest.Resources, app, release
 	cs := []container{}
 
 	for _, r := range resources {
-		rp, err := resourcePort({Kind: r.Type, PortProtocol: parseProtocol(r.Port)})
+		rp, err := resourcePort(appResource{Kind: r.Type, PortProtocol: parseProtocol(r.Port)})
 		if err != nil {
 			return nil, err
 		}
@@ -337,7 +341,7 @@ func (p *Provider) serviceContainers(services manifest.Services, app, release st
 		for _, sr := range s.Resources {
 			for _, r := range m.Resources {
 				if r.Name == sr {
-					u, err := resourceURL({App: app, Kind: r.Type, Name: r.Name, PortProtocol: parseProtocol(r.Port)})
+					u, err := resourceURL(appResource{App: app, Kind: r.Type, Name: r.Name, PortProtocol: parseProtocol(r.Port)})
 					if err != nil {
 						return nil, err
 					}
