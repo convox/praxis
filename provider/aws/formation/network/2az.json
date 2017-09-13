@@ -1,10 +1,44 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Outputs": {
-    "Cidr": { "Value": "10.0.0.0/16" },
-    "Subnet0": { "Value": { "Ref": "Subnet0" } },
-    "Subnet1": { "Value": { "Ref": "Subnet1" } },
-    "Vpc": { "Value": { "Ref": "Vpc" } }
+    "Subnet0": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Subnet0" } },
+      "Value": { "Ref": "Subnet0" }
+    },
+    "Subnet0Cidr": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Subnet0Cidr" } },
+      "Value": { "Ref": "Subnet0Cidr" }
+    },
+    "Subnet1": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Subnet1" } },
+      "Value": { "Ref": "Subnet1" }
+    },
+    "Subnet1Cidr": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Subnet1Cidr" } },
+      "Value": { "Ref": "Subnet1Cidr" }
+    },
+    "Vpc": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Vpc" } },
+      "Value": { "Ref": "Vpc" }
+    },
+    "VpcCidr": {
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:VpcCidr" } },
+      "Value": { "Ref": "VpcCidr" }
+    }
+  },
+  "Parameters": {
+    "Subnet0Cidr": {
+      "Default": "10.0.0.0/24",
+      "Type": "String"
+    },
+    "Subnet1Cidr": {
+      "Default": "10.0.1.0/24",
+      "Type": "String"
+    },
+    "VpcCidr": {
+      "Default": "10.0.0.0/16",
+      "Type": "String"
+    },
   },
   "Resources": {
     "Gateway": {
@@ -20,7 +54,7 @@
     },
     "Routes": {
       "Type": "AWS::EC2::RouteTable",
-      "DependsOn": [ "Gateway" ],
+      "DependsOn": [ "Gateway", "GatewayAttachment" ],
       "Properties": {
         "VpcId": { "Ref": "Vpc" }
       }

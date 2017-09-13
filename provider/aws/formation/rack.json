@@ -1,12 +1,13 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Conditions": {
-    "BlankInstanceKey": { "Fn::Equals": [ { "Ref": "InstanceKey" }, "" ] }
+    "BlankNetworkStack": { "Fn::Equals": [ { "Ref": "NetworkStack" }, "" ] },
+    "BlankSshKey": { "Fn::Equals": [ { "Ref": "SshKey" }, "" ] }
   },
   "Mappings": {
     "Constants": {
       "Values": {
-        "Version": "latest"
+        "Version": "20170831124901"
       }
     },
     "RegionConfig": {
@@ -37,11 +38,10 @@
     },
     "Domain": {
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Domain" } },
-      "Value": { "Fn::Join": [ "", [
+      "Value": { "Fn::Join": [ ".", [
         { "Fn::Select": [ 0, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
-        ".",
         { "Fn::Select": [ 1, { "Fn::Split": [ ".", { "Fn::GetAtt": [ "Balancer", "DNSName" ] } ] } ] },
-        ".rack.convox.io"
+        "rack.convox.io"
       ] ] }
     },
     "Endpoint": {
@@ -62,32 +62,24 @@
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:ServiceRole" } },
       "Value": { "Ref": "RackServiceRole" }
     },
-    "Subnet0": {
-      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Subnet0" } },
-      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] }
-    },
-    "Subnet1": {
-      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Subnet1" } },
-      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }
-    },
     "Version": {
       "Value": { "Fn::FindInMap": [ "Constants", "Values", "Version" ] }
     },
     "Vpc": {
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:Vpc" } },
-      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
+      "Value": { "Fn::If": [ "BlankNetworkStack", { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }, { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:Vpc" } } ] }
     },
     "VpcCidr": {
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:VpcCidr" } },
-      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Cidr" ] }
+      "Value": { "Fn::If": [ "BlankNetworkStack", { "Fn::GetAtt": [ "Network", "Outputs.VpcCidr" ] }, { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:VpcCidr" } } ] }
     },
     "VpcSubnet0": {
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:VpcSubnet0" } },
-      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] }
+      "Value": { "Fn::If": [ "BlankNetworkStack", { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] }, { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:Subnet0" } } ] }
     },
     "VpcSubnet1": {
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}:VpcSubnet1" } },
-      "Value": { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }
+      "Value": { "Fn::If": [ "BlankNetworkStack", { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }, { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:Subnet1" } } ] }
     }
   },
   "Parameters": {
@@ -99,26 +91,31 @@
       "Default": "10",
       "Type": "Number"
     },
-    "InstanceKey": {
-      "Default": "",
-      "Type": "String"
-    },
     "InstanceSize": {
       "Default": "t2.micro",
+      "Type": "String"
+    },
+    "NetworkStack": {
+      "Default": "",
       "Type": "String"
     },
     "Password": {
       "MinLength": "1",
       "NoEcho": true,
       "Type": "String"
+    },
+    "SshKey": {
+      "Default": "",
+      "Type": "String"
     }
   },
   "Resources": {
     "Network": {
+      "Condition": "BlankNetworkStack",
       "Type": "AWS::CloudFormation::Stack",
       "Properties": {
         "TemplateURL": { "Fn::Sub": [
-          "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/network.json",
+          "http://praxis-releases.s3.amazonaws.com/release/${Version}/formation/network/2az.json",
           { "Version": { "Fn::FindInMap": [ "Constants", "Values", "Version" ] } }
         ] }
       }
@@ -128,11 +125,17 @@
       "Properties": {
         "GroupDescription": { "Fn::Sub": "${AWS::StackName} instances" },
         "SecurityGroupIngress": [
-          { "IpProtocol": "tcp", "FromPort": "0", "ToPort": "65535", "CidrIp": { "Fn::GetAtt": [ "Network", "Outputs.Cidr" ] } },
-          { "IpProtocol": "udp", "FromPort": "0", "ToPort": "65535", "CidrIp": { "Fn::GetAtt": [ "Network", "Outputs.Cidr" ] } }
+          { "IpProtocol": "tcp", "FromPort": "0", "ToPort": "65535", "CidrIp": { "Fn::If": [ "BlankNetworkStack",
+            { "Fn::GetAtt": [ "Network", "Outputs.VpcCidr" ] },
+            { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:VpcCidr" } }
+          ] } },
+          { "IpProtocol": "udp", "FromPort": "0", "ToPort": "65535", "CidrIp": { "Fn::If": [ "BlankNetworkStack",
+            { "Fn::GetAtt": [ "Network", "Outputs.VpcCidr" ] },
+            { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:VpcCidr" } }
+          ] } }
         ],
         "Tags": [ { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-instances" } } ],
-        "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
+        "VpcId": { "Fn::If": [ "BlankNetworkStack", { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }, { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:Vpc" } } ] }
       }
     },
     "InstancesProfile": {
@@ -165,7 +168,7 @@
         "ImageId": { "Fn::FindInMap": [ "RegionConfig", { "Ref": "AWS::Region" }, "Ami" ] },
         "InstanceMonitoring": true,
         "InstanceType": { "Ref": "InstanceSize" },
-        "KeyName": { "Fn::If": [ "BlankInstanceKey", { "Ref": "AWS::NoValue" }, { "Ref": "InstanceKey" } ] },
+        "KeyName": { "Fn::If": [ "BlankSshKey", { "Ref": "AWS::NoValue" }, { "Ref": "SshKey" } ] },
         "PlacementTenancy" : "default",
         "SecurityGroups": [ { "Ref": "InstancesSecurity" } ],
         "UserData": { "Fn::Base64":
@@ -174,7 +177,6 @@
             "yum install -y aws-cfn-bootstrap aws-cli nfs-utils\n",
             "iptables --insert FORWARD 1 --in-interface docker+ --destination 169.254.169.254/32 --jump DROP\n",
             "mkdir /volumes\n",
-            "while true; do mount -t nfs -o nfsvers=4.1 $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).", { "Ref": "Volumes" }, ".efs.", { "Ref": "AWS::Region" }, ".amazonaws.com:/ /volumes && break; sleep 5; done\n",
             "echo ECS_CLUSTER=", { "Ref": "RackCluster" }, " >> /etc/ecs/ecs.config\n",
             "echo ECS_ENGINE_AUTH_TYPE=docker >> /etc/ecs/ecs.config\n",
             "echo 'OPTIONS=\"${OPTIONS} --log-opt max-file=2 --log-opt max-size=50m --host=unix:///var/run/docker.sock --host=0.0.0.0:2376\"' >> /etc/sysconfig/docker\n",
@@ -206,8 +208,8 @@
         "MetricsCollection": [ { "Granularity": "1Minute" } ],
         "Tags": [ { "Key": "Name", "Value": { "Ref": "AWS::StackName" }, "PropagateAtLaunch": "true" } ],
         "VPCZoneIdentifier": [
-          { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] },
-          { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }
+          { "Fn::If": [ "BlankNetworkStack", { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] }, { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:Subnet0" } } ] },
+          { "Fn::If": [ "BlankNetworkStack", { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }, { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:Subnet1" } } ] }
         ]
       },
       "UpdatePolicy": {
@@ -356,40 +358,8 @@
         ]
       }
     },
-    "Volumes": {
-      "Type": "AWS::EFS::FileSystem",
-      "Properties": {
-        "FileSystemTags": [ { "Key": "Name", "Value": { "Ref": "AWS::StackName" } } ]
-      }
-    },
-    "VolumesSecurity": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "Properties": {
-        "GroupDescription": { "Fn::Sub": "${AWS::StackName} volumes" },
-        "SecurityGroupIngress": [
-          { "IpProtocol": "tcp", "FromPort": "2049", "ToPort": "2049", "CidrIp": { "Fn::GetAtt": [ "Network", "Outputs.Cidr" ] } }
-        ],
-        "Tags": [ { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-volumes" } } ],
-        "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
-      }
-    },
-    "VolumesTarget0": {
-      "Type": "AWS::EFS::MountTarget",
-      "Properties": {
-        "FileSystemId": { "Ref": "Volumes" },
-        "SubnetId": { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] },
-        "SecurityGroups": [ { "Ref": "VolumesSecurity" } ]
-      }
-    },
-    "VolumesTarget1": {
-      "Type": "AWS::EFS::MountTarget",
-      "Properties": {
-        "FileSystemId": { "Ref": "Volumes" },
-        "SubnetId": { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] },
-        "SecurityGroups": [ { "Ref": "VolumesSecurity" } ]
-      }
-    },
     "BalancerCertificate": {
+      "DependsOn": "BalancerTargetGroup",
       "Type": "AWS::CertificateManager::Certificate",
       "Properties": {
         "DomainName": { "Fn::Join": [ ".", [
@@ -414,14 +384,15 @@
     "Balancer": {
       "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
       "Properties": {
+        "Name": { "Fn::If": [ "BlankNetworkStack", { "Ref": "AWS::NoValue" }, { "Fn::Sub": "${AWS::StackName}-${NetworkStack}" } ] },
         "LoadBalancerAttributes": [
           { "Key" : "idle_timeout.timeout_seconds", "Value" : "1800" }
         ],
         "Scheme": "internet-facing",
         "SecurityGroups": [ { "Ref": "BalancerSecurity" } ],
         "Subnets": [
-          { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] },
-          { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }
+          { "Fn::If": [ "BlankNetworkStack", { "Fn::GetAtt": [ "Network", "Outputs.Subnet0" ] }, { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:Subnet0" } } ] },
+          { "Fn::If": [ "BlankNetworkStack", { "Fn::GetAtt": [ "Network", "Outputs.Subnet1" ] }, { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:Subnet1" } } ] }
         ]
       }
     },
@@ -443,12 +414,13 @@
           { "IpProtocol": "tcp", "FromPort": "443", "ToPort": "443", "CidrIp": "0.0.0.0/0" }
         ],
         "Tags": [ { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-balancer" } } ],
-        "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
+        "VpcId": { "Fn::If": [ "BlankNetworkStack", { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }, { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:Vpc" } } ] }
       }
     },
     "BalancerTargetGroup": {
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
       "Properties": {
+        "Name": { "Fn::If": [ "BlankNetworkStack", { "Ref": "AWS::NoValue" }, { "Fn::Sub": "${AWS::StackName}-${NetworkStack}" } ] },
         "HealthCheckIntervalSeconds": 60,
         "UnhealthyThresholdCount": 10,
         "HealthCheckPath": "/",
@@ -458,7 +430,7 @@
           { "Key": "deregistration_delay.timeout_seconds", "Value": "2" },
           { "Key": "stickiness.enabled", "Value": "true" }
         ],
-        "VpcId": { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }
+        "VpcId": { "Fn::If": [ "BlankNetworkStack", { "Fn::GetAtt": [ "Network", "Outputs.Vpc" ] }, { "Fn::ImportValue": { "Fn::Sub": "${NetworkStack}:Vpc" } } ] }
       }
     },
     "NotificationQueue": {
