@@ -39,7 +39,7 @@ func (p *Provider) ResourceList(app string) (types.Resources, error) {
 	rs := make(types.Resources, len(m.Resources))
 
 	for i, r := range m.Resources {
-		e, err := resourceURL(app, r.Type, r.Name)
+		e, err := resourceURL(appResource{App: app, Kind: r.Type, Name: r.Name})
 		if err != nil {
 			return nil, errors.WithStack(log.Error(err))
 		}
@@ -67,7 +67,7 @@ func (p *Provider) ResourceProxy(app, resource string, in io.Reader) (io.ReadClo
 		return nil, err
 	}
 
-	port, err := resourcePort(r.Type)
+	port, err := resourcePort(appResource{Kind: r.Type})
 	if err != nil {
 		return nil, err
 	}
