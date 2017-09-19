@@ -14,17 +14,6 @@ import (
 )
 
 func init() {
-	flags := []cli.Flag{
-		cli.StringFlag{
-			Name:  "filter",
-			Usage: "filter logs",
-			Value: "",
-		},
-		cli.BoolFlag{
-			Name:  "follow, f",
-			Usage: "stream logs continuously",
-		},
-	}
 	stdcli.RegisterCommand(cli.Command{
 		Name:        "releases",
 		Description: "list releases",
@@ -43,7 +32,18 @@ func init() {
 				Description: "release logs",
 				Usage:       "<id>",
 				Action:      runReleasesLogs,
-				Flags:       append(flags, globalFlags...),
+				Flags: append(
+					globalFlags,
+					cli.StringFlag{
+						Name:  "filter",
+						Usage: "filter logs",
+						Value: "",
+					},
+					cli.BoolFlag{
+						Name:  "follow, f",
+						Usage: "stream logs continuously",
+					},
+				),
 			},
 		},
 	})
@@ -73,7 +73,7 @@ func runReleases(c *cli.Context) error {
 
 func runReleasesInfo(c *cli.Context) error {
 	if len(c.Args()) < 1 {
-		stdcli.Usage(c)
+		return stdcli.Usage(c)
 	}
 
 	id := c.Args()[0]

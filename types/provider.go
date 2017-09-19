@@ -33,6 +33,9 @@ type Provider interface {
 	KeyDecrypt(app, key string, data []byte) ([]byte, error)
 	KeyEncrypt(app, key string, data []byte) ([]byte, error)
 
+	MetricList(app string) (Metrics, error)
+	MetricGet(app, name string) (*Metric, error)
+
 	// ObjectDelete(key string) error
 	ObjectExists(app, key string) (bool, error)
 	ObjectFetch(app, key string) (io.ReadCloser, error)

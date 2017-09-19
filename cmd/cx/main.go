@@ -156,7 +156,7 @@ func autoUpdate(ch chan error) {
 
 var errMissingProxyEndpoint = errors.New("Rack endpoint was not found, try cx login")
 
-func Rack(c *cli.Context) rack.Rack {
+func Rack(c *cli.Context) *rack.Client {
 	var endpoint *url.URL
 
 	exit := func(err error) {
